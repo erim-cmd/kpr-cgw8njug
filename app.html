@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<!-- ÖNİZLEME: canlıya alırken bu satırı ve _headers'daki X-Robots-Tag'i sil -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KPR</title>
+<meta name="description" content="KPR uygulaması: ders programın, sınavların ve ödevlerin tek yerde.">
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#141A28">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KPR">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="app.css">
+<script type="module" src="app.js"></script>
+</head>
+<body>
+
+<div class="app">
+  <header class="topbar">
+    <a class="brand" href="#/bugun">
+      <span class="brand-mark">K</span>
+      <span class="brand-name">KPR</span>
+    </a>
+    <a class="site-link" id="site-link" href="./">← Tanıtım sayfası</a>
+    <a class="icon-btn" id="settings-link" href="#/ayarlar" aria-label="Ayarlar"></a>
+  </header>
+  <main id="view" tabindex="-1"></main>
+</div>
+
+<nav class="tabbar" id="tabbar" aria-label="Ana menü"></nav>
+<button class="fab" id="fab" type="button" hidden></button>
+<dialog class="sheet" id="sheet"></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<noscript><p style="padding:24px">KPR'yi kullanmak için JavaScript'i etkinleştir.</p></noscript>
+</body>
+</html>
