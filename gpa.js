@@ -183,3 +183,37 @@ export function projection({ transcript, courses, gpaBase }) {
     },
   };
 }
+
+/* ------------------------------------------------------------------ */
+/* Ders puanı → harf                                                    */
+/* BAU bağıl değerlendirme kullanır: eşikler hocadan hocaya değişir.   */
+/* Bu yüzden tablo öğrencinin girdiği değerdir; örnek tablo sadece      */
+/* başlangıç noktasıdır ve arayüzde "doğrula" diye işaretlenir.         */
+/* ------------------------------------------------------------------ */
+
+export const SAMPLE_SCALE = [
+  { letter: "A", min: 90 }, { letter: "A-", min: 85 }, { letter: "B+", min: 80 }, { letter: "B", min: 75 },
+  { letter: "B-", min: 70 }, { letter: "C+", min: 65 }, { letter: "C", min: 60 }, { letter: "C-", min: 55 },
+  { letter: "D+", min: 50 }, { letter: "D", min: 45 },
+];
+
+/** Puanın tablodaki harfi; en alt eşiğin altı F. */
+export function letterFor(score, scale) {
+  if (score === null || !scale.length) return null;
+  const hit = [...scale].sort((a, b) => b.min - a.min).find((r) => score + 1e-9 >= r.min);
+  return hit ? hit.letter : "F";
+}
+
+/**
+ * Her harf için kalan bileşenlerden gereken ortalama (0–100).
+ * earned/remaining: forms.calcGrades çıktısı (ağırlık puanı cinsinden).
+ * status: "ok" (şimdiden garanti), "need", "no" (100 alsan da olmuyor).
+ */
+export function neededByLetter(scale, earned, remaining) {
+  return [...scale].sort((a, b) => b.min - a.min).map((r) => {
+    if (earned + 1e-9 >= r.min) return { ...r, status: "ok", need: 0 };
+    if (!(remaining > 0)) return { ...r, status: "no", need: null };
+    const need = ((r.min - earned) / remaining) * 100;
+    return { ...r, status: need > 100 ? "no" : "need", need };
+  });
+}

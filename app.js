@@ -32,7 +32,9 @@ const ROUTES = {
   ortalama: { mod: gpaView, title: "Ortalama", icon: "chart", fab: null },
   ayarlar: { mod: settings, title: "Ayarlar", fab: null },
 };
-const TABS = ["bugun", "program", "gorevler", "dersler", "donem", "ortalama"];
+// Alt menü 5 sekme: 6'sı telefonda göz yoruyor. Görevler Bugün'ün altında ("Tümü" bağlantısı).
+const TABS = ["bugun", "program", "dersler", "donem", "ortalama"];
+const TAB_OF = { gorevler: "bugun" };
 
 const $view = document.getElementById("view");
 const $tabbar = document.getElementById("tabbar");
@@ -73,7 +75,7 @@ function render() {
   document.title = `${route.title} · KPR`;
 
   const markCurrent = (el, on) => (on ? el.setAttribute("aria-current", "page") : el.removeAttribute("aria-current"));
-  $tabbar.querySelectorAll(".tab").forEach((a) => markCurrent(a, a.dataset.route === name));
+  $tabbar.querySelectorAll(".tab").forEach((a) => markCurrent(a, a.dataset.route === (TAB_OF[name] || name)));
   markCurrent($settings, name === "ayarlar");
 
   $fab.hidden = !route.fab;

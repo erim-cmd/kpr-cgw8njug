@@ -6,6 +6,7 @@ import { DAYS, todayIdx, todayISO, toMin, daysUntil, fmtShort, relLabel, byDue }
 import { icon } from "./icons.js";
 import { attendance, attendanceText } from "./attendance.js";
 import { canAsk, enableNotifications } from "./notify.js";
+import { SAMPLE_SCALE, letterFor, neededByLetter, COEF } from "./gpa.js";
 
 const head = (title) => `<header class="sheet-head">
   <h2>${title}</h2>
@@ -249,6 +250,53 @@ function calcSummary(course) {
   return lines.map((l) => `<p>${l}</p>`).join("");
 }
 
+/** Final bileşeni: adında final/bütünleme geçen ilk bileşen. */
+const finalIndex = (grading) => grading.findIndex((g) => /final|bütünleme|butunleme|yarıyıl sonu/i.test(g.name));
+
+/** Harf tahmini sonucu (sadece metin; girişler ayrı çizilir ki odak bozulmasın). */
+function letterResult(c) {
+  if (!c.grading.length) return "";
+  if (!c.scale.length) return `<p class="calc-note">BAU'da harf eşikleri hocaya göre değişir. Hocanın açıkladığı tabloyu gir ya da örnek tabloyla başlayıp düzelt.</p>`;
+  const r = calcGrades(c.grading, c.target);
+  const lines = [];
+  const fi = finalIndex(c.grading);
+  const fin = fi >= 0 ? c.grading[fi] : null;
+  const underBar = c.finalMin !== null && fin && fin.score !== null && fin.score < c.finalMin;
+
+  if (r.remaining <= 0.01 && r.doneWeight > 0) {
+    const letter = underBar ? "F" : letterFor(r.earned, c.scale);
+    lines.push(`<p>Ders puanın <b>${fmtNum(r.earned)}</b> → tahmini harfin <b class="need">${letter}</b>${letter in COEF ? ` (${COEF[letter].toFixed(2)})` : ""}.</p>`);
+    if (letter !== c.letter) lines.push(`<p><button type="button" class="btn btn-ghost" data-apply-letter="${letter}">Ortalama tablosuna ${letter} olarak aktar</button></p>`);
+    else lines.push(`<p class="fine">Ortalama tablosunda bu ders ${letter} olarak kayıtlı.</p>`);
+  } else {
+    const rows = neededByLetter(c.scale, r.earned, r.remaining);
+    const best = rows.find((x) => x.status !== "no");
+    const shown = rows.filter((x) => x.status === "need").slice(0, 5);
+    if (!best) lines.push(`<p>Kalanlardan 100 alsan da tablodaki en düşük harfe (${rows[rows.length - 1].letter}) ulaşmak zor görünüyor.</p>`);
+    else {
+      const ok = rows.find((x) => x.status === "ok");
+      if (ok) lines.push(`<p>Şimdiden en az <b>${ok.letter}</b> garanti.</p>`);
+      if (shown.length) lines.push(`<ul class="kv need-list">${shown.map((x) => `<li><b>${x.letter}</b><span>kalanlardan ort. <b class="need">${fmtNum(Math.max(0, x.need))}</b></span></li>`).join("")}</ul>`);
+      if (rows[0].status === "no") lines.push(`<p class="fine">${rows[0].letter} bu noktadan sonra mümkün görünmüyor.</p>`);
+    }
+    if (c.finalMin !== null && fin && fin.score === null) lines.push(`<p class="fine">Finalden en az <b>${fmtNum(c.finalMin)}</b> alman şart; altında kalırsan diğer notlardan bağımsız F olabilir.</p>`);
+  }
+  if (underBar) lines.push(`<p class="warn-text">Final notun (${fmtNum(fin.score)}) barajın (${fmtNum(c.finalMin)}) altında. Bütünlemeye girersen final satırına bütünleme notunu yaz.</p>`);
+  return lines.join("");
+}
+
+function letterBlock(c) {
+  if (!c.grading.length) return "";
+  const inputs = c.scale.length
+    ? `<div class="scale-grid">${c.scale.map((x, i) => `<label><span>${x.letter}</span>
+        <input type="number" min="0" max="100" step="any" inputmode="decimal" data-scale-i="${i}" value="${x.min}" aria-label="${x.letter} için en düşük puan"></label>`).join("")}
+        <label><span>Final barajı</span><input type="number" min="0" max="100" step="any" inputmode="decimal" data-final-min value="${c.finalMin ?? ""}" placeholder="yok" aria-label="Final barajı"></label>
+      </div>
+      <p class="fine gap-t">Kutular o harf için gereken en düşük ders puanı. Hocanın tablosuyla aynı olduğundan emin ol. <button type="button" class="link" data-scale-clear>Tabloyu kaldır</button></p>`
+    : `<div class="empty-actions"><button type="button" class="btn btn-ghost" data-scale-sample>Örnek tabloyla başla</button></div>`;
+  return `<div data-letter-block>${inputs}<div class="calc-result" data-letter-result aria-live="polite">${letterResult(c)}</div></div>`;
+}
+
 function absenceBlock(c) {
   const a = attendance(c, store.get().settings.termWeeks);
   const pct = a.limit ? Math.min(100, (a.used / a.limit) * 100) : a.used ? 100 : 0;
@@ -306,8 +354,9 @@ export function openCourseDetail(courseId) {
               <input type="number" min="0" max="100" step="any" inputmode="decimal" name="target" value="${c.target}" aria-label="Hedef not">
             </label>
           </form>` : ""}
-          <div class="calc-result" aria-live="polite">${calcSummary(c)}</div>
+          <div class="calc-result" data-calc-result aria-live="polite">${calcSummary(c)}</div>
         </section>
+        ${c.grading.length ? `<section><h3 class="mini-title">Harf tahmini</h3>${letterBlock(c)}</section>` : ""}
         <section><h3 class="mini-title">Devamsızlık</h3>
           ${absenceBlock(c)}
         </section>
@@ -328,6 +377,20 @@ export function openCourseDetail(courseId) {
     root.addEventListener("click", (e) => {
       const course = store.get().courses.find((x) => x.id === courseId);
       if (e.target.closest("[data-edit]")) openCourseForm(course);
+      if (e.target.closest("[data-scale-sample]")) {
+        store.saveCourse({ ...course, scale: SAMPLE_SCALE });
+        refreshLetter(true);
+      }
+      if (e.target.closest("[data-scale-clear]")) {
+        store.saveCourse({ ...course, scale: [], finalMin: null });
+        refreshLetter(true);
+      }
+      const apply = e.target.closest("[data-apply-letter]");
+      if (apply) {
+        store.saveCourse({ ...course, letter: apply.dataset.applyLetter });
+        toast(`${course.code || course.name}: ${apply.dataset.applyLetter} olarak Ortalama'ya aktarıldı`);
+        refreshLetter(false);
+      }
       if (e.target.closest("[data-new-task]")) openTaskForm(null, { courseId });
       const rm = e.target.closest("[data-remove-abs]");
       if (rm) {
@@ -348,8 +411,25 @@ export function openCourseDetail(courseId) {
       const c = store.get().courses.find((x) => x.id === courseId);
       if (c) root.querySelector("[data-abs-block]").outerHTML = absenceBlock(c);
     };
+    // Harf bloğu: full=true ise girişler de yeniden çizilir, değilse sadece sonuç
+    const refreshLetter = (full) => {
+      const c = store.get().courses.find((x) => x.id === courseId);
+      const block = root.querySelector("[data-letter-block]");
+      if (!c || !block) return;
+      if (full) block.outerHTML = letterBlock(c);
+      else block.querySelector("[data-letter-result]").innerHTML = letterResult(c);
+    };
     // Notlar yazıldıkça kaydet ve sadece sonuç kutusunu güncelle (odak kaybolmasın)
     root.addEventListener("input", (e) => {
+      const lb = e.target.closest("[data-letter-block]");
+      if (lb) {
+        const course = store.get().courses.find((x) => x.id === courseId);
+        const v = (el) => (el.value === "" ? null : Math.min(100, Math.max(0, Number(el.value))));
+        const scale = course.scale.map((x, i) => ({ ...x, min: v(lb.querySelector(`[data-scale-i="${i}"]`)) ?? x.min }));
+        store.saveCourse({ ...course, scale, finalMin: v(lb.querySelector("[data-final-min]")) });
+        refreshLetter(false);
+        return;
+      }
       const form = e.target.closest("[data-calc]");
       if (!form) return;
       const course = store.get().courses.find((x) => x.id === courseId);
@@ -357,7 +437,8 @@ export function openCourseDetail(courseId) {
       const grading = course.grading.map((g, i) => ({ ...g, score: val(form.querySelector(`[data-i="${i}"]`)) }));
       const target = val(form.elements.namedItem("target")) ?? 50;
       const saved = store.saveCourse({ ...course, grading, target });
-      root.querySelector(".calc-result").innerHTML = calcSummary(saved);
+      root.querySelector("[data-calc-result]").innerHTML = calcSummary(saved);
+      refreshLetter(false);
     });
   });
 }

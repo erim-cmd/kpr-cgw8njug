@@ -11,6 +11,7 @@ Yarım kalan ve sıradaki işler. Bitenler en alta "Yapıldı"ya taşınır.
 - [ ] **Onur/yüksek onur eşikleri** ve yönetmeliğin 1.4.2026 değişikliği doğrulanmadı.
 
 ## Yapıldı
+- [x] v2.4 (26 Eyl 2026): Ders puanı → harf tahmini (hocanın harf tablosu, örnek tablo "doğrula" uyarılı, her harf için kalanlardan gereken ortalama, final barajı + bütünleme uyarısı, tahmini harfi tek dokunuşla Ortalama tablosuna aktarma). Alt menü 5 sekme (Görevler Bugün'ün altında).
 - [x] v2.3 (26 Eyl 2026): "Dönem" paneli BAU motoru üzerine (GNO/YNO özeti, en riskli ders, ortak hedef GNO, devamsızlık kartları, sınıra yaklaşınca uyarı); syllabus talimatına Türkçe kurallar (50 dk ders saati, hafta → tarih, bütünleme/mazeret, not ağırlığı ≠ 100, belge içi talimatlara uyma). Eski ayarlanabilir ölçek + saat bazlı devamsızlık `arsiv/donem-paneli` dalında.
 - [x] v2.2 (26 Eyl 2026): UMIS harf listesi (D-, E, R dahil), AKTS, UMIS tablosu + HESAPLA; syllabus okuma sunucusu (`functions/api/syllabus.js`); kredi/AKTS/devam şartı syllabus'tan
 - [x] v2.1 (26 Eyl 2026): proaktif uyarılar, bildirimler, BAU GNO, devamsızlık, takvime aktarma
