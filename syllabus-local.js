@@ -355,6 +355,13 @@ const ITEM_KINDS = [
 const RULE_WORDS = /\ben az\b|\bat least\b|zorunlu|required|must|kabul edilmez|not accepted|penalty|ceza|kesinti|puan alin|gerekmektedir|gerekir|sevk|disiplin|plagiarism|intihal|kopya|devam sartini|%|revision|revise|review\b|tekrar\b|gozden gecir/;
 const SCHEDULE_WORDS = /\bhafta\b|\bweek\b|\btba\b|\btbd\b|ilan edilecek|announced|akademik takvim|academic calendar|tarih|date|final exam week|sinav haftasi|exam week/;
 
+// Ders olmayan gün ("No class Apr 20", "20 Nisan ders yok", "HOLIDAY") hiçbir zaman sınav/teslim tarihi değildir.
+// Katlanmış (fold) metinde, tarihin hemen önündeki ~30 karakterde aranır.
+const NO_CLASS = /(no class(?:es)?|no lecture|ders yok|ders yapilmayacak|holiday|tatil|break)[^\d]{0,12}$/;
+const noClassAt = (ftext, idx) => NO_CLASS.test(ftext.slice(Math.max(0, idx - 30), idx));
+// Tarihin sonradan ilan edileceğini söyleyen ifadeler
+const TBA_RE = /\btba\b|\btbd\b|to be announced|will be announced|ilan edilecek|belirlenecek|duyurulacak/;
+
 function titleFrom(orig, fk, kind, datesInCell) {
   // Tarihleri çıkar, sonra ayırıcılara göre böl ve anahtar kelimeyi içeren parçayı başlık yap
   let t = orig;
@@ -487,12 +494,21 @@ function parseItems(lines, flines, termYear, warnings) {
       const fc = fcells[r.ci];
       // Tarih: hücrenin kendi tarihi (anahtar kelimeden sonraki ilk), yoksa satırın tarih sütunu, yoksa satırdaki herhangi bir tarih
       const kpos = r.kind.re.exec(fc).index;
-      let d = r.dates.find((x) => x.index >= kpos) || r.dates[0];
-      if (!d && rowDates.length) d = rowDates[0];
-      if (!d && cells.length > 1) {
-        const any = cells.flatMap((c, k) => (k === r.ci ? [] : findDates(fcells[k], termYear)));
-        d = any[0];
+      const own = r.dates.filter((x) => !noClassAt(fc, x.index));
+      let d = own.find((x) => x.index >= kpos) || own[0];
+      let dsrc = fc; // tarihin alındığı hücre (katlanmış)
+      if (!d && rowDates.length) {
+        d = rowDates.find((x) => !noClassAt(fcells[dateCol], x.index));
+        dsrc = fcells[dateCol];
       }
+      if (!d && cells.length > 1) {
+        const any = cells.flatMap((c, k) => (k === r.ci ? [] : findDates(fcells[k], termYear).filter((x) => !noClassAt(fcells[k], x.index)).map((x) => ({ x, k }))));
+        if (any[0]) ({ x: d, k: dsrc } = { x: any[0].x, k: fcells[any[0].k] });
+      }
+      // "Mid-Term Exam 1 · TBA (Midterms Week) – No class Apr 20": sınavın kendi hücresi ya da tarihin
+      // ödünç alındığı hücre tarihin ilan edileceğini söylüyorsa, ödünç tarih uydurma olur → tarihsiz.
+      // (Satırın başka bir hücresindeki "final … will be announced" bu öğeyi etkilemez.)
+      if (d && !own.includes(d) && (TBA_RE.test(fc) || TBA_RE.test(dsrc))) d = null;
       // "Final exam period: 14–27.12.2026; exact date will be announced." gibi: hemen ardından "ilan
       // edilecek/announced" geçiyorsa bu bir ARALIK bitişi, gerçek sınav tarihi değil — tarihsiz say.
       if (d && /will be announced|to be announced|\btba\b|\btbd\b|ilan edilecek/.test(fc.slice(d.end, d.end + 45))) d = null;
