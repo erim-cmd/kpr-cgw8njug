@@ -1,7 +1,9 @@
 import { store } from "./store.js";
 import { esc } from "./ui.js";
 import { icon } from "./icons.js";
-import { todayIdx, todayISO, nowMin, daysUntil, fmtLong, greeting, byDue } from "./dates.js";
+import { todayIdx, todayISO, nowMin, daysUntil, fmtLong, fmtShort, greeting, byDue, relLabel } from "./dates.js";
+import { TASK_TYPES } from "./store.js";
+import { density } from "./density.js";
 import { sessionsOn, sessionItem, taskItem, emptyState, installCard } from "./components.js";
 import { buildAlerts } from "./alerts.js";
 import { permissionState } from "./notify.js";
@@ -61,17 +63,60 @@ function notifyCard(state) {
   return "";
 }
 
+/** Geri sayım metni: "Bugün 23:59", "Yarın", "5 gün". */
+function countdown(t) {
+  const n = daysUntil(t.due);
+  if (n === 0) return t.time ? `Bugün ${t.time}` : "Bugün";
+  if (n === 1) return t.time ? `Yarın ${t.time}` : "Yarın";
+  return `${n} gün`;
+}
+
+/** Ekranın üstü: sıradaki teslim büyük kartta; ayrı bir sınav yaklaşıyorsa altında geri sayımı. */
+function heroBlock(open, courses) {
+  const next = open.filter((t) => daysUntil(t.due) >= 0).sort(byDue)[0];
+  if (!next) return "";
+  const c = courses.find((x) => x.id === next.courseId);
+  const exam = open.filter((t) => t.type === "sinav" && t.id !== next.id && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 30).sort(byDue)[0];
+  const ec = exam && courses.find((x) => x.id === exam.courseId);
+  const urgent = daysUntil(next.due) <= 1;
+  return `<section class="hero ${urgent ? "urgent" : ""}" style="--c:${c?.color || "var(--cyan)"}">
+    <p class="hero-eyebrow">Sıradaki · ${TASK_TYPES[next.type]}${c ? ` · ${esc(c.code || c.name)}` : ""}</p>
+    <div class="hero-main">
+      <button type="button" class="hero-title" data-action="edit-task" data-id="${esc(next.id)}">${esc(next.title)}</button>
+      <div class="hero-count"><b>${countdown(next)}</b><small>${fmtShort(next.due)}</small></div>
+    </div>
+    <button type="button" class="btn btn-ghost hero-done" data-action="toggle-task" data-id="${esc(next.id)}">${icon.check}Bitti</button>
+    ${exam ? `<button type="button" class="hero-exam" data-action="edit-task" data-id="${esc(exam.id)}">
+      <span>Sıradaki sınav: <b>${esc(exam.title)}</b>${ec ? ` · ${esc(ec.code || ec.name)}` : ""}</span><b class="need">${relLabel(daysUntil(exam.due))}</b></button>` : ""}
+  </section>`;
+}
+
+/** Bu hafta ve gelecek hafta tek satırda (Dönem akışıyla aynı hesap). */
+function weekLine(state, open) {
+  const d = density(open, state.settings);
+  if (d.current === null) return "";
+  const cur = d.weeks[d.current];
+  const nxt = d.weeks[d.current + 1];
+  const tag = (w) => (w.final ? "final haftası" : w.vize ? "vize haftası" : w.busy ? "yoğun" : "sakin");
+  return `<a class="week-line" href="#/donem">
+    <span><b>${d.current + 1}. hafta</b> · ${cur.items.length} teslim</span>
+    ${nxt ? `<span>Gelecek hafta: <b class="${nxt.busy || nxt.vize || nxt.final ? "warn-text" : ""}">${tag(nxt)}</b></span>` : ""}
+  </a>`;
+}
+
 export function view() {
   const state = store.get();
   const { profile, courses, tasks } = state;
   const sessions = sessionsOn(courses, todayIdx());
   const open = tasks.filter((t) => !t.done);
-  const upcoming = open.filter((t) => daysUntil(t.due) <= 14).sort(byDue);
-  const thisWeek = open.filter((t) => daysUntil(t.due) >= 0 && daysUntil(t.due) <= 6).length;
-  const exams = open.filter((t) => t.type === "sinav" && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 30).length;
+  // Sıradaki teslim üstteki kartta; liste ondan sonrakileri 7 gün boyunca gösterir
+  const heroId = open.filter((t) => daysUntil(t.due) >= 0).sort(byDue)[0]?.id;
+  const upcoming = open.filter((t) => t.id !== heroId && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 7).sort(byDue);
   const now = nowMin();
   const hidden = dismissed();
-  const alerts = buildAlerts(state).filter((a) => !hidden[a.id]);
+  // Üstteki kartın gösterdiği görev için uyarıyı tekrarlama
+  const heroTask = open.filter((t) => daysUntil(t.due) >= 0).sort(byDue)[0];
+  const alerts = buildAlerts(state).filter((a) => !hidden[a.id] && a.taskId !== heroTask?.id);
 
   let todayBlock;
   if (!courses.length) {
@@ -96,11 +141,8 @@ export function view() {
     ${installCard()}
     ${notifyCard(state)}
 
-    <div class="stats">
-      <div class="stat"><b>${sessions.length}</b><span>ders bugün</span></div>
-      <div class="stat"><b>${thisWeek}</b><span>görev bu hafta</span></div>
-      <div class="stat"><b>${exams}</b><span>sınav 30 gün içinde</span></div>
-    </div>
+    ${heroBlock(open, courses)}
+    ${weekLine(state, open)}
 
     ${alerts.length ? `<section class="section">
       <div class="section-head"><h2>Dikkat</h2></div>
@@ -114,9 +156,10 @@ export function view() {
     </section>
 
     <section class="section">
-      <div class="section-head"><h2>Önümüzdeki 2 hafta</h2><a class="link" href="#/gorevler">Tümü</a></div>
+      <div class="section-head"><h2>Bu hafta</h2><a class="link" href="#/gorevler">Tümü</a></div>
       ${upcoming.length
         ? `<ul class="list">${upcoming.map((t) => taskItem(t, courses)).join("")}</ul>`
+        : heroId ? '<p class="muted-note">Bu hafta başka teslim yok.</p>'
         : emptyState("Yaklaşan bir şey yok", "Sınav ve ödevlerini ekle, geri sayımı KPR tutsun.", "new-task", "Görev ekle")}
     </section>`;
 }

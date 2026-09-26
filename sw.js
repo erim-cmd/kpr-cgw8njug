@@ -11,7 +11,7 @@
  * Uygulamada "Yeni sürüm hazır → Yenile" uyarısı çıkar (bkz. js/app.js).
  */
 
-const VERSION = "2.3.0";
+const VERSION = "2.8.4";
 const SHELL_CACHE = `kpr-shell-${VERSION}`;
 const FONT_CACHE = "kpr-fonts";
 
@@ -41,7 +41,7 @@ const SHELL = [
   "./settings.js",
   "./gpa.js",
   "./gpa-view.js",
-  "./term.js",
+  "./term.js", "./density.js", "./doc-text.js", "./syllabus-local.js",
   "./attendance.js",
   "./alerts.js",
   "./notify.js",
@@ -51,8 +51,29 @@ const SHELL = [
   "./icon-maskable-512.png",
 ];
 
+/**
+ * Yönlendirilmiş (redirected) bir cevap, sayfa açılışına (navigate) verilirse tarayıcı reddeder
+ * ve sayfa ERR_FAILED ile açılmaz. Sunucular "app.html" → "/app" gibi temiz adrese yönlendirebilir
+ * (serve, Cloudflare Pages); bu yüzden önbelleğe koymadan önce yönlendirme izi silinir.
+ */
+function unredirect(res) {
+  if (!res || !res.redirected) return Promise.resolve(res);
+  return res.blob().then((body) => new Response(body, { status: res.status, statusText: res.statusText, headers: res.headers }));
+}
+
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(SHELL_CACHE).then((cache) => cache.addAll(SHELL)));
+  event.waitUntil(
+    caches.open(SHELL_CACHE).then((cache) =>
+      Promise.all(
+        SHELL.map((url) =>
+          fetch(url, { cache: "reload" }).then((res) => {
+            if (!res.ok) throw new Error(`${url} ${res.status}`);
+            return unredirect(res).then((clean) => cache.put(url, clean));
+          })
+        )
+      )
+    )
+  );
   // skipWaiting burada yok: yeni sürüm, kullanıcı "Yenile"ye basınca devreye girer.
 });
 
@@ -81,9 +102,10 @@ self.addEventListener("fetch", (event) => {
       // Sayfa açılışı: önbellekteki sayfa; yoksa ağ; ağ da yoksa uygulama kabuğu
       const fallback = url.pathname.endsWith("/app.html") ? "./app.html" : "./";
       event.respondWith(
-        caches.match(request, { ignoreSearch: true }).then(
-          (cached) => cached || fetch(request).catch(() => caches.match(fallback))
-        )
+        caches
+          .match(request, { ignoreSearch: true })
+          .then((cached) => cached || fetch(request).catch(() => caches.match(fallback)))
+          .then(unredirect)
       );
       return;
     }

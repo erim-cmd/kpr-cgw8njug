@@ -1,0 +1,546 @@
+{
+  "tr_tablo": {
+    "code": "MCH 2016",
+    "name": "Devre Analizi",
+    "instructor": "Dr. Öğr. Üyesi Ayşe Yılmaz",
+    "email": "ayse.yilmaz@bau.edu.tr",
+    "office": "D-512",
+    "credit": 3,
+    "ects": 6,
+    "sessions": [
+      [
+        0,
+        "09:00",
+        "10:50",
+        "D-301"
+      ],
+      [
+        3,
+        "13:00",
+        "14:50",
+        "Lab-2"
+      ]
+    ],
+    "grading": {
+      "Ara Sınav (Vize)": 30,
+      "Ödevler": 15,
+      "Laboratuvar": 15,
+      "Final Sınavı": 40
+    },
+    "attendance": 70,
+    "final_min": 40,
+    "items": [
+      [
+        "Ödev 1",
+        "2026-10-12"
+      ],
+      [
+        "Ödev 2",
+        "2026-10-26"
+      ],
+      [
+        "Vize",
+        "2026-11-18",
+        "10:00"
+      ],
+      [
+        "Ödev 3",
+        "2026-11-30"
+      ],
+      [
+        "Ödev 4",
+        "2026-12-14"
+      ],
+      [
+        "Final",
+        "2027-01-12",
+        "13:00"
+      ]
+    ],
+    "policies": [
+      "devam",
+      "baraj",
+      "gec_teslim",
+      "telafi",
+      "durustluk"
+    ]
+  },
+  "en_paragraf": {
+    "code": "MCH 3012",
+    "name": "Control Systems",
+    "instructor": "Prof. Dr. Mehmet Kaya",
+    "email": "mehmet.kaya@eng.bau.edu.tr",
+    "office": "B-204",
+    "credit": 3,
+    "ects": 5,
+    "sessions": [
+      [
+        1,
+        "13:00",
+        "15:50",
+        "A-105"
+      ]
+    ],
+    "grading": {
+      "Quizzes": 10,
+      "Homework": 20,
+      "Midterm Exam": 30,
+      "Final Exam": 40
+    },
+    "attendance": 70,
+    "final_min": null,
+    "items": [
+      [
+        "Homework 1",
+        "2026-10-13"
+      ],
+      [
+        "Midterm",
+        "2026-11-17",
+        "13:00"
+      ],
+      [
+        "Project",
+        "2026-12-22"
+      ],
+      [
+        "Final",
+        ""
+      ]
+    ],
+    "policies": [
+      "devam",
+      "gec_teslim",
+      "not_kurali",
+      "durustluk"
+    ]
+  },
+  "tr_hafta": {
+    "code": "EEE 2101",
+    "name": "Sayısal Elektronik (Lojik Tasarım)",
+    "instructor": "Öğr. Gör. Can Demir",
+    "email": "can.demir@bau.edu.tr",
+    "office": "",
+    "credit": 4,
+    "ects": 7,
+    "sessions": [
+      [
+        1,
+        "10:00",
+        "12:50",
+        "C-201"
+      ],
+      [
+        4,
+        "14:00",
+        "15:50",
+        "C-201"
+      ]
+    ],
+    "grading": {
+      "Vize": 35,
+      "Proje": 25,
+      "Final": 40
+    },
+    "attendance": null,
+    "max_absences": 4,
+    "final_min": null,
+    "items": [
+      [
+        "Vize",
+        "",
+        null,
+        7
+      ],
+      [
+        "Proje",
+        "",
+        null,
+        11
+      ],
+      [
+        "Final",
+        ""
+      ]
+    ],
+    "policies": [
+      "devam",
+      "butunleme"
+    ]
+  },
+  "en_bologna": {
+    "code": "ME 3201",
+    "name": "Fluid Mechanics",
+    "instructor": "Assoc. Prof. Dr. Elif Şahin",
+    "email": "elif.sahin@bau.edu.tr",
+    "office": "F-310",
+    "credit": 4,
+    "ects": 6,
+    "sessions": [
+      [
+        0,
+        "10:00",
+        "11:50",
+        "A-201"
+      ],
+      [
+        2,
+        "10:00",
+        "11:50",
+        "A-201"
+      ],
+      [
+        4,
+        "13:00",
+        "14:50",
+        "M-Lab 3"
+      ]
+    ],
+    "grading": {
+      "Quizzes": 10,
+      "Laboratory": 15,
+      "Midterms": 25,
+      "Final": 50
+    },
+    "attendance": 70,
+    "final_min": 35,
+    "items": [
+      [
+        "Quiz 1",
+        "2026-10-16"
+      ],
+      [
+        "Midterm Exam",
+        "2026-11-04",
+        "18:30"
+      ],
+      [
+        "Lab Report 1",
+        "2026-11-20"
+      ]
+    ],
+    "policies": [
+      "baraj",
+      "devam",
+      "telafi"
+    ]
+  },
+  "tr_ikivize": {
+    "code": "ENM 2004",
+    "name": "Olasılık ve İstatistik",
+    "instructor": "Doç. Dr. Hakan Aydın",
+    "email": "hakan.aydin@bau.edu.tr",
+    "office": "",
+    "credit": 3,
+    "ects": 5,
+    "sessions": [
+      [
+        2,
+        "13:00",
+        "15:50",
+        "B-104"
+      ]
+    ],
+    "grading": {
+      "1. Ara Sınav": 20,
+      "2. Ara Sınav": 20,
+      "Ödevler": 20,
+      "Final": 40
+    },
+    "attendance": 70,
+    "final_min": null,
+    "items": [
+      [
+        "1. Ara Sınav",
+        "2026-10-21",
+        "13:00"
+      ],
+      [
+        "2. Ara Sınav",
+        "2026-11-25"
+      ],
+      [
+        "Final",
+        ""
+      ]
+    ],
+    "policies": [
+      "devam",
+      "not_kurali",
+      "telafi"
+    ]
+  },
+  "tr_bologna": {
+    "code": "MAT 1001",
+    "name": "Matematik I",
+    "instructor": "Prof. Dr. Zeynep Koç",
+    "email": "",
+    "office": "",
+    "credit": 4,
+    "ects": 6,
+    "sessions": [
+      [
+        1,
+        "09:00",
+        "10:50",
+        "A-110"
+      ],
+      [
+        3,
+        "09:00",
+        "10:50",
+        "A-110"
+      ]
+    ],
+    "grading": {
+      "Ara Sınav": 42,
+      "Kısa Sınav": 18,
+      "Final": 40
+    },
+    "attendance": 70,
+    "final_min": null,
+    "items": [
+      [
+        "Kısa Sınav 1",
+        "",
+        null,
+        5
+      ],
+      [
+        "Ara Sınav",
+        "",
+        null,
+        8
+      ],
+      [
+        "Kısa Sınav 2",
+        "",
+        null,
+        11
+      ]
+    ],
+    "policies": [
+      "devam"
+    ]
+  },
+  "en_bau_real1": {
+    "code": "MAT 2045",
+    "name": "Numerical Methods for Engineers",
+    "instructor": "Deneme Kişi",
+    "email": "deneme1@ornek.edu.tr",
+    "office": "D310",
+    "credit": 4,
+    "ects": 5,
+    "sessions": [
+      [
+        0,
+        "15:30",
+        "18:20",
+        "A204"
+      ],
+      [
+        3,
+        "15:30",
+        "16:20",
+        "D405"
+      ],
+      [
+        2,
+        "12:30",
+        "15:20",
+        "D404"
+      ],
+      [
+        3,
+        "15:30",
+        "18:20",
+        "U305"
+      ]
+    ],
+    "grading": {
+      "Midterm Exam": 35,
+      "Quizzes I-IV": 20,
+      "Final Exam": 45
+    },
+    "attendance": 60,
+    "final_min": null,
+    "items": [
+      [
+        "Quiz 1",
+        "",
+        null,
+        3
+      ],
+      [
+        "MATLAB Quiz",
+        "",
+        null,
+        4
+      ],
+      [
+        "MATLAB Quiz",
+        "",
+        null,
+        6
+      ],
+      [
+        "Midterm Exam",
+        "",
+        null,
+        7
+      ],
+      [
+        "MATLAB Quiz",
+        "",
+        null,
+        9
+      ],
+      [
+        "MATLAB Quiz",
+        "",
+        null,
+        11
+      ]
+    ],
+    "policies": [
+      "devam",
+      "durustluk",
+      "not_kurali",
+      "telafi"
+    ]
+  },
+  "tr_bau_real2": {
+    "code": "GEP 1020",
+    "name": "HERKES İÇİN YAPAY ZEKA",
+    "instructor": "Dr.Örnek Kişi",
+    "email": "ornek2@ornek.edu.tr",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "sessions": [
+      [
+        0,
+        "08:30",
+        "11:20",
+        ""
+      ]
+    ],
+    "grading": {
+      "Coursera MOOC Sertifikası": 20,
+      "Vize-Test sınavı": 30,
+      "Final Projesi Raporu": 10,
+      "Final Projesi": 40
+    },
+    "attendance": 70,
+    "final_min": null,
+    "items": [
+      [
+        "Vize-Test sınavı",
+        "",
+        null,
+        8
+      ],
+      [
+        "Final Projeniz için geri bildirim alın.",
+        "",
+        null,
+        11
+      ],
+      [
+        "Final Proje",
+        "",
+        null,
+        12
+      ]
+    ],
+    "policies": [
+      "devam",
+      "durustluk",
+      "telafi"
+    ]
+  },
+  "en_bau_real3": {
+    "code": "ENM 4116",
+    "name": "New Product and Service Development",
+    "instructor": "Assoc. Prof. Dr. Test Kişi",
+    "email": "test3@ornek.edu.tr",
+    "office": "D434",
+    "credit": 3,
+    "ects": 6,
+    "sessions": [
+      [
+        2,
+        "12:30",
+        "15:20",
+        "D301"
+      ]
+    ],
+    "grading": {
+      "Assignment/Project": 40,
+      "Midterm Exam": 20,
+      "Final Exam": 40
+    },
+    "attendance": null,
+    "final_min": null,
+    "items": [
+      [
+        "Project topic development",
+        "2026-10-07",
+        "",
+        null
+      ],
+      [
+        "In-class activity Graded Project presentation",
+        "2026-11-04",
+        "",
+        null
+      ],
+      [
+        "Midterm Exam",
+        "2026-11-11",
+        "",
+        null
+      ],
+      [
+        "Case activity Graded Project presentation",
+        "2026-10-28",
+        "",
+        null
+      ],
+      [
+        "Case analysis / project development",
+        "2026-11-18",
+        "",
+        null
+      ],
+      [
+        "Graded Project presentation",
+        "2026-11-25",
+        "",
+        null
+      ],
+      [
+        "Graded project presentation",
+        "2026-12-02",
+        "",
+        null
+      ],
+      [
+        "Term Project Student Presentations and Semester Overview",
+        "2026-12-09",
+        "",
+        null
+      ],
+      [
+        "Final sınavı",
+        "",
+        "",
+        null
+      ]
+    ],
+    "policies": [
+      "durustluk",
+      "telafi"
+    ]
+  }
+}

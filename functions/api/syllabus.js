@@ -50,6 +50,15 @@ export const SCHEMA = obj({
   },
   grading: { type: "array", items: obj({ name: str, weight: { type: "number" } }) },
   attendance: obj({ percent: numOrNull, max_absences: intOrNull, source: str }),
+  final_min: numOrNull,
+  policies: {
+    type: "array",
+    items: obj({
+      kind: { type: "string", enum: ["devam", "gec_teslim", "telafi", "butunleme", "baraj", "not_kurali", "durustluk", "diger"] },
+      severity: { type: "string", enum: ["kritik", "dikkat", "bilgi"] },
+      rule: str, consequence: str, source: str,
+    }),
+  },
   warnings: { type: "array", items: str },
 });
 
@@ -83,6 +92,14 @@ attendance
 - percent: minimum attendance required in percent (e.g. "%70 devam zorunludur" -> 70, "students may miss at most 30%" -> 70).
 - max_absences: only if the syllabus gives a maximum NUMBER of absences (classes or weeks), else null.
 - source: the exact phrase.
+
+final_min: the minimum final exam score required to pass ("final barajı", "finalden en az 40 alınmalı", "minimum 50 on the final"), else null.
+
+policies: the rules a student can get hurt by, max 8, most important first. Write rule and consequence IN TURKISH, short (max ~140 characters each), plain words.
+- kind: devam (attendance / NA), gec_teslim (late work), telafi (make-up / mazeret), butunleme (resit), baraj (minimum score on an exam), not_kurali (grading quirks: dropped lowest quiz, best N of M count, curve, extra credit), durustluk (plagiarism, AI use, cheating), diger.
+- severity: kritik = can directly fail the course or give zero (e.g. "late work not accepted", "attendance below 70% gets NA", "plagiarism = F"); dikkat = costs points or needs action; bilgi = a helpful quirk (e.g. "lowest quiz is dropped").
+- consequence: what happens to the student, e.g. "Geç ödev 0 alır". If the syllabus states none, "".
+- source: the exact short phrase from the syllabus. Only include rules the document actually states.
 
 warnings: short notes IN TURKISH about anything uncertain the student should check (e.g. "Final tarihi yazmıyor", "Yıl belirtilmemiş, 2026 varsayıldı", "Devamsızlık haftayla verilmiş").
 
@@ -136,6 +153,15 @@ export function sanitize(raw) {
       max_absences: Number.isInteger(a.max_absences) && a.max_absences >= 0 && a.max_absences <= 200 ? a.max_absences : null,
       source: s(a.source, 200),
     },
+    final_min: n(r.final_min, 0, 100),
+    policies: arr(r.policies)
+      .map((x) => ({
+        kind: ["devam", "gec_teslim", "telafi", "butunleme", "baraj", "not_kurali", "durustluk", "diger"].includes(x?.kind) ? x.kind : "diger",
+        severity: ["kritik", "dikkat", "bilgi"].includes(x?.severity) ? x.severity : "bilgi",
+        rule: s(x?.rule, 200), consequence: s(x?.consequence, 200), source: s(x?.source, 200),
+      }))
+      .filter((x) => x.rule)
+      .slice(0, 8),
     warnings: arr(r.warnings).map((w) => s(w, 200)).filter(Boolean).slice(0, 8),
   };
 }

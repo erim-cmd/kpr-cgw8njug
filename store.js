@@ -24,7 +24,7 @@ const arr = (v) => (Array.isArray(v) ? v : []);
 export const uid = () =>
   crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
 
-const defaultSettings = () => ({ termWeeks: 14, notify: false, notifyClasses: false });
+const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false });
 const empty = () => ({ version: 1, profile: { name: "" }, courses: [], tasks: [], transcript: [], gpaBase: null, settings: defaultSettings() });
 
 function normSession(s) {
@@ -44,6 +44,34 @@ function normGrade(g) {
 }
 
 const grade = (g, list = GRADE_CODES) => (list.includes(g) ? g : "");
+
+const SCALE_LETTERS = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D"];
+function normScale(list) {
+  const seen = new Set();
+  return arr(list)
+    .map((r) => ({ letter: SCALE_LETTERS.includes(r?.letter) ? r.letter : "", min: num(r?.min, 0, 100) }))
+    .filter((r) => r.letter && r.min !== null && !seen.has(r.letter) && seen.add(r.letter))
+    .sort((a, b) => b.min - a.min);
+}
+
+export const POLICY_KINDS = {
+  devam: "Devam", gec_teslim: "Geç teslim", telafi: "Mazeret / telafi", butunleme: "Bütünleme",
+  baraj: "Baraj", not_kurali: "Not kuralı", durustluk: "Akademik dürüstlük", diger: "Diğer",
+};
+const SEVERITIES = ["kritik", "dikkat", "bilgi"];
+function normPolicy(p) {
+  const rule = str(p?.rule, 200);
+  if (!rule) return null;
+  return {
+    id: str(p.id, 64) || uid(),
+    kind: p.kind in POLICY_KINDS ? p.kind : "diger",
+    severity: SEVERITIES.includes(p.severity) ? p.severity : "bilgi",
+    rule,
+    consequence: str(p.consequence, 200),
+    source: str(p.source, 200),
+    hidden: p.hidden === true,
+  };
+}
 
 function normAbsence(a) {
   if (!a || !DATE.test(a.date)) return null;
@@ -69,6 +97,11 @@ function normCourse(c) {
     credit: num(c.credit, 0, 30),
     ects: num(c.ects, 0, 60),
     letter: grade(c.letter),
+    // Hocanın harf tablosu (puan → harf) ve varsa final barajı; ikisi de öğrencinin girdiği değer
+    scale: normScale(c.scale),
+    finalMin: num(c.finalMin, 0, 100),
+    // Syllabus'tan çıkarılan kurallar (kırmızı bayraklar); öğrenci gizleyebilir
+    policies: arr(c.policies).map(normPolicy).filter(Boolean).slice(0, 8),
     prevGrade: grade(c.prevGrade),
     // Devamsızlık: devam zorunluluğu (%) ya da elle girilen hak (ders sayısı)
     attendPct: num(c.attendPct, 0, 100),
@@ -108,6 +141,7 @@ function normSettings(s) {
   const d = defaultSettings();
   if (!s || typeof s !== "object") return d;
   return {
+    termStart: DATE.test(s.termStart) ? s.termStart : "",
     termWeeks: Number.isInteger(s.termWeeks) && s.termWeeks >= 1 && s.termWeeks <= 30 ? s.termWeeks : d.termWeeks,
     notify: s.notify === true,
     notifyClasses: s.notifyClasses === true,
