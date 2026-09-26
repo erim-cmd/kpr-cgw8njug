@@ -17,6 +17,8 @@ import * as tasks from "./tasks.js";
 import * as courses from "./courses.js";
 import * as settings from "./settings.js";
 import * as gpaView from "./gpa-view.js";
+import * as term from "./term.js";
+import { attendance } from "./attendance.js";
 import { dismiss } from "./today.js";
 import { todayISO } from "./dates.js";
 import { enableNotifications, checkReminders, sync, permissionState } from "./notify.js";
@@ -26,10 +28,11 @@ const ROUTES = {
   program: { mod: schedule, title: "Program", icon: "calendar", fab: "import-syllabus" },
   gorevler: { mod: tasks, title: "Görevler", icon: "tasks", fab: "new-task" },
   dersler: { mod: courses, title: "Dersler", icon: "book", fab: "import-syllabus" },
+  donem: { mod: term, title: "Dönem", icon: "gauge", fab: null },
   ortalama: { mod: gpaView, title: "Ortalama", icon: "chart", fab: null },
   ayarlar: { mod: settings, title: "Ayarlar", fab: null },
 };
-const TABS = ["bugun", "program", "gorevler", "dersler", "ortalama"];
+const TABS = ["bugun", "program", "gorevler", "dersler", "donem", "ortalama"];
 
 const $view = document.getElementById("view");
 const $tabbar = document.getElementById("tabbar");
@@ -126,7 +129,15 @@ const globalActions = {
       toast("Devamsızlık geri alındı");
     } else {
       store.addAbsence(c.id, date, el.dataset.start);
-      toast("Devamsızlık kaydedildi", { label: "Geri al", onClick: () => {
+      // Sınıra yaklaşıldıysa uygulama içinde hemen uyar
+      const a = attendance(find(store.get().courses, c.id), store.get().settings.termWeeks);
+      const name = c.code || c.name;
+      const msg =
+        a.level === "over" ? `⚠️ ${name}: devamsızlık sınırı aşıldı`
+          : a.level === "last" ? `⚠️ ${name}: devamsızlık hakkın bitti`
+            : a.level === "warn" ? `${name}: 1 devamsızlık hakkın kaldı`
+              : "Devamsızlık kaydedildi";
+      toast(msg, { label: "Geri al", onClick: () => {
         const again = find(store.get().courses, c.id)?.absences.find((a) => a.date === date && a.start === el.dataset.start);
         if (again) store.removeAbsence(c.id, again.id);
       } });
