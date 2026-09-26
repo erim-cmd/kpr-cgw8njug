@@ -1,0 +1,10 @@
+{
+  "name": "kpr",
+  "private": true,
+  "type": "module",
+  "description": "KPR — Derslerinle arandaki köprü",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0",
+    "@netlify/blobs": "^11.1.1"
+  }
+}

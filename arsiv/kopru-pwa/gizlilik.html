@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<!-- ÖNİZLEME: canlıya alırken bu satırı ve _headers'daki X-Robots-Tag'i sil -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gizlilik ve KVKK · KPR</title>
+<meta name="description" content="KPR kişisel verilerin korunması aydınlatma metni ve gizlilik politikası.">
+<meta name="theme-color" content="#141A28">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/site.css">
+<script src="/js/site.js" defer></script>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="/" aria-label="KPR ana sayfa"><span class="brand-mark">K</span><span class="brand-name">KPR</span></a>
+    <a class="btn btn-primary btn-sm" href="/app/" style="margin-left:auto">Uygulamayı aç</a>
+  </div>
+</header>
+
+<main class="legal">
+  <div class="wrap narrow">
+    <h1>Gizlilik ve KVKK Aydınlatma Metni</h1>
+    <p class="updated">Son güncelleme: 24 Eylül 2026</p>
+
+    <div class="summary">
+      <strong>Kısaca</strong>
+      <ul>
+        <li>KPR'de hesap yok. Derslerin, görevlerin ve notların <strong>sadece senin cihazında</strong> saklanır; bize ulaşmaz.</li>
+        <li>Syllabus yüklediğinde dosyan, okunması için yapay zekâ hizmetine (Anthropic, ABD) gönderilir. <strong>Dosyayı biz saklamayız.</strong></li>
+        <li>Kötüye kullanımı önlemek için IP adresinin geri döndürülemez bir özeti günlük sayaç olarak tutulur ve <strong>en geç 2 gün içinde silinir.</strong></li>
+        <li>Reklam yok, takip çerezi yok, verilerin satılmaz.</li>
+      </ul>
+    </div>
+
+    <h2>1. Veri sorumlusu</h2>
+    <p>6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında veri sorumlusu, KPR'yi geliştiren ve işleten <strong>[AD SOYAD]</strong>'dır (gerçek kişi). İletişim: <strong>[E-POSTA ADRESİ]</strong></p>
+
+    <h2>2. Hangi veriler, nerede işleniyor?</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Veri</th><th>Nerede</th><th>Amaç</th><th>Saklama</th></tr></thead>
+        <tbody>
+          <tr><td>Adın (hitap için), dersler, ders saatleri, sınav/ödev tarihleri, notların, harf notların ve ortalaman, devamsızlık kayıtların</td><td>Yalnızca cihazındaki tarayıcı depolaması. Bize iletilmez.</td><td>Uygulamanın çalışması</td><td>Sen silene kadar (Ayarlar → Her şeyi sil)</td></tr>
+          <tr><td>Yüklediğin syllabus dosyası (PDF/fotoğraf) ve içeriği</td><td>KPR sunucusu (Netlify) üzerinden Anthropic'e iletilir</td><td>Dosyadan ders bilgilerinin çıkarılması</td><td>KPR tarafından saklanmaz. Anthropic'in kendi politikası geçerlidir (aşağıya bak).</td></tr>
+          <tr><td>IP adresinin tuzlanmış özeti (hash)</td><td>Netlify Blobs</td><td>Günlük yükleme sınırı, kötüye kullanımın önlenmesi</td><td>En geç 2 gün</td></tr>
+          <tr><td>Teknik kayıtlar (IP adresi, tarayıcı bilgisi, istek zamanı)</td><td>Barındırma sağlayıcısı Netlify</td><td>Sitenin güvenli ve kesintisiz çalışması</td><td>Netlify'ın kayıt saklama süreleri</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Syllabus dosyası genellikle kişisel veri içermez. Yine de öğrenci numarası, T.C. kimlik numarası veya iletişim bilgisi gibi kişisel bilgi içeren sayfaları <strong>yüklememeni</strong> öneririz. Syllabus'ta öğretim üyesinin adı ve iş iletişim bilgileri yer alabilir; bu bilgiler yalnızca senin ders kaydını oluşturmak için okunur.</p>
+
+    <h2>3. Hukuki sebepler</h2>
+    <ul>
+      <li><strong>Açık rıza (KVKK m. 5/1 ve m. 9):</strong> Syllabus dosyanın okunmak üzere yurt dışındaki yapay zekâ hizmetine aktarılması, yükleme ekranında verdiğin açık rızaya dayanır. Rıza vermezsen dersleri elle ekleyerek KPR'yi kullanmaya devam edebilirsin.</li>
+      <li><strong>Meşru menfaat (KVKK m. 5/2-f):</strong> Kötüye kullanımı önlemek için günlük sayaç tutulması ve sitenin güvenliğine yönelik teknik kayıtlar.</li>
+    </ul>
+
+    <h2>4. Aktarılan taraflar ve yurt dışı aktarım</h2>
+    <ul>
+      <li><strong>Anthropic, PBC (ABD):</strong> Syllabus dosyasını okuyan yapay zekâ hizmeti. Anthropic, API üzerinden gönderilen içerikleri model eğitimi için kullanmayacağını ve sınırlı bir süre sonunda sileceğini taahhüt etmektedir. Ayrıntılar: <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">anthropic.com/legal/privacy</a></li>
+      <li><strong>Netlify, Inc. (ABD):</strong> Sitenin ve sunucu fonksiyonunun barındırılması. Ayrıntılar: <a href="https://www.netlify.com/privacy/" target="_blank" rel="noopener">netlify.com/privacy</a></li>
+    </ul>
+    <p>Veriler bu taraflar dışında kimseyle paylaşılmaz, satılmaz ve reklam amacıyla kullanılmaz.</p>
+
+    <h2>5. Çerezler ve yerel depolama</h2>
+    <p>KPR takip veya reklam çerezi kullanmaz. Uygulamanın çalışması için tarayıcının yerel depolaması (localStorage) ve internetsiz çalışma için önbellek (Cache Storage) kullanılır. Bunlar yalnızca senin cihazında durur. Yazı tipleri Google Fonts üzerinden yüklenir; bu sırada Google tarayıcının IP adresini görebilir.</p>
+
+    <h2>6. Hakların (KVKK m. 11)</h2>
+    <p>Kişisel verilerinin işlenip işlenmediğini öğrenme, işlenmişse bilgi talep etme, işlenme amacını ve amaca uygun kullanılıp kullanılmadığını öğrenme, yurt içinde veya yurt dışında aktarıldığı üçüncü kişileri bilme, eksik veya yanlış işlenmişse düzeltilmesini, silinmesini veya yok edilmesini isteme, itiraz etme ve zarara uğraman hâlinde tazminat talep etme haklarına sahipsin. Açık rızanı dilediğin zaman geri alabilirsin; bu durumda syllabus yükleme özelliğini kullanmaman yeterlidir.</p>
+    <p>Cihazında tutulan verileri istediğin an Ayarlar → <strong>Her şeyi sil</strong> ile kendin silebilirsin. Diğer talepler için yukarıdaki e-posta adresine yazabilirsin; başvurun en geç 30 gün içinde yanıtlanır.</p>
+
+    <h2>7. Değişiklikler</h2>
+    <p>Bu metin güncellenirse yeni hâli bu sayfada, güncelleme tarihiyle birlikte yayımlanır.</p>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <a class="brand" href="/"><span class="brand-mark">K</span><span class="brand-name">KPR</span></a>
+    <nav aria-label="Alt bağlantılar">
+      <a href="/">Ana sayfa</a>
+      <a href="/app/">Uygulama</a>
+    </nav>
+    <p>© <span id="year">2026</span> KPR</p>
+  </div>
+</footer>
+
+</body>
+</html>
