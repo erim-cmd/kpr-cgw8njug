@@ -16,15 +16,20 @@ import * as schedule from "./schedule.js";
 import * as tasks from "./tasks.js";
 import * as courses from "./courses.js";
 import * as settings from "./settings.js";
+import * as gpaView from "./gpa-view.js";
+import { dismiss } from "./today.js";
+import { todayISO } from "./dates.js";
+import { enableNotifications, checkReminders, sync, permissionState } from "./notify.js";
 
 const ROUTES = {
   bugun: { mod: today, title: "Bugün", icon: "home", fab: "new-task" },
   program: { mod: schedule, title: "Program", icon: "calendar", fab: "import-syllabus" },
   gorevler: { mod: tasks, title: "Görevler", icon: "tasks", fab: "new-task" },
   dersler: { mod: courses, title: "Dersler", icon: "book", fab: "import-syllabus" },
+  ortalama: { mod: gpaView, title: "Ortalama", icon: "chart", fab: null },
   ayarlar: { mod: settings, title: "Ayarlar", fab: null },
 };
-const TABS = ["bugun", "program", "gorevler", "dersler"];
+const TABS = ["bugun", "program", "gorevler", "dersler", "ortalama"];
 
 const $view = document.getElementById("view");
 const $tabbar = document.getElementById("tabbar");
@@ -90,6 +95,43 @@ const globalActions = {
     if (t?.done) toast("Tamamlandı 🎉", { label: "Geri al", onClick: () => store.toggleTask(t.id) });
   },
   install: () => promptInstall(),
+
+  // Uyarılar
+  "open-alert": (el) => {
+    const { task, course, route } = el.dataset;
+    if (task) openTaskForm(find(store.get().tasks, task));
+    else if (course) openCourseDetail(course);
+    else if (route) location.hash = `#/${route}`;
+  },
+  "dismiss-alert": (el, { render }) => {
+    dismiss(el.dataset.id);
+    render();
+  },
+  "enable-notify": async (_el, { render }) => {
+    const perm = permissionState();
+    if (perm === "denied") return toast("Bildirimler tarayıcı ayarlarında kapalı. Site ayarlarından izin ver.");
+    const ok = await enableNotifications();
+    toast(ok ? "Bildirimler açıldı" : "Bildirim izni verilmedi");
+    render();
+  },
+
+  // Devamsızlık: bugünkü derste "Gelmedim"
+  "mark-absent": (el) => {
+    const c = find(store.get().courses, el.dataset.id);
+    if (!c) return;
+    const date = todayISO();
+    const existing = c.absences.find((a) => a.date === date && a.start === el.dataset.start);
+    if (existing) {
+      store.removeAbsence(c.id, existing.id);
+      toast("Devamsızlık geri alındı");
+    } else {
+      store.addAbsence(c.id, date, el.dataset.start);
+      toast("Devamsızlık kaydedildi", { label: "Geri al", onClick: () => {
+        const again = find(store.get().courses, c.id)?.absences.find((a) => a.date === date && a.start === el.dataset.start);
+        if (again) store.removeAbsence(c.id, again.id);
+      } });
+    }
+  },
   "dismiss-install": () => dismissInstall(),
 };
 
@@ -124,6 +166,13 @@ window.addEventListener("hashchange", () => {
   handleShortcut();
 });
 store.subscribe(render);
+
+// Veri değişince arka plan hatırlatma listesini güncelle (art arda değişiklikleri birleştir)
+let syncTimer;
+store.subscribe(() => {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(sync, 800);
+});
 onInstallChange(render);
 
 // Uygulama ikonuna uzun basınca çıkan kısayol: #/gorevler?yeni=1
@@ -137,7 +186,10 @@ function handleShortcut() {
 // Kullanıcı bir form doldururken ekranı yeniden çizmiyoruz.
 const isBusy = () =>
   document.querySelector("dialog[open]") || $view.contains(document.activeElement) && document.activeElement.matches("input, select, textarea");
-const refresh = () => document.visibilityState === "visible" && !isBusy() && render();
+const refresh = () => {
+  checkReminders();
+  if (document.visibilityState === "visible" && !isBusy()) render();
+};
 setInterval(refresh, 60 * 1000);
 document.addEventListener("visibilitychange", refresh);
 
@@ -172,6 +224,12 @@ if ("serviceWorker" in navigator) {
         if (reloading) return;
         reloading = true;
         location.reload();
+      });
+
+      // Hatırlatmalar: kaçanları göster, arka plan listesini tazele
+      navigator.serviceWorker.ready.then(() => {
+        checkReminders();
+        sync();
       });
 
       // Açık kalan uygulamada saatte bir güncelleme kontrolü

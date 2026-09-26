@@ -11,7 +11,7 @@
  * Uygulamada "Yeni sürüm hazır → Yenile" uyarısı çıkar (bkz. js/app.js).
  */
 
-const VERSION = "2.0.2";
+const VERSION = "2.1.0";
 const SHELL_CACHE = `kpr-shell-${VERSION}`;
 const FONT_CACHE = "kpr-fonts";
 
@@ -39,6 +39,12 @@ const SHELL = [
   "./tasks.js",
   "./courses.js",
   "./settings.js",
+  "./gpa.js",
+  "./gpa-view.js",
+  "./attendance.js",
+  "./alerts.js",
+  "./notify.js",
+  "./ics.js",
   "./icon-192.png",
   "./icon-512.png",
   "./icon-maskable-512.png",
@@ -99,4 +105,66 @@ self.addEventListener("fetch", (event) => {
       })
     );
   }
+});
+
+/* ------------------------------------------------------------------ */
+/* Bildirimler                                                          */
+/* ------------------------------------------------------------------ */
+
+const REMINDER_CACHE = "kpr-reminders";
+const REMINDER_URL = "./__kpr-reminders.json";
+
+/**
+ * Android Chrome: uygulama kapalıyken tarayıcı ara ara bu olayı tetikler.
+ * Uygulamanın yazdığı hatırlatma listesinden zamanı gelenleri gösterir.
+ */
+async function showDueReminders() {
+  const cache = await caches.open(REMINDER_CACHE);
+  const res = await cache.match(REMINDER_URL);
+  if (!res) return;
+  const data = await res.json();
+  const sent = data.sent || {};
+  const now = Date.now();
+  const due = (data.reminders || []).filter((r) => r.fireAt <= now && now - r.fireAt <= 12 * 3600 * 1000 && !sent[r.id]);
+  if (!due.length) return;
+  if (due.length > 3) {
+    await self.registration.showNotification(`${due.length} hatırlatman var`, {
+      body: due.slice(0, 4).map((r) => r.title).join("\n"), tag: "kpr-digest", icon: "icon-192.png", data: { url: "#/bugun" },
+    });
+  } else {
+    for (const r of due) await self.registration.showNotification(r.title, { body: r.body, tag: r.id, icon: "icon-192.png", data: { url: r.url } });
+  }
+  for (const r of due) sent[r.id] = now;
+  await cache.put(REMINDER_URL, new Response(JSON.stringify({ ...data, sent }), { headers: { "content-type": "application/json" } }));
+}
+
+self.addEventListener("periodicsync", (event) => {
+  if (event.tag === "kpr-reminders") event.waitUntil(showDueReminders());
+});
+
+/**
+ * Web Push: bir push sunucusu kurulduğunda bildirimler buradan gelir.
+ * iOS, bildirim göstermeyen push'ları birkaç kez sonra aboneliği iptal ettiği için
+ * her push mutlaka bir bildirim gösterir.
+ */
+self.addEventListener("push", (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch { data = { title: event.data?.text() }; }
+  event.waitUntil(
+    self.registration.showNotification(data.title || "KPR", {
+      body: data.body || "Yaklaşan bir hatırlatman var.", tag: data.tag, icon: "icon-192.png", data: { url: data.url || "#/bugun" },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL(`./app.html${event.notification.data?.url || "#/bugun"}`, self.registration.scope).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      const open = list.find((c) => c.url.includes("app.html"));
+      if (open) return open.navigate(target).then((c) => (c || open).focus()).catch(() => open.focus());
+      return self.clients.openWindow(target);
+    })
+  );
 });
