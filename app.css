@@ -516,3 +516,38 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
   .tab span { font-size: 0.66rem; }
 }
 .more-link { display: block; margin: 10px auto 0; }
+
+/* UMIS benzeri dönem tablosu */
+.u-term { font-size: 0.85rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.u-table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.u-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; table-layout: fixed; }
+.u-numc { width: 64px; }
+.u-gradec { width: 86px; }
+.u-table col.u-name { width: auto; }
+.u-table th { text-align: left; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); padding: 10px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.u-table td { padding: 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.u-table tbody tr:last-child td { border-bottom: 0; }
+.u-table tbody tr td:first-child { box-shadow: inset 4px 0 0 var(--c, transparent); padding-left: 12px; }
+.u-table th:first-child, .u-table tfoot td:first-child { padding-left: 12px; }
+.u-table tfoot td { border-top: 1px solid var(--border); border-bottom: 0; font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.u-code b { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.u-code { overflow: hidden; }
+.u-name-sm { display: none; font-size: 0.74rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.u-num { text-align: center; }
+.u-num input { width: 100%; padding: 6px 2px; text-align: center; font-variant-numeric: tabular-nums; }
+.u-grade select { width: 100%; padding: 6px 4px; font-weight: 600; }
+.u-table td.u-num, .u-table td.u-grade { padding-left: 4px; padding-right: 4px; }
+.u-sub td { padding: 0 8px 10px 12px; font-size: 0.78rem; color: var(--text-muted); box-shadow: none !important; }
+.u-sub label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.u-sub select { max-width: 170px; padding: 5px 6px; font-size: 0.8rem; }
+.u-table tbody tr:has(+ .u-sub) td { border-bottom: 0; }
+.u-calc { margin-top: 12px; letter-spacing: 0.04em; }
+.u-result { margin-top: 12px; }
+@media (max-width: 559px) {
+  .u-table .u-name, .u-table col.u-name { display: none; }
+  .u-name-sm { display: block; }
+  .u-numc { width: 50px; }
+  .u-gradec { width: 70px; }
+  .u-wide { display: none; }
+  .u-table th { padding: 10px 4px; }
+}
