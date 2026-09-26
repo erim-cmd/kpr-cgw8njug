@@ -45,6 +45,15 @@ function normGrade(g) {
 
 const grade = (g, list = GRADE_CODES) => (list.includes(g) ? g : "");
 
+const SCALE_LETTERS = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D"];
+function normScale(list) {
+  const seen = new Set();
+  return arr(list)
+    .map((r) => ({ letter: SCALE_LETTERS.includes(r?.letter) ? r.letter : "", min: num(r?.min, 0, 100) }))
+    .filter((r) => r.letter && r.min !== null && !seen.has(r.letter) && seen.add(r.letter))
+    .sort((a, b) => b.min - a.min);
+}
+
 function normAbsence(a) {
   if (!a || !DATE.test(a.date)) return null;
   return { id: str(a.id, 64) || uid(), date: a.date, start: TIME.test(a.start) ? a.start : "" };
@@ -69,6 +78,9 @@ function normCourse(c) {
     credit: num(c.credit, 0, 30),
     ects: num(c.ects, 0, 60),
     letter: grade(c.letter),
+    // Hocanın harf tablosu (puan → harf) ve varsa final barajı; ikisi de öğrencinin girdiği değer
+    scale: normScale(c.scale),
+    finalMin: num(c.finalMin, 0, 100),
     prevGrade: grade(c.prevGrade),
     // Devamsızlık: devam zorunluluğu (%) ya da elle girilen hak (ders sayısı)
     attendPct: num(c.attendPct, 0, 100),

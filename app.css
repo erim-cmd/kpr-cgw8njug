@@ -584,3 +584,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 .abs-text.none { color: var(--text-muted); font-weight: 500; }
 .abs-meta { margin: 0; font-size: 0.76rem; color: var(--text-muted); }
 .abs-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+/* Harf tahmini */
+.scale-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; }
+.scale-grid label { display: grid; gap: 4px; font-size: 0.8rem; color: var(--text-muted); }
+.scale-grid label span { font-weight: 600; color: var(--text); }
+.scale-grid input { padding: 8px 10px; text-align: right; width: 100%; box-sizing: border-box; }
+.need-list { margin: 6px 0 0; }
