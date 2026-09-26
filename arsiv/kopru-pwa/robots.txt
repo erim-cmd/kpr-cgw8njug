@@ -1,0 +1,3 @@
+# ÖNİZLEME: canlıya alırken bu dosyayı "Allow: /" yap
+User-agent: *
+Disallow: /
