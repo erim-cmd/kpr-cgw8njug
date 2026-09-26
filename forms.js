@@ -4,6 +4,8 @@ import { store, COLORS, TASK_TYPES } from "./store.js";
 import { esc, openSheet, closeSheet, toast, armDelete } from "./ui.js";
 import { DAYS, todayIdx, todayISO, toMin, daysUntil, fmtShort, relLabel, byDue } from "./dates.js";
 import { icon } from "./icons.js";
+import { attendance, attendanceText } from "./attendance.js";
+import { canAsk, enableNotifications } from "./notify.js";
 
 const head = (title) => `<header class="sheet-head">
   <h2>${title}</h2>
@@ -99,8 +101,9 @@ export function openCourseForm(course = null) {
   const c = course || {
     name: "", code: "", instructor: "", email: "", office: "", officeHours: "",
     color: COLORS[store.get().courses.length % COLORS.length],
-    sessions: [], grading: [],
+    sessions: [], grading: [], credit: null, attendPct: null, absLimit: null,
   };
+  const optNum = (v) => (v === null || v === undefined ? "" : v);
 
   openSheet(
     `<form class="sheet-form">
@@ -122,6 +125,23 @@ export function openCourseForm(course = null) {
           <div class="srows" data-rows="sessions">${c.sessions.map(sessionRow).join("")}</div>
           <button type="button" class="btn btn-ghost" data-add="sessions">${icon.plus}Saat ekle</button>
         </fieldset>
+        <details class="more" ${c.credit !== null || c.attendPct !== null || c.absLimit !== null ? "open" : ""}>
+          <summary>Kredi ve devam şartı</summary>
+          <div class="more-body">
+            <div class="row2">
+              <label class="field"><span>Kredi <span class="hint">(ulusal, GNO için)</span></span>
+                <input name="credit" type="number" min="0" max="30" step="0.5" inputmode="decimal" value="${optNum(c.credit)}" placeholder="ör. 3">
+              </label>
+              <label class="field"><span>Devam zorunluluğu</span>
+                <span class="pct"><input name="attendPct" type="number" min="0" max="100" step="1" inputmode="numeric" value="${optNum(c.attendPct)}" placeholder="ör. 70"><span>%</span></span>
+              </label>
+            </div>
+            <label class="field"><span>ya da en fazla kaç derse gelmeyebilirsin? <span class="hint">(syllabus sayı veriyorsa)</span></span>
+              <input name="absLimit" type="number" min="0" max="200" step="1" inputmode="numeric" value="${optNum(c.absLimit)}" placeholder="ör. 4">
+            </label>
+            <p class="fine">Devam oranı syllabus'ta yazar. Şartı sağlamayan öğrenci NA alır ve finale giremez; sağlık raporu devamsızlığı silmez. Hak, dönem ${store.get().settings.termWeeks} hafta kabul edilerek ders oturumu sayısından hesaplanır (Ayarlar'dan değiştirilebilir).</p>
+          </div>
+        </details>
         <details class="more" ${c.email || c.office || c.officeHours || c.grading.length ? "open" : ""}>
           <summary>Hoca iletişimi ve not dağılımı</summary>
           <div class="more-body">
@@ -169,6 +189,9 @@ export function openCourseForm(course = null) {
           color: fd.get("color"),
           sessions: list,
           grading: readGrading(grading, course?.grading),
+          credit: fd.get("credit") === "" ? null : Number(fd.get("credit")),
+          attendPct: fd.get("attendPct") === "" ? null : Number(fd.get("attendPct")),
+          absLimit: fd.get("absLimit") === "" ? null : Math.round(Number(fd.get("absLimit"))),
         });
         closeSheet();
         toast(course ? "Ders güncellendi" : "Ders eklendi");
@@ -226,6 +249,25 @@ function calcSummary(course) {
   return lines.map((l) => `<p>${l}</p>`).join("");
 }
 
+function absenceBlock(c) {
+  const a = attendance(c, store.get().settings.termWeeks);
+  const pct = a.limit ? Math.min(100, (a.used / a.limit) * 100) : a.used ? 100 : 0;
+  const list = [...c.absences].sort((x, y) => y.date.localeCompare(x.date));
+  const times = [...new Set(c.sessions.map((s) => s.start))].sort();
+  return `<div class="abs" data-abs-block>
+    <p class="abs-text ${a.level}">${attendanceText(a)}</p>
+    ${a.limit !== null ? `<div class="bar ${a.level}" role="img" aria-label="${a.used} / ${a.limit} devamsızlık"><i style="width:${pct}%"></i></div>` : ""}
+    ${a.limit === null ? '<p class="calc-note">Devam şartını <b>Düzenle → Kredi ve devam şartı</b>\'ndan gir; kalan hakkını hesaplayayım.</p>' : ""}
+    <div class="abs-add">
+      <input type="date" data-abs-date value="${todayISO()}" max="${todayISO()}" aria-label="Devamsızlık tarihi">
+      ${times.length > 1 ? `<select data-abs-start aria-label="Ders saati">${times.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("")}</select>` : times.length ? `<input type="hidden" data-abs-start value="${esc(times[0])}">` : ""}
+      <button type="button" class="btn btn-ghost" data-add-abs>${icon.plus}Ekle</button>
+    </div>
+    ${list.length ? `<ul class="kv abs-list">${list.map((x) => `<li><b>${fmtShort(x.date)}${x.start ? ` · ${esc(x.start)}` : ""}</b>
+      <button type="button" class="link" data-remove-abs="${esc(x.id)}">Kaldır</button></li>`).join("")}</ul>` : ""}
+  </div>`;
+}
+
 export function openCourseDetail(courseId) {
   const render = () => {
     const { courses, tasks } = store.get();
@@ -241,6 +283,7 @@ export function openCourseDetail(courseId) {
       c.email && `<li><b>E-posta</b><a href="mailto:${esc(c.email)}">${esc(c.email)}</a></li>`,
       c.office && `<li><b>Ofis</b><span>${esc(c.office)}</span></li>`,
       c.officeHours && `<li><b>Ofis saatleri</b><span>${esc(c.officeHours)}</span></li>`,
+      c.credit !== null && `<li><b>Kredi</b><span>${c.credit.toLocaleString("tr-TR")}</span></li>`,
     ].filter(Boolean).join("");
 
     return `<div class="sheet-form">
@@ -265,6 +308,9 @@ export function openCourseDetail(courseId) {
           </form>` : ""}
           <div class="calc-result" aria-live="polite">${calcSummary(c)}</div>
         </section>
+        <section><h3 class="mini-title">Devamsızlık</h3>
+          ${absenceBlock(c)}
+        </section>
         <section><h3 class="mini-title">Açık görevler</h3>
           ${open.length ? `<ul class="kv">${open.map((t) => `<li><b>${esc(t.title)}</b><span>${relLabel(daysUntil(t.due))} · ${fmtShort(t.due)}</span></li>`).join("")}</ul>` : '<p class="calc-note">Bu derse ait açık görev yok.</p>'}
         </section>
@@ -283,7 +329,25 @@ export function openCourseDetail(courseId) {
       const course = store.get().courses.find((x) => x.id === courseId);
       if (e.target.closest("[data-edit]")) openCourseForm(course);
       if (e.target.closest("[data-new-task]")) openTaskForm(null, { courseId });
+      const rm = e.target.closest("[data-remove-abs]");
+      if (rm) {
+        store.removeAbsence(courseId, rm.dataset.removeAbs);
+        refreshDetail();
+      }
+      if (e.target.closest("[data-add-abs]")) {
+        const date = root.querySelector("[data-abs-date]").value;
+        const start = root.querySelector("[data-abs-start]")?.value || "";
+        if (!date) return;
+        if (!store.addAbsence(courseId, date, start)) return toast("Bu ders için o gün zaten kayıtlı");
+        toast("Devamsızlık kaydedildi");
+        refreshDetail();
+      }
     });
+    // Devamsızlık eklenince/silinince sadece o bölümü yenile (not girişi odağı bozulmasın)
+    const refreshDetail = () => {
+      const c = store.get().courses.find((x) => x.id === courseId);
+      if (c) root.querySelector("[data-abs-block]").outerHTML = absenceBlock(c);
+    };
     // Notlar yazıldıkça kaydet ve sadece sonuç kutusunu güncelle (odak kaybolmasın)
     root.addEventListener("input", (e) => {
       const form = e.target.closest("[data-calc]");
@@ -358,7 +422,11 @@ export function openTaskForm(task = null, defaults = {}) {
           note: fd.get("note"),
         });
         closeSheet();
-        toast(task ? "Görev güncellendi" : "Görev eklendi");
+        if (!task && fd.get("type") === "sinav" && canAsk()) {
+          toast("Sınav eklendi. Önceden hatırlatayım mı?", { label: "Evet", onClick: () => enableNotifications() });
+        } else {
+          toast(task ? "Görev güncellendi" : "Görev eklendi");
+        }
       });
       armDelete(form.querySelector("[data-delete]"), () => {
         store.deleteTask(task.id);

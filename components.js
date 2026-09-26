@@ -13,22 +13,29 @@ export function sessionsOn(courses, day) {
     .sort((a, b) => toMin(a.start) - toMin(b.start));
 }
 
-/** now: dakika cinsinden şu an (sadece bugünün listesi için), yoksa null */
-export function sessionItem(s, now = null) {
+/**
+ * now: dakika cinsinden şu an (sadece bugünün listesi için), yoksa null
+ * absentDate: verilirse başlamış/bitmiş derslerde "Gelmedim" düğmesi çıkar (devamsızlık)
+ */
+export function sessionItem(s, now = null, absentDate = null) {
   let state = "";
   if (now !== null) {
     if (now >= toMin(s.end)) state = "past";
     else if (now >= toMin(s.start)) state = "now";
   }
+  const absent = absentDate && s.course.absences.some((a) => a.date === absentDate && a.start === s.start);
+  const absBtn = absentDate && (state || absent)
+    ? `<button type="button" class="abs-btn ${absent ? "on" : ""}" data-action="mark-absent" data-id="${esc(s.course.id)}" data-start="${esc(s.start)}" aria-pressed="${!!absent}">${absent ? "Gelmedim ✓" : "Gelmedim"}</button>`
+    : "";
   const meta = [s.course.code, s.room].filter(Boolean).map(esc).join(" · ");
-  return `<li>
-    <button class="session ${state}" style="--c:${s.course.color}" data-action="course-detail" data-id="${esc(s.course.id)}">
+  return `<li class="${absBtn ? "session-wrap" : ""}">
+    <button class="session ${state} ${absent ? "absent" : ""}" style="--c:${s.course.color}" data-action="course-detail" data-id="${esc(s.course.id)}">
       <span class="session-time">${esc(s.start)}<small>${esc(s.end)}</small></span>
       <span>
         <span class="session-name">${esc(s.course.name)}${state === "now" ? '<span class="badge">Şu an</span>' : ""}</span>
         ${meta ? `<span class="session-meta">${meta}</span>` : ""}
       </span>
-    </button>
+    </button>${absBtn}
   </li>`;
 }
 

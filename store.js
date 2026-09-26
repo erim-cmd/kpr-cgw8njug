@@ -9,6 +9,9 @@ const KEY = "kpr:data:v1";
 
 export const COLORS = ["#4CC9F0", "#8B5CF6", "#F472B6", "#F5B84C", "#4ADE80", "#F0607A", "#60A5FA", "#2DD4BF"];
 export const TASK_TYPES = { sinav: "Sınav", odev: "Ödev", proje: "Proje", diger: "Diğer" };
+// BAU harf notları (Yönetmelik Md. 26). Katsayılar gpa.js'te.
+export const GRADE_CODES = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "F", "NA", "S", "U", "EX", "W", "I", "NI", "PR"];
+export const SEASONS = { guz: "Güz", bahar: "Bahar", yaz: "Yaz" };
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -20,7 +23,8 @@ const arr = (v) => (Array.isArray(v) ? v : []);
 export const uid = () =>
   crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
 
-const empty = () => ({ version: 1, profile: { name: "" }, courses: [], tasks: [] });
+const defaultSettings = () => ({ termWeeks: 14, notify: false, notifyClasses: false });
+const empty = () => ({ version: 1, profile: { name: "" }, courses: [], tasks: [], transcript: [], gpaBase: null, settings: defaultSettings() });
 
 function normSession(s) {
   if (!s || !Number.isInteger(s.day) || s.day < 0 || s.day > 6) return null;
@@ -38,6 +42,13 @@ function normGrade(g) {
   return { name, weight, score: num(g.score, 0, 100) };
 }
 
+const grade = (g, list = GRADE_CODES) => (list.includes(g) ? g : "");
+
+function normAbsence(a) {
+  if (!a || !DATE.test(a.date)) return null;
+  return { id: str(a.id, 64) || uid(), date: a.date, start: TIME.test(a.start) ? a.start : "" };
+}
+
 function normCourse(c) {
   const name = str(c?.name, 80);
   if (!name) return null;
@@ -53,6 +64,14 @@ function normCourse(c) {
     sessions: arr(c.sessions).map(normSession).filter(Boolean),
     grading: arr(c.grading).map(normGrade).filter(Boolean).slice(0, 12),
     target: num(c.target, 0, 100) ?? 50,
+    // GNO: ulusal (yerel) kredi, beklenen harf notu, tekrar alınıyorsa önceki not
+    credit: num(c.credit, 0, 30),
+    letter: grade(c.letter),
+    prevGrade: grade(c.prevGrade),
+    // Devamsızlık: devam zorunluluğu (%) ya da elle girilen hak (ders sayısı)
+    attendPct: num(c.attendPct, 0, 100),
+    absLimit: Number.isInteger(c.absLimit) && c.absLimit >= 0 && c.absLimit <= 200 ? c.absLimit : null,
+    absences: arr(c.absences).map(normAbsence).filter(Boolean).slice(0, 300),
   };
 }
 
@@ -72,6 +91,33 @@ function normTask(t, courseIds) {
   };
 }
 
+function normEntry(e) {
+  const g = grade(e?.grade);
+  const year = Number.isInteger(e?.year) && e.year >= 1990 && e.year <= 2100 ? e.year : null;
+  const credit = num(e?.credit, 0, 30);
+  if (!g || year === null || credit === null || !(e.season in SEASONS)) return null;
+  const code = str(e.code, 20);
+  const name = str(e.name, 80);
+  if (!code && !name) return null;
+  return { id: str(e.id, 64) || uid(), year, season: e.season, code, name, credit, grade: g };
+}
+
+function normSettings(s) {
+  const d = defaultSettings();
+  if (!s || typeof s !== "object") return d;
+  return {
+    termWeeks: Number.isInteger(s.termWeeks) && s.termWeeks >= 1 && s.termWeeks <= 30 ? s.termWeeks : d.termWeeks,
+    notify: s.notify === true,
+    notifyClasses: s.notifyClasses === true,
+  };
+}
+
+function normBase(b) {
+  const credits = num(b?.credits, 1, 1000);
+  const gno = num(b?.gno, 0, 4);
+  return credits === null || gno === null ? null : { credits, gno };
+}
+
 export function normalize(data) {
   const out = empty();
   if (!data || typeof data !== "object") return out;
@@ -79,6 +125,9 @@ export function normalize(data) {
   out.courses = arr(data.courses).map(normCourse).filter(Boolean);
   const ids = new Set(out.courses.map((c) => c.id));
   out.tasks = arr(data.tasks).map((t) => normTask(t, ids)).filter(Boolean);
+  out.transcript = arr(data.transcript).map(normEntry).filter(Boolean).slice(0, 400);
+  out.gpaBase = normBase(data.gpaBase);
+  out.settings = normSettings(data.settings);
   return out;
 }
 
@@ -160,6 +209,36 @@ export const store = {
 
   deleteTask(id) {
     commit({ ...state, tasks: state.tasks.filter((t) => t.id !== id) });
+  },
+
+  /** Devamsızlık: aynı gün + aynı saat ikinci kez eklenmez. */
+  addAbsence(courseId, date, start = "") {
+    const c = state.courses.find((x) => x.id === courseId);
+    if (!c || c.absences.some((a) => a.date === date && a.start === start)) return null;
+    return this.saveCourse({ ...c, absences: [...c.absences, { date, start }] });
+  },
+
+  removeAbsence(courseId, absenceId) {
+    const c = state.courses.find((x) => x.id === courseId);
+    if (c) this.saveCourse({ ...c, absences: c.absences.filter((a) => a.id !== absenceId) });
+  },
+
+  saveEntry(input) {
+    const entry = normEntry(input);
+    if (entry) commit({ ...state, transcript: upsert(state.transcript, entry) });
+    return entry;
+  },
+
+  deleteEntry(id) {
+    commit({ ...state, transcript: state.transcript.filter((e) => e.id !== id) });
+  },
+
+  setBase(base) {
+    commit({ ...state, gpaBase: base ? normBase(base) : null });
+  },
+
+  setSettings(patch) {
+    commit({ ...state, settings: normSettings({ ...state.settings, ...patch }) });
   },
 
   replace(data) {
