@@ -220,7 +220,11 @@ async function overLimit(request, env) {
   if (!env.KPR_LIMITS) return false;
   const ip = request.headers.get("cf-connecting-ip") || "unknown";
   const day = new Date().toISOString().slice(0, 10);
-  const key = `rl:${day}:${ip}`;
+  // KVKK: IP açık hâliyle yazılmaz; gün + IP'nin SHA-256 özeti anahtar olur ve 26 saatte silinir.
+  // Not: IPv4 uzayı küçük olduğundan özet deneme yoluyla geri çözülebilir; bu tam anonimleştirme değildir.
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${day}:${ip}`));
+  const who = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+  const key = `rl:${day}:${who}`;
   const count = Number(await env.KPR_LIMITS.get(key)) || 0;
   if (count >= DAILY_LIMIT) return true;
   await env.KPR_LIMITS.put(key, String(count + 1), { expirationTtl: 60 * 60 * 26 });
