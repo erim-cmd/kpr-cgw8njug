@@ -11,6 +11,7 @@ Yarım kalan ve sıradaki işler. Bitenler en alta "Yapıldı"ya taşınır.
 - [ ] **Onur/yüksek onur eşikleri** ve yönetmeliğin 1.4.2026 değişikliği doğrulanmadı.
 
 ## Yapıldı
+- [x] v2.6 (26 Eyl 2026): Dönem akışı: Dönem ekranında hafta hafta yoğunluk şeridi (sınav 2, proje 1,5, ödev 1 puan; vize/final/yoğun etiketi), haftaya dokununca o haftanın teslimleri, 1–2 hafta içinde yoğun hafta varsa "bu hafta başla" uyarısı. Dönem başlangıcı ayarlanabilir; girilmezse ilk teslimden tahmin.
 - [x] v2.5 (26 Eyl 2026): Kırmızı bayraklar: syllabus okuyucu kuralları (devam, geç teslim, telafi, bütünleme, baraj, not kuralı, dürüstlük) Kritik/Dikkat/İpucu olarak ve kaynak cümlesiyle çıkarıyor; final barajını harf tahminine otomatik dolduruyor. Ders sayfasının en üstünde gösterilir, gizlenebilir; Dersler kartında kritik kural rozeti.
 - [x] v2.4 (26 Eyl 2026): Ders puanı → harf tahmini (hocanın harf tablosu, örnek tablo "doğrula" uyarılı, her harf için kalanlardan gereken ortalama, final barajı + bütünleme uyarısı, tahmini harfi tek dokunuşla Ortalama tablosuna aktarma). Alt menü 5 sekme (Görevler Bugün'ün altında).
 - [x] v2.3 (26 Eyl 2026): "Dönem" paneli BAU motoru üzerine (GNO/YNO özeti, en riskli ders, ortak hedef GNO, devamsızlık kartları, sınıra yaklaşınca uyarı); syllabus talimatına Türkçe kurallar (50 dk ders saati, hafta → tarih, bütünleme/mazeret, not ağırlığı ≠ 100, belge içi talimatlara uyma). Eski ayarlanabilir ölçek + saat bazlı devamsızlık `arsiv/donem-paneli` dalında.

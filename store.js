@@ -24,7 +24,7 @@ const arr = (v) => (Array.isArray(v) ? v : []);
 export const uid = () =>
   crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
 
-const defaultSettings = () => ({ termWeeks: 14, notify: false, notifyClasses: false });
+const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false });
 const empty = () => ({ version: 1, profile: { name: "" }, courses: [], tasks: [], transcript: [], gpaBase: null, settings: defaultSettings() });
 
 function normSession(s) {
@@ -141,6 +141,7 @@ function normSettings(s) {
   const d = defaultSettings();
   if (!s || typeof s !== "object") return d;
   return {
+    termStart: DATE.test(s.termStart) ? s.termStart : "",
     termWeeks: Number.isInteger(s.termWeeks) && s.termWeeks >= 1 && s.termWeeks <= 30 ? s.termWeeks : d.termWeeks,
     notify: s.notify === true,
     notifyClasses: s.notifyClasses === true,
