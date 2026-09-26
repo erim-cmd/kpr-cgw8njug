@@ -256,9 +256,14 @@ export async function onRequestPost({ request, env }) {
   try {
     let r = await callClaude({ env, data, mediaType, mode: "structured", signal: ctrl.signal });
     // Yapılandırılmış çıktı reddedilirse (ör. şema desteği) aynı şemayla araç çağrısını dene
-    if (r.status === 400) r = await callClaude({ env, data, mediaType, mode: "tool", signal: ctrl.signal });
+    if (r.status === 400) {
+      console.error(`[syllabus] yapılandırılmış çıktı reddedildi, araç yoluna geçiliyor: ${String(r.error).slice(0, 300)}`);
+      r = await callClaude({ env, data, mediaType, mode: "tool", signal: ctrl.signal });
+    }
 
     if (r.status) {
+      // Sunucu kaydı: sadece durum kodu ve API'nin hata metni (anahtar ve dosya içeriği yazılmaz)
+      console.error(`[syllabus] Claude API hatası: HTTP ${r.status} · ${String(r.error).slice(0, 300)}`);
       if (r.status === 429 || r.status === 529) return fail(503, "Okuma servisi şu an yoğun. Birkaç dakika sonra tekrar dene.");
       if (r.status === 400 && /pdf|document|page/i.test(r.error)) return fail(422, "Bu PDF okunamadı (şifreli ya da bozuk olabilir). Fotoğrafını yüklemeyi dene.");
       return fail(502, "Syllabus okunamadı. Tekrar dene.");
