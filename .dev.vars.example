@@ -1,0 +1,6 @@
+# Köprü — yerel geliştirme sırları (wrangler pages dev bunu okur).
+# Kullanım: bu dosyayı ".dev.vars" adıyla kopyala ve anahtarı kendin yaz.
+# .dev.vars .gitignore'da; asla commit'lenmez. Anahtarı hiçbir yere yapıştırma.
+ANTHROPIC_API_KEY=
+# İsteğe bağlı: varsayılan model claude-sonnet-5
+# KPR_MODEL=
