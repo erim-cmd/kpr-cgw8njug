@@ -8,6 +8,7 @@
 import { store, COLORS, TASK_TYPES } from "./store.js";
 import { esc, openSheet, closeSheet, toast } from "./ui.js";
 import { icon } from "./icons.js";
+import { flagItem, sortFlags } from "./components.js";
 import { sessionRow, gradeRow, swatches, bindRows, readSessions, readGrading, openCourseForm } from "./forms.js";
 
 const ENDPOINT = "/api/syllabus";
@@ -290,6 +291,10 @@ function openReview(r) {
         </div>
         ${att.source ? `<small class="irow-src">“${esc(att.source)}”</small>` : '<p class="calc-note">Syllabus\'ta devam şartı bulunamadı. Biliyorsan gir; devamsızlık takibi buna göre çalışır.</p>'}
 
+        ${(r.policies || []).length ? `<h3 class="mini-title">Dikkat edilecek kurallar</h3>
+        <ul class="flags">${sortFlags(r.policies).map((p) => flagItem(p)).join("")}</ul>
+        <p class="calc-note">Bunlar ders sayfasının en üstünde görünecek.</p>` : ""}
+
         <h3 class="mini-title">Not dağılımı</h3>
         <div class="srows" data-rows="grading">${r.grading.map(gradeRow).join("")}</div>
         <button type="button" class="btn btn-ghost" data-add="grading">${icon.plus}Bileşen ekle</button>
@@ -354,6 +359,8 @@ function openReview(r) {
             ects: numOrNull(fd.get("ects")),
             attendPct: numOrNull(fd.get("attendPct")),
             absLimit: fd.get("absLimit") === "" ? null : Math.round(Number(fd.get("absLimit"))),
+            policies: (r.policies || []).length ? r.policies : existing?.policies ?? [],
+            finalMin: r.final_min ?? existing?.finalMin ?? null,
           },
           tasks
         );

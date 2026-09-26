@@ -590,3 +590,20 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 .scale-grid label span { font-weight: 600; color: var(--text); }
 .scale-grid input { padding: 8px 10px; text-align: right; width: 100%; box-sizing: border-box; }
 .need-list { margin: 6px 0 0; }
+
+/* Kırmızı bayraklar */
+.flags { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.flag { padding: 10px 12px; border-radius: 12px; background: var(--bg); border-left: 3px solid var(--text-muted); }
+.flag.kritik { border-left-color: #F0616D; }
+.flag.dikkat { border-left-color: #F2B544; }
+.flag.bilgi { border-left-color: var(--cyan); }
+.flag-tag { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-muted); }
+.flag.kritik .flag-tag { color: #F0616D; }
+.flag.dikkat .flag-tag { color: #F2B544; }
+.flag-rule { margin: 4px 0 0; font-size: 0.9rem; font-weight: 500; }
+.flag-cons { margin: 2px 0 0; font-size: 0.85rem; color: var(--text-muted); }
+.flag-foot { margin: 6px 0 0; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
+.flag-foot .link { flex: none; }
+.flag-badge { background: rgba(240, 97, 109, 0.15); color: #F0616D; }
+.badges { display: grid; gap: 4px; justify-items: end; flex: none; }
+.badges .badge { white-space: nowrap; }

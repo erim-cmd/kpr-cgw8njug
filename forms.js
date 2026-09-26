@@ -6,6 +6,7 @@ import { DAYS, todayIdx, todayISO, toMin, daysUntil, fmtShort, relLabel, byDue }
 import { icon } from "./icons.js";
 import { attendance, attendanceText } from "./attendance.js";
 import { canAsk, enableNotifications } from "./notify.js";
+import { flagItem, sortFlags } from "./components.js";
 import { SAMPLE_SCALE, letterFor, neededByLetter, COEF } from "./gpa.js";
 
 const head = (title) => `<header class="sheet-head">
@@ -297,6 +298,17 @@ function letterBlock(c) {
   return `<div data-letter-block>${inputs}<div class="calc-result" data-letter-result aria-live="polite">${letterResult(c)}</div></div>`;
 }
 
+/** Ders sayfasının en üstü: syllabus'taki kurallar, kritik olan önce. */
+function flagsBlock(c) {
+  if (!c.policies.length) return "";
+  const shown = sortFlags(c.policies.filter((p) => !p.hidden));
+  const hidden = c.policies.length - shown.length;
+  return `<section data-flags-block><h3 class="mini-title">Dikkat edilecekler</h3>
+    ${shown.length ? `<ul class="flags">${shown.map((p) => flagItem(p, true)).join("")}</ul>` : ""}
+    ${hidden ? `<button type="button" class="link gap-t" data-show-policies>Gizlenen ${hidden} kuralı göster</button>` : ""}
+  </section>`;
+}
+
 function absenceBlock(c) {
   const a = attendance(c, store.get().settings.termWeeks);
   const pct = a.limit ? Math.min(100, (a.used / a.limit) * 100) : a.used ? 100 : 0;
@@ -340,6 +352,7 @@ export function openCourseDetail(courseId) {
         <button type="button" class="icon-btn sm" data-close aria-label="Kapat">${icon.close}</button>
       </header>
       <div class="sheet-body">
+        ${flagsBlock(c)}
         ${info ? `<ul class="kv">${info}</ul>` : ""}
         <section><h3 class="mini-title">Haftalık saatler</h3>
           ${times ? `<ul class="kv">${times}</ul>` : '<p class="calc-note">Ders saati eklenmemiş.</p>'}
@@ -377,6 +390,13 @@ export function openCourseDetail(courseId) {
     root.addEventListener("click", (e) => {
       const course = store.get().courses.find((x) => x.id === courseId);
       if (e.target.closest("[data-edit]")) openCourseForm(course);
+      const hide = e.target.closest("[data-hide-policy]");
+      if (hide || e.target.closest("[data-show-policies]")) {
+        const policies = course.policies.map((p) => (hide ? (p.id === hide.dataset.hidePolicy ? { ...p, hidden: true } : p) : { ...p, hidden: false }));
+        const saved = store.saveCourse({ ...course, policies });
+        const blk = root.querySelector("[data-flags-block]");
+        if (blk) blk.outerHTML = flagsBlock(saved) || "<span data-flags-block hidden></span>";
+      }
       if (e.target.closest("[data-scale-sample]")) {
         store.saveCourse({ ...course, scale: SAMPLE_SCALE });
         refreshLetter(true);

@@ -5,6 +5,7 @@ import { emptyState, importCard } from "./components.js";
 
 function courseCard(c, tasks) {
   const openCount = tasks.filter((t) => t.courseId === c.id && !t.done).length;
+  const critical = c.policies.filter((p) => p.severity === "kritik" && !p.hidden).length;
   const meta = [c.code, c.instructor].filter(Boolean).map(esc).join(" · ");
   const times = [...c.sessions]
     .sort((a, b) => a.day - b.day || toMin(a.start) - toMin(b.start))
@@ -17,7 +18,10 @@ function courseCard(c, tasks) {
           <span class="course-name">${esc(c.name)}</span>
           ${meta ? `<span class="course-meta">${meta}</span>` : ""}
         </span>
-        ${openCount ? `<span class="badge">${openCount} açık görev</span>` : ""}
+        ${openCount || critical ? `<span class="badges">
+          ${openCount ? `<span class="badge">${openCount} açık görev</span>` : ""}
+          ${critical ? `<span class="badge flag-badge">${critical} kritik kural</span>` : ""}
+        </span>` : ""}
       </span>
       <span class="course-times">${times || '<span class="pill">Saat eklenmedi</span>'}</span>
     </button>
