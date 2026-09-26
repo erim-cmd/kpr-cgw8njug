@@ -18,6 +18,7 @@ AGENTS.md eklenirse: biri güncellenince diğeri de güncellenir.
 - Dışarıdan gelen her veri `store.js` `normalize()` ile doğrulanır; yeni alan eklersen oraya da ekle.
 - GNO kuralları BAU Yönetmeliği Md. 26/28'e dayanır (`gpa.js` başındaki not). Doğrulanmamış bir katsayı ekleme.
 - API anahtarı, şifre, kişisel veri commit'lenmez. `.dev.vars` git dışında.
+- CI: `.github/workflows/test.yml` her PR'da ve main'e her gönderimde sözdizimi + `test/shell.mjs` (sw.js SHELL listesi ↔ depodaki dosyalar) + ayrıştırıcı testlerini çalıştırır. Yerelde aynısı: `npm test`. Kırmızı CI ile birleştirme.
 - Ayrıştırıcı testi: `node test/check.mjs` (test/syllabus/*.pdf|docx ↔ expected.json). Ayrıştırıcıya dokunan her değişiklikten sonra çalıştır; yeni format görülünce `make*.py`'ye örnek + beklenen değer ekle.
 - Bitti tanımı: tarayıcıda gözle kontrol + konsolda hata yok + telefonda (390px) taşma yok.
 
