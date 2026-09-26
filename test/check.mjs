@@ -11,7 +11,7 @@ const verbose = process.argv.includes("-v");
 let pass = 0, fail = 0;
 const ok = (c, msg) => { c ? pass++ : (fail++, console.log("  ✗ " + msg)); };
 for (const [name, e] of Object.entries(exp)) {
-  for (const ext of ["pdf", "docx"]) {
+  for (const ext of ["pdf", "docx", "txt"]) {
     const f = dir + name + "." + ext;
     if (!existsSync(f)) continue;
     const buf = readFileSync(f);
@@ -35,6 +35,9 @@ for (const [name, e] of Object.entries(exp)) {
       ok(hit, `item ${t} ${date} ${time || ""} ${week || ""} yok`);
     }
     ok(r.items.length === e.items.length, `item sayısı ${r.items.length} ≠ ${e.items.length}: ${r.items.map((x) => `${x.title}@${x.date || "w" + x.week}${x.time ? " " + x.time : ""}`).join(" | ")}`);
+    // Uyarılar (isteğe bağlı): olması gerekenler ve kesinlikle olmaması gerekenler
+    for (const w of e.warnings_include || []) ok(r.warnings.some((x) => fold(x).includes(fold(w))), `uyarı yok: "${w}" · var olanlar: ${r.warnings.join(" / ")}`);
+    for (const w of e.warnings_exclude || []) ok(!r.warnings.some((x) => fold(x).includes(fold(w))), `olmaması gereken uyarı var: "${w}"`);
     const kinds = [...new Set(r.policies.map((p) => p.kind))].sort();
     ok(JSON.stringify(kinds) === JSON.stringify([...e.policies].sort()), `policies: ${kinds} ≠ ${[...e.policies].sort()}`);
   }

@@ -355,6 +355,15 @@ const ITEM_KINDS = [
 const RULE_WORDS = /\ben az\b|\bat least\b|zorunlu|required|must|kabul edilmez|not accepted|penalty|ceza|kesinti|puan alin|gerekmektedir|gerekir|sevk|disiplin|plagiarism|intihal|kopya|devam sartini|%|revision|revise|review\b|tekrar\b|gozden gecir/;
 const SCHEDULE_WORDS = /\bhafta\b|\bweek\b|\btba\b|\btbd\b|ilan edilecek|announced|akademik takvim|academic calendar|tarih|date|final exam week|sinav haftasi|exam week/;
 
+// Ders olmayan gün ("No class Apr 20", "20 Nisan ders yok", "HOLIDAY") hiçbir zaman sınav/teslim tarihi değildir.
+// Katlanmış (fold) metinde, tarihin hemen önündeki ~30 karakterde aranır.
+const NO_CLASS = /(no class(?:es)?|no lecture|ders yok|ders yapilmayacak|holiday|tatil|break)[^\d]{0,12}$/;
+const noClassAt = (ftext, idx) => NO_CLASS.test(ftext.slice(Math.max(0, idx - 30), idx));
+// "ders saatinde" yapılacak sınav (katlanmış metin)
+const CLASS_TIME_RE = /(during class time|during class|in class|ders saatinde|ders saati icinde|derste)\)?\s*$/;
+// Tarihin sonradan ilan edileceğini söyleyen ifadeler
+const TBA_RE = /\btba\b|\btbd\b|to be announced|will be announced|ilan edilecek|belirlenecek|duyurulacak/;
+
 function titleFrom(orig, fk, kind, datesInCell) {
   // Tarihleri çıkar, sonra ayırıcılara göre böl ve anahtar kelimeyi içeren parçayı başlık yap
   let t = orig;
@@ -487,12 +496,21 @@ function parseItems(lines, flines, termYear, warnings) {
       const fc = fcells[r.ci];
       // Tarih: hücrenin kendi tarihi (anahtar kelimeden sonraki ilk), yoksa satırın tarih sütunu, yoksa satırdaki herhangi bir tarih
       const kpos = r.kind.re.exec(fc).index;
-      let d = r.dates.find((x) => x.index >= kpos) || r.dates[0];
-      if (!d && rowDates.length) d = rowDates[0];
-      if (!d && cells.length > 1) {
-        const any = cells.flatMap((c, k) => (k === r.ci ? [] : findDates(fcells[k], termYear)));
-        d = any[0];
+      const own = r.dates.filter((x) => !noClassAt(fc, x.index));
+      let d = own.find((x) => x.index >= kpos) || own[0];
+      let dsrc = fc; // tarihin alındığı hücre (katlanmış)
+      if (!d && rowDates.length) {
+        d = rowDates.find((x) => !noClassAt(fcells[dateCol], x.index));
+        dsrc = fcells[dateCol];
       }
+      if (!d && cells.length > 1) {
+        const any = cells.flatMap((c, k) => (k === r.ci ? [] : findDates(fcells[k], termYear).filter((x) => !noClassAt(fcells[k], x.index)).map((x) => ({ x, k }))));
+        if (any[0]) ({ x: d, k: dsrc } = { x: any[0].x, k: fcells[any[0].k] });
+      }
+      // "Mid-Term Exam 1 · TBA (Midterms Week) – No class Apr 20": sınavın kendi hücresi ya da tarihin
+      // ödünç alındığı hücre tarihin ilan edileceğini söylüyorsa, ödünç tarih uydurma olur → tarihsiz.
+      // (Satırın başka bir hücresindeki "final … will be announced" bu öğeyi etkilemez.)
+      if (d && !own.includes(d) && (TBA_RE.test(fc) || TBA_RE.test(dsrc))) d = null;
       // "Final exam period: 14–27.12.2026; exact date will be announced." gibi: hemen ardından "ilan
       // edilecek/announced" geçiyorsa bu bir ARALIK bitişi, gerçek sınav tarihi değil — tarihsiz say.
       if (d && /will be announced|to be announced|\btba\b|\btbd\b|ilan edilecek/.test(fc.slice(d.end, d.end + 45))) d = null;
@@ -541,10 +559,16 @@ function parseItems(lines, flines, termYear, warnings) {
       if (!d && RULE_WORDS.test(fc) && !SCHEDULE_WORDS.test(fc)) continue;
 
       if (d?.assumed) warnings.add(`Bazı tarihlerde yıl yazmıyor; ${d.iso.slice(0, 4)} varsayıldı.`);
+      // "Mid Term Exam 2 during class time": başlıktan at, saati ders saatine bağlı olduğunu uyar
+      let title = titleFrom(r.cell, fc, r.kind, r.dates);
+      if (CLASS_TIME_RE.test(fold(title))) {
+        title = title.replace(/\s*[-–,(]?\s*(during class time|during class|in class|ders saatinde|ders saati icinde|derste)\)?\s*$/i, "").trim() || title;
+        if (!time) warnings.add(`${title} ders saatinde; saatini kendi şubenin ders saatine göre gir.`);
+      }
       items.push({
         type: r.kind.type,
         group: r.kind.group,
-        title: titleFrom(r.cell, fc, r.kind, r.dates),
+        title,
         date: d ? d.iso : "",
         time,
         week: d ? null : week,
@@ -1061,6 +1085,14 @@ export function parseSyllabus(text, now = new Date()) {
   if (!course.code) warnings.add("Ders kodu bulunamadı.");
   if (course.credit === null) warnings.add("Kredi bulunamadı; GNO için UMIS'teki kredisini gir.");
   if (!sessions.length) warnings.add("Ders saatleri bulunamadı.");
+  // "Section · Day · Time · Room" tablosunda birden çok şube: öğrenci yalnız birine gider
+  if (sessions.length > 1 && flines.some((l) => /(^|\t)(section|sections|sube|subeler|grup|group)(\t|$)/.test(l.trim())))
+    warnings.add("Birden fazla şube listelenmiş; sadece kendi şubenin ders saatini bırak, diğerlerini sil.");
+  // Finali olmayan derste (ör. vize + vize + final projesi) "final tarihi bulunamadı" yanıltıcı
+  const hasFinalExam =
+    /final (exam|sinav)|yariyil sonu|donem sonu sinav/.test(flines.join("\n")) ||
+    grading.some((g) => /final|yariyil sonu/.test(fold(g.name)) && !/proje|project|rapor|report|paper|essay|odev|sunum|presentation|portfol/.test(fold(g.name)));
+  if (!hasFinalExam) warnings.delete("Final tarihi bulunamadı; akademik takvimden kontrol et.");
   const total = grading.reduce((s, g) => s + g.weight, 0);
   if (!grading.length) warnings.add("Not dağılımı bulunamadı.");
   else if (Math.abs(total - 100) > 0.5) warnings.add(`Not ağırlıklarının toplamı %${Math.round(total * 10) / 10}, 100 değil; kontrol et.`);

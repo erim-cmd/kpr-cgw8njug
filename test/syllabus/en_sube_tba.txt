@@ -1,0 +1,42 @@
+ME 2020 – Manufacturing Lab Practice
+Spring 2026
+
+Instructor	Dr. Deniz Test
+
+Office Hours	Tuesdays, 10:00 – 11:00
+
+E-mail	deniz.test@example.edu
+
+Class Sections
+Section	Day	Time	Room
+
+1	Tuesday	13:30 – 16:20	C105
+
+2	Tuesday	09:30 – 12:20	C207
+
+Grading
+
+Assessment	Weight
+
+Mid-term Exam 1	40%
+
+Mid-term Exam 2	40%
+
+Final Project	20%
+
+Course Topics
+This is a tentative schedule.
+
+Date	Topic
+
+Mar 3	Introduction
+
+Mar 10 – 17	Measurement Basics
+
+Mid-Term Exam 1	TBA (Midterms Week) – No class Apr 21
+
+Apr 28	Casting Lab
+
+May 26	HOLIDAY BREAK
+
+Jun 16	Mid Term Exam 2 during class time

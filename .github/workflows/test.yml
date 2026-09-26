@@ -1,0 +1,37 @@
+# Köprü — her PR'da ve main'e her gönderimde otomatik testler.
+# Sunucu, anahtar veya internet gerekmez; npm paketi kurulmaz (testler bağımlılıksız).
+name: Testler
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Sözdizimi, önbellek listesi, syllabus okuyucu
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: JavaScript sözdizimi (node --check)
+        run: |
+          set -e
+          for f in *.js functions/api/*.js test/*.mjs; do
+            node --check "$f"
+          done
+          echo "Tüm dosyalar temiz."
+
+      - name: sw.js önbellek listesi (SHELL) tutarlı mı
+        run: node test/shell.mjs
+
+      - name: Syllabus okuyucu testleri
+        run: node test/check.mjs
