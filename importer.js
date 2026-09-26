@@ -3,7 +3,9 @@
  * 1) Dosya seç (PDF / Word / metin)  →  2) Cihazda okunur: doc-text.js metni çıkarır,
  *    syllabus-local.js alanlara ayırır (internet gerekmez, dosya cihazdan çıkmaz)
  * 3) Öğrenci sonucu kontrol eder, düzeltir  →  4) Ders + görevler tek seferde kaydedilir
- * Yapay zekâ ile okuma (functions/api/syllabus.js) şimdilik bağlı değil; çıktı şekli aynı.
+ * Yapay zekâ ile okuma (functions/api/syllabus.js): sunucu hazırsa seçenek olarak görünür,
+ * açık rıza kutusu işaretlenirse dosya okunmak üzere gönderilir. Çıktı şekli cihaz içi okuyucuyla
+ * aynı. Yapay zekâ okuyamazsa (sunucu yok, sınır doldu, zaman aşımı…) cihaz içi okuyucuya düşülür.
  */
 
 import { store, COLORS, TASK_TYPES } from "./store.js";
@@ -17,6 +19,69 @@ import { parseSyllabus } from "./syllabus-local.js";
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const numOrNull = (v) => (v === "" || v === null || v === undefined ? null : Number(v));
+
+/* ------------------------------------------------------------------ */
+/* Yapay zekâ ile okuma (isteğe bağlı)                                 */
+/* ------------------------------------------------------------------ */
+
+const API = "api/syllabus"; // göreli: sitenin bulunduğu klasöre göre
+const AI_TYPES = new Set(["application/pdf", "image/jpeg", "image/png"]); // sunucunun kabul ettikleri
+const AI_MAX_BYTES = 4 * 1024 * 1024;
+let apiState = null; // "ready" | "off" | "none"
+
+/**
+ * Sunucu var mı, yapılandırılmış mı? Boş bir POST gönderir: fonksiyon bunu Claude'u
+ * çağırmadan ve günlük sayacı artırmadan JSON ile reddeder (anahtar yoksa 503, varsa 400).
+ * Statik barındırmada (GitHub Pages) JSON gelmez → "none".
+ */
+async function aiStatus() {
+  if (apiState) return apiState;
+  if (!navigator.onLine) return "none";
+  try {
+    const res = await fetch(API, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    const json = (res.headers.get("content-type") || "").includes("json");
+    apiState = !json ? "none" : res.status === 503 ? "off" : "ready";
+  } catch {
+    apiState = "none";
+  }
+  return apiState;
+}
+
+const blobToBase64 = (blob) =>
+  new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(",")[1]);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(blob);
+  });
+
+const mediaTypeOf = (file) =>
+  file.type || (/\.pdf$/i.test(file.name) ? "application/pdf" : /\.png$/i.test(file.name) ? "image/png" : /\.jpe?g$/i.test(file.name) ? "image/jpeg" : "");
+
+/** Yapay zekâ ile okur. Başarısızsa { error } döner (asla fırlatmaz), çağıran cihaz içine düşer. */
+async function readWithAI(file) {
+  const mediaType = mediaTypeOf(file);
+  if (!AI_TYPES.has(mediaType)) return { error: "Word ve metin dosyaları yapay zekâya gönderilmiyor" };
+  if (file.size > AI_MAX_BYTES) return { error: "dosya 4 MB'tan büyük" };
+  if (!navigator.onLine) return { error: "internet bağlantısı yok" };
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 80_000);
+  try {
+    const res = await fetch(API, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ data: await blobToBase64(file), mediaType, fileName: file.name }),
+      signal: ctrl.signal,
+    });
+    const body = await res.json().catch(() => ({}));
+    if (res.ok && body.result) return { result: body.result };
+    return { error: body.error || `sunucu ${res.status} döndü` };
+  } catch (err) {
+    return { error: err.name === "AbortError" ? "okuma çok uzun sürdü" : "sunucuya ulaşılamadı" };
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 const head = (title) => `<header class="sheet-head">
   <h2>${title}</h2>
@@ -39,7 +104,11 @@ export function openImport() {
           <strong data-file-label>Dosya seç</strong>
           <small>PDF, Word (.docx) ya da metin</small>
         </label>
-        <p class="fine">Dosyan cihazında okunur, hiçbir yere gönderilmez. İnternet olmadan da çalışır.</p>
+        <p class="fine" data-local-note>Dosyan cihazında okunur, hiçbir yere gönderilmez. İnternet olmadan da çalışır.</p>
+        <label class="consent" data-ai hidden>
+          <input type="checkbox" name="ai">
+          <span><b>Yapay zekâ ile oku (daha doğru).</b> <a href="gizlilik.html" target="_blank" rel="noopener">Aydınlatma metnini</a> okudum; PDF ya da fotoğrafımın, okunması için yurt dışındaki yapay zekâ hizmetine (Anthropic) aktarılmasına açık rıza veriyorum. Dosya saklanmaz. Günde 5 okuma hakkın var; olmazsa cihazında okunur.</span>
+        </label>
       </div>
       <footer class="sheet-foot">
         <button type="button" class="btn btn-ghost" data-manual>Elle ekle</button>
@@ -72,7 +141,13 @@ export function openImport() {
       form.querySelector("[data-manual]").addEventListener("click", () => openCourseForm());
       form.addEventListener("submit", (e) => {
         e.preventDefault();
-        run(input.files[0]);
+        const ai = form.elements.namedItem("ai");
+        run(input.files[0], { ai: !!ai && !ai.closest("[hidden]") && ai.checked });
+      });
+
+      // Sunucu hazırsa yapay zekâ seçeneğini göster (yoksa ekran değişmez)
+      aiStatus().then((st) => {
+        if (st === "ready") form.querySelector("[data-ai]").hidden = false;
       });
     }
   );
@@ -84,14 +159,14 @@ export function openImport() {
 
 const STEPS = ["Dosya açılıyor", "Ders bilgileri okunuyor", "Tarihler ve not dağılımı çıkarılıyor", "Kurallar bulunuyor"];
 
-function showProgress() {
+function showProgress(ai = false) {
   const d = openSheet(`<div class="sheet-form">
     <header class="sheet-head"><h2>Syllabus okunuyor</h2></header>
     <div class="sheet-body">
       <div class="reading" role="status" aria-live="polite">
         <div class="reading-orb"><span class="brand-mark">K</span></div>
         <ol class="steps">${STEPS.map((s, i) => `<li data-s="${i}">${s}</li>`).join("")}</ol>
-        <p class="fine">Birkaç saniye sürer.</p>
+        <p class="fine">${ai ? "Yapay zekâ ile okuma genelde 10–40 saniye sürer. Pencereyi kapatma." : "Birkaç saniye sürer."}</p>
       </div>
     </div>
   </div>`);
@@ -107,7 +182,7 @@ function showProgress() {
       li.classList.toggle("active", k === i);
     });
   mark();
-  const timer = setInterval(() => { if (i < STEPS.length - 1) { i++; mark(); } }, 120);
+  const timer = setInterval(() => { if (i < STEPS.length - 1) { i++; mark(); } }, ai ? 7000 : 120);
   return () => { clearInterval(timer); d.removeEventListener("cancel", blockEsc); };
 }
 
@@ -126,16 +201,28 @@ function showError(message, file) {
   });
 }
 
-async function run(file) {
+async function run(file, { ai = false } = {}) {
   if (!file) return;
-  const stop = showProgress();
+  const stop = showProgress(ai);
   try {
+    // 1) Rıza verildiyse yapay zekâ; olmazsa sebebiyle birlikte cihaz içine düş
+    let aiError = "";
+    if (ai) {
+      const r = await readWithAI(file);
+      if (r.result) {
+        stop();
+        openReview(r.result, { reader: "ai" });
+        return;
+      }
+      aiError = r.error;
+    }
+    // 2) Cihaz içi okuma
     const { text } = await extractText(file);
     const result = parseSyllabus(text);
     // İlerleme ekranı bir an görünsün (çok hızlı biter)
     await new Promise((r) => setTimeout(r, 400));
     stop();
-    openReview(result);
+    openReview(result, { reader: "local", aiError });
   } catch (err) {
     stop();
     showError(err instanceof DocError ? err.message : "Dosya okunamadı. Başka bir dosya dene ya da dersi elle ekle.");
@@ -178,7 +265,7 @@ function itemRow(it, i) {
   </li>`;
 }
 
-function openReview(r) {
+function openReview(r, { reader = "local", aiError = "" } = {}) {
   const { courses } = store.get();
   const code = (r.course.code || "").trim().toLowerCase();
   const existing = code ? courses.find((c) => c.code.trim().toLowerCase() === code) : null;
@@ -198,6 +285,7 @@ function openReview(r) {
       ${head("Kontrol et ve kaydet")}
       <div class="sheet-body">
         <p class="lead-text">KPR ${found ? `<b>${found}</b> buldu` : "bu dosyada tarih veya saat bulamadı"}. Yanlış bir şey varsa düzelt, sonra kaydet.</p>
+        <p class="fine reader-note" data-reader="${reader}">${reader === "ai" ? "Yapay zekâ ile okundu." : aiError ? `Yapay zekâ ile okunamadı (${esc(aiError)}); dosya cihazında okundu.` : "Cihazında okundu."}</p>
         ${existing ? `<p class="info-box">${esc(existing.name)} dersin zaten kayıtlı. Kaydedince bu dersin bilgileri güncellenir, yeni tarihler eklenir.</p>` : ""}
         ${r.warnings.length ? `<ul class="warn-box">${r.warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}
 
