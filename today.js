@@ -1,7 +1,7 @@
 import { store } from "./store.js";
 import { esc } from "./ui.js";
 import { todayIdx, nowMin, daysUntil, fmtLong, greeting, byDue } from "./dates.js";
-import { sessionsOn, sessionItem, taskItem, emptyState, installCard } from "./components.js";
+import { sessionsOn, sessionItem, taskItem, emptyState, installCard, attendanceAlert } from "./components.js";
 
 export function view() {
   const { profile, courses, tasks } = store.get();
@@ -33,6 +33,7 @@ export function view() {
     </header>
 
     ${installCard()}
+    ${attendanceAlert(courses, store.get().settings)}
 
     <div class="stats">
       <div class="stat"><b>${sessions.length}</b><span>ders bugün</span></div>

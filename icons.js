@@ -6,6 +6,7 @@ export const icon = {
   tasks: svg('<path d="m8.5 11.5 3 3 8-8"/><path d="M20 12v6.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 18.5v-11A2.5 2.5 0 0 1 6.5 5H15"/>'),
   book: svg('<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/>'),
   settings: svg('<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>'),
+  chart: svg('<path d="M4 20h16"/><path d="M7 16v-5M12 16V6M17 16v-8"/>'),
   plus: svg('<path d="M12 5v14M5 12h14"/>'),
   check: svg('<path d="m5 12.5 4.5 4.5L19 7.5"/>'),
   close: svg('<path d="M6 6l12 12M18 6 6 18"/>'),

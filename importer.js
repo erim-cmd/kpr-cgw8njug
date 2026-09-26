@@ -13,6 +13,8 @@ import { sessionRow, gradeRow, swatches, bindRows, readSessions, readGrading, op
 const ENDPOINT = "/api/syllabus";
 const MAX_BYTES = 4 * 1024 * 1024;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
+// Yapay zekâ bulamadığında 0 döndürür; 0'ı "bulunamadı" sayıyoruz
+const credit = (v) => (typeof v === "number" && v > 0 && v <= 60 ? v : null);
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 const head = (title) => `<header class="sheet-head">
@@ -265,6 +267,11 @@ function openReview(r) {
           <label class="field"><span>Ofis</span><input name="office" value="${esc(r.course.office)}" maxlength="60"></label>
         </div>
         <label class="field"><span>Ofis saatleri</span><input name="officeHours" value="${esc(r.course.office_hours)}" maxlength="80"></label>
+        <div class="row2">
+          <label class="field"><span>AKTS</span><input name="akts" type="number" inputmode="decimal" min="0" max="60" step="0.5" value="${credit(r.course.akts) ?? existing?.akts ?? ""}" placeholder="Bulunamadı"></label>
+          <label class="field"><span>Ulusal kredi</span><input name="kredi" type="number" inputmode="decimal" min="0" max="60" step="0.5" value="${credit(r.course.national_credit) ?? existing?.kredi ?? ""}" placeholder="Bulunamadı"></label>
+        </div>
+        ${r.course.credit_source ? `<small class="irow-src">“${esc(r.course.credit_source)}”</small>` : (credit(r.course.akts) || credit(r.course.national_credit) ? "" : '<small class="irow-hint">Syllabus\'ta AKTS/kredi bulunamadı. Biliyorsan kendin yaz.</small>')}
         <fieldset class="field"><legend>Renk</legend>${swatches(color)}</fieldset>
 
         <h3 class="mini-title">Haftalık ders saatleri</h3>
@@ -334,6 +341,8 @@ function openReview(r) {
             color: fd.get("color"),
             sessions: list.length ? list : existing?.sessions ?? [],
             grading: readGrading(gradingBox, existing?.grading),
+            akts: fd.get("akts") === "" ? null : Number(fd.get("akts")),
+            kredi: fd.get("kredi") === "" ? null : Number(fd.get("kredi")),
           },
           tasks
         );
