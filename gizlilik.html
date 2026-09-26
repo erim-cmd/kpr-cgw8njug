@@ -29,14 +29,14 @@
 <main class="legal">
   <div class="wrap narrow">
     <h1>Gizlilik ve KVKK Aydınlatma Metni</h1>
-    <p class="updated">Son güncelleme: 24 Eylül 2026</p>
+    <p class="updated">Son güncelleme: 26 Eylül 2026</p>
 
     <div class="summary">
       <strong>Kısaca</strong>
       <ul>
         <li>KPR'de hesap yok. Derslerin, görevlerin ve notların <strong>sadece senin cihazında</strong> saklanır; bize ulaşmaz.</li>
-        <li>Syllabus yüklediğinde dosyan, okunması için yapay zekâ hizmetine (Anthropic, ABD) gönderilir. <strong>Dosyayı biz saklamayız.</strong></li>
-        <li>Kötüye kullanımı önlemek için IP adresinin geri döndürülemez bir özeti günlük sayaç olarak tutulur ve <strong>en geç 2 gün içinde silinir.</strong></li>
+        <li>Syllabus <strong>varsayılan olarak cihazında okunur</strong>, hiçbir yere gönderilmez. Yükleme ekranında "Yapay zekâ ile oku" seçeneğini işaretlersen (açık rıza) dosyan, okunması için yapay zekâ hizmetine (Anthropic, ABD) gönderilir. <strong>Dosyayı biz saklamayız.</strong></li>
+        <li>Yapay zekâ ile okuma seçildiğinde, kötüye kullanımı önlemek için IP adresinin özeti (açık hâli değil) günlük sayaç olarak tutulur ve <strong>26 saat içinde silinir.</strong></li>
         <li>Reklam yok, takip çerezi yok, verilerin satılmaz.</li>
       </ul>
     </div>
@@ -50,9 +50,9 @@
         <thead><tr><th>Veri</th><th>Nerede</th><th>Amaç</th><th>Saklama</th></tr></thead>
         <tbody>
           <tr><td>Adın (hitap için), dersler, ders saatleri, sınav/ödev tarihleri, notların</td><td>Yalnızca cihazındaki tarayıcı depolaması. Bize iletilmez.</td><td>Uygulamanın çalışması</td><td>Sen silene kadar (Ayarlar → Her şeyi sil)</td></tr>
-          <tr><td>Yüklediğin syllabus dosyası (PDF/fotoğraf) ve içeriği</td><td>KPR sunucusu (Netlify) üzerinden Anthropic'e iletilir</td><td>Dosyadan ders bilgilerinin çıkarılması</td><td>KPR tarafından saklanmaz. Anthropic'in kendi politikası geçerlidir (aşağıya bak).</td></tr>
-          <tr><td>IP adresinin tuzlanmış özeti (hash)</td><td>Netlify Blobs</td><td>Günlük yükleme sınırı, kötüye kullanımın önlenmesi</td><td>En geç 2 gün</td></tr>
-          <tr><td>Teknik kayıtlar (IP adresi, tarayıcı bilgisi, istek zamanı)</td><td>Barındırma sağlayıcısı Netlify</td><td>Sitenin güvenli ve kesintisiz çalışması</td><td>Netlify'ın kayıt saklama süreleri</td></tr>
+          <tr><td>Yüklediğin syllabus dosyası (PDF/Word/fotoğraf) ve içeriği</td><td>Varsayılan: sadece cihazında okunur, gönderilmez. "Yapay zekâ ile oku" seçilirse (yalnızca PDF/fotoğraf): KPR sunucusu (Cloudflare) üzerinden Anthropic'e iletilir</td><td>Dosyadan ders bilgilerinin çıkarılması</td><td>KPR tarafından saklanmaz. Anthropic'in kendi politikası geçerlidir (aşağıya bak).</td></tr>
+          <tr><td>IP adresinin gün ile birlikte SHA-256 özeti (yalnızca yapay zekâ ile okumada). IP açık hâliyle yazılmaz; ancak özet tam anonimleştirme sayılmaz.</td><td>Cloudflare KV</td><td>Günlük 5 okuma sınırı, kötüye kullanımın önlenmesi</td><td>26 saat</td></tr>
+          <tr><td>Teknik kayıtlar (IP adresi, tarayıcı bilgisi, istek zamanı)</td><td>Barındırma sağlayıcısı (Cloudflare)</td><td>Sitenin güvenli ve kesintisiz çalışması</td><td>Cloudflare'in kayıt saklama süreleri</td></tr>
         </tbody>
       </table>
     </div>
@@ -60,14 +60,14 @@
 
     <h2>3. Hukuki sebepler</h2>
     <ul>
-      <li><strong>Açık rıza (KVKK m. 5/1 ve m. 9):</strong> Syllabus dosyanın okunmak üzere yurt dışındaki yapay zekâ hizmetine aktarılması, yükleme ekranında verdiğin açık rızaya dayanır. Rıza vermezsen dersleri elle ekleyerek KPR'yi kullanmaya devam edebilirsin.</li>
+      <li><strong>Açık rıza (KVKK m. 5/1 ve m. 9):</strong> Syllabus dosyanın okunmak üzere yurt dışındaki yapay zekâ hizmetine aktarılması, yükleme ekranında "Yapay zekâ ile oku" kutusunu işaretleyerek verdiğin açık rızaya dayanır. Rıza vermezsen syllabus cihazında okunur ya da dersleri elle eklersin; KPR'nin diğer her özelliği aynı şekilde çalışır.</li>
       <li><strong>Meşru menfaat (KVKK m. 5/2-f):</strong> Kötüye kullanımı önlemek için günlük sayaç tutulması ve sitenin güvenliğine yönelik teknik kayıtlar.</li>
     </ul>
 
     <h2>4. Aktarılan taraflar ve yurt dışı aktarım</h2>
     <ul>
       <li><strong>Anthropic, PBC (ABD):</strong> Syllabus dosyasını okuyan yapay zekâ hizmeti. Anthropic, API üzerinden gönderilen içerikleri model eğitimi için kullanmayacağını ve sınırlı bir süre sonunda sileceğini taahhüt etmektedir. Ayrıntılar: <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">anthropic.com/legal/privacy</a></li>
-      <li><strong>Netlify, Inc. (ABD):</strong> Sitenin ve sunucu fonksiyonunun barındırılması. Ayrıntılar: <a href="https://www.netlify.com/privacy/" target="_blank" rel="noopener">netlify.com/privacy</a></li>
+      <li><strong>Cloudflare, Inc. (ABD):</strong> Sitenin ve sunucu fonksiyonunun barındırılması. Ayrıntılar: <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">cloudflare.com/privacypolicy</a></li>
     </ul>
     <p>Veriler bu taraflar dışında kimseyle paylaşılmaz, satılmaz ve reklam amacıyla kullanılmaz.</p>
 

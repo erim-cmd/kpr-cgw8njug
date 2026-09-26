@@ -220,7 +220,11 @@ async function overLimit(request, env) {
   if (!env.KPR_LIMITS) return false;
   const ip = request.headers.get("cf-connecting-ip") || "unknown";
   const day = new Date().toISOString().slice(0, 10);
-  const key = `rl:${day}:${ip}`;
+  // KVKK: IP açık hâliyle yazılmaz; gün + IP'nin SHA-256 özeti anahtar olur ve 26 saatte silinir.
+  // Not: IPv4 uzayı küçük olduğundan özet deneme yoluyla geri çözülebilir; bu tam anonimleştirme değildir.
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${day}:${ip}`));
+  const who = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+  const key = `rl:${day}:${who}`;
   const count = Number(await env.KPR_LIMITS.get(key)) || 0;
   if (count >= DAILY_LIMIT) return true;
   await env.KPR_LIMITS.put(key, String(count + 1), { expirationTtl: 60 * 60 * 26 });
@@ -252,9 +256,14 @@ export async function onRequestPost({ request, env }) {
   try {
     let r = await callClaude({ env, data, mediaType, mode: "structured", signal: ctrl.signal });
     // Yapılandırılmış çıktı reddedilirse (ör. şema desteği) aynı şemayla araç çağrısını dene
-    if (r.status === 400) r = await callClaude({ env, data, mediaType, mode: "tool", signal: ctrl.signal });
+    if (r.status === 400) {
+      console.error(`[syllabus] yapılandırılmış çıktı reddedildi, araç yoluna geçiliyor: ${String(r.error).slice(0, 300)}`);
+      r = await callClaude({ env, data, mediaType, mode: "tool", signal: ctrl.signal });
+    }
 
     if (r.status) {
+      // Sunucu kaydı: sadece durum kodu ve API'nin hata metni (anahtar ve dosya içeriği yazılmaz)
+      console.error(`[syllabus] Claude API hatası: HTTP ${r.status} · ${String(r.error).slice(0, 300)}`);
       if (r.status === 429 || r.status === 529) return fail(503, "Okuma servisi şu an yoğun. Birkaç dakika sonra tekrar dene.");
       if (r.status === 400 && /pdf|document|page/i.test(r.error)) return fail(422, "Bu PDF okunamadı (şifreli ya da bozuk olabilir). Fotoğrafını yüklemeyi dene.");
       return fail(502, "Syllabus okunamadı. Tekrar dene.");

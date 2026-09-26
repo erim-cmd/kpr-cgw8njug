@@ -1,0 +1,17 @@
+{
+  "name": "kopru",
+  "private": true,
+  "type": "module",
+  "description": "Köprü — syllabus'tan dönem planı (PWA). Derleme adımı yok; bu dosya sadece yerel geliştirme araçları için.",
+  "scripts": {
+    "dev": "wrangler pages dev . --port 8788 --kv KPR_LIMITS --compatibility-date 2026-09-01",
+    "test": "node test/shell.mjs && node test/check.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "4.141.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "workerd@1.20260925.1": true
+  }
+}
