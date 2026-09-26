@@ -322,5 +322,91 @@
   "policies": [
    "devam"
   ]
+ },
+ "en_bau_real1": {
+  "code": "MAT 2045",
+  "name": "Numerical Methods for Engineers",
+  "instructor": "Deneme Kişi",
+  "email": "deneme1@ornek.edu.tr",
+  "office": "D310",
+  "credit": 4,
+  "ects": 5,
+  "sessions": [
+   [
+    0,
+    "15:30",
+    "18:20",
+    "A204"
+   ],
+   [
+    3,
+    "15:30",
+    "16:20",
+    "D405"
+   ],
+   [
+    2,
+    "12:30",
+    "15:20",
+    "D404"
+   ],
+   [
+    3,
+    "15:30",
+    "18:20",
+    "U305"
+   ]
+  ],
+  "grading": {
+   "Midterm Exam": 35,
+   "Quizzes I-IV": 20,
+   "Final Exam": 45
+  },
+  "attendance": 60,
+  "final_min": null,
+  "items": [
+   [
+    "Quiz 1",
+    "",
+    null,
+    3
+   ],
+   [
+    "MATLAB Quiz",
+    "",
+    null,
+    4
+   ],
+   [
+    "MATLAB Quiz",
+    "",
+    null,
+    6
+   ],
+   [
+    "Midterm Exam",
+    "",
+    null,
+    7
+   ],
+   [
+    "MATLAB Quiz",
+    "",
+    null,
+    9
+   ],
+   [
+    "MATLAB Quiz",
+    "",
+    null,
+    11
+   ]
+  ],
+  "policies": [
+   "devam",
+   "durustluk",
+   "not_kurali",
+   "telafi"
+  ]
  }
 }
