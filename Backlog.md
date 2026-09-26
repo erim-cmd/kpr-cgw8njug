@@ -11,6 +11,7 @@ Yarım kalan ve sıradaki işler. Bitenler en alta "Yapıldı"ya taşınır.
 - [ ] **Onur/yüksek onur eşikleri** ve yönetmeliğin 1.4.2026 değişikliği doğrulanmadı.
 
 ## Yapıldı
+- [x] v2.7 (26 Eyl 2026): Bugün sadeleşti: üstte sıradaki teslim kartı (geri sayım, 1 gün kala kırmızı, tek dokunuşla "Bitti"), altında en yakın sınava geri sayım; bu hafta/gelecek hafta satırı (Dönem akışına gider); 3 kutuluk istatistik kaldırıldı; liste 2 hafta → bu hafta; kartta gösterilen görev Dikkat'te tekrarlanmaz.
 - [x] v2.6 (26 Eyl 2026): Dönem akışı: Dönem ekranında hafta hafta yoğunluk şeridi (sınav 2, proje 1,5, ödev 1 puan; vize/final/yoğun etiketi), haftaya dokununca o haftanın teslimleri, 1–2 hafta içinde yoğun hafta varsa "bu hafta başla" uyarısı. Dönem başlangıcı ayarlanabilir; girilmezse ilk teslimden tahmin.
 - [x] v2.5 (26 Eyl 2026): Kırmızı bayraklar: syllabus okuyucu kuralları (devam, geç teslim, telafi, bütünleme, baraj, not kuralı, dürüstlük) Kritik/Dikkat/İpucu olarak ve kaynak cümlesiyle çıkarıyor; final barajını harf tahminine otomatik dolduruyor. Ders sayfasının en üstünde gösterilir, gizlenebilir; Dersler kartında kritik kural rozeti.
 - [x] v2.4 (26 Eyl 2026): Ders puanı → harf tahmini (hocanın harf tablosu, örnek tablo "doğrula" uyarılı, her harf için kalanlardan gereken ortalama, final barajı + bütünleme uyarısı, tahmini harfi tek dokunuşla Ortalama tablosuna aktarma). Alt menü 5 sekme (Görevler Bugün'ün altında).
