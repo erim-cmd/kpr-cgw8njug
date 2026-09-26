@@ -54,6 +54,25 @@ function normScale(list) {
     .sort((a, b) => b.min - a.min);
 }
 
+export const POLICY_KINDS = {
+  devam: "Devam", gec_teslim: "Geç teslim", telafi: "Mazeret / telafi", butunleme: "Bütünleme",
+  baraj: "Baraj", not_kurali: "Not kuralı", durustluk: "Akademik dürüstlük", diger: "Diğer",
+};
+const SEVERITIES = ["kritik", "dikkat", "bilgi"];
+function normPolicy(p) {
+  const rule = str(p?.rule, 200);
+  if (!rule) return null;
+  return {
+    id: str(p.id, 64) || uid(),
+    kind: p.kind in POLICY_KINDS ? p.kind : "diger",
+    severity: SEVERITIES.includes(p.severity) ? p.severity : "bilgi",
+    rule,
+    consequence: str(p.consequence, 200),
+    source: str(p.source, 200),
+    hidden: p.hidden === true,
+  };
+}
+
 function normAbsence(a) {
   if (!a || !DATE.test(a.date)) return null;
   return { id: str(a.id, 64) || uid(), date: a.date, start: TIME.test(a.start) ? a.start : "" };
@@ -81,6 +100,8 @@ function normCourse(c) {
     // Hocanın harf tablosu (puan → harf) ve varsa final barajı; ikisi de öğrencinin girdiği değer
     scale: normScale(c.scale),
     finalMin: num(c.finalMin, 0, 100),
+    // Syllabus'tan çıkarılan kurallar (kırmızı bayraklar); öğrenci gizleyebilir
+    policies: arr(c.policies).map(normPolicy).filter(Boolean).slice(0, 8),
     prevGrade: grade(c.prevGrade),
     // Devamsızlık: devam zorunluluğu (%) ya da elle girilen hak (ders sayısı)
     attendPct: num(c.attendPct, 0, 100),

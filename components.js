@@ -1,6 +1,6 @@
 /** KPR — Birden çok ekranda kullanılan HTML parçaları. */
 
-import { TASK_TYPES } from "./store.js";
+import { TASK_TYPES, POLICY_KINDS } from "./store.js";
 import { esc } from "./ui.js";
 import { icon } from "./icons.js";
 import { daysUntil, relLabel, fmtShort, toMin } from "./dates.js";
@@ -92,4 +92,19 @@ export function installCard() {
     ${mode === "prompt" ? '<button class="btn btn-primary" type="button" data-action="install">Kur</button>' : ""}
     <button class="icon-btn sm" type="button" data-action="dismiss-install" aria-label="Kapat">${icon.close}</button>
   </div>`;
+}
+
+const SEV_ORDER = { kritik: 0, dikkat: 1, bilgi: 2 };
+const SEV_LABEL = { kritik: "Kritik", dikkat: "Dikkat", bilgi: "İpucu" };
+export const sortFlags = (list) => [...list].sort((a, b) => SEV_ORDER[a.severity] - SEV_ORDER[b.severity]);
+
+/** Bir syllabus kuralı (kırmızı bayrak). withHide: ders sayfasında "Gizle" bağlantısı. */
+export function flagItem(p, withHide = false) {
+  return `<li class="flag ${p.severity}">
+    <span class="flag-tag">${SEV_LABEL[p.severity]} · ${POLICY_KINDS[p.kind]}</span>
+    <p class="flag-rule">${esc(p.rule)}</p>
+    ${p.consequence ? `<p class="flag-cons">→ ${esc(p.consequence)}</p>` : ""}
+    ${p.source || withHide ? `<p class="flag-foot">${p.source ? `<small class="irow-src">“${esc(p.source)}”</small>` : ""}
+      ${withHide ? `<button type="button" class="link" data-hide-policy="${esc(p.id)}">Gizle</button>` : ""}</p>` : ""}
+  </li>`;
 }
