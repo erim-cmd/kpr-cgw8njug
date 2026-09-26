@@ -10,7 +10,7 @@ AGENTS.md eklenirse: biri güncellenince diğeri de güncellenir.
 ## Yapı
 - Düz HTML/CSS/ES modülleri, derleme yok. `app.html` uygulama, `index.html` tanıtım sitesi.
 - Ekranlar: `today.js` (Bugün + uyarılar), `schedule.js`, `tasks.js`, `courses.js`, `term.js` (Dönem paneli: tek bakış özeti, hedef GNO, devamsızlık — kendi hesabı yok, gpa.js/attendance.js kullanır), `gpa-view.js` (Ortalama, UMIS tablosu), `settings.js`.
-- Mantık: `gpa.js` (BAU not kuralları), `attendance.js`, `alerts.js` (uyarı + hatırlatma takvimi), `notify.js` (bildirim teslimi), `ics.js` (takvime aktarma), `importer.js` (syllabus yükleme ekranı).
+- Mantık: `gpa.js` (BAU not kuralları + ders puanı → harf), `density.js` (dönem haftaları, yoğun/vize/final haftası), `attendance.js`, `alerts.js` (uyarı + hatırlatma takvimi), `notify.js` (bildirim teslimi), `ics.js` (takvime aktarma), `importer.js` (syllabus yükleme ekranı).
 - Sunucu: `functions/api/syllabus.js` → Cloudflare Pages Function. Anahtar `ANTHROPIC_API_KEY` ortam değişkeninde; koda asla yazılmaz.
 
 ## Kurallar

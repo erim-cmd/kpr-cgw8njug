@@ -13,6 +13,10 @@ import { projection, standing, fmtGpa } from "./gpa.js";
 import { attendance, attendanceText } from "./attendance.js";
 import { readTarget, saveTarget, targetText } from "./gpa-view.js";
 import { emptyState } from "./components.js";
+import { density } from "./density.js";
+import { fmtShort, parseISO, toISO } from "./dates.js";
+
+let selWeek = null; // şeritte seçilen hafta (index); null → bu hafta
 
 const SEVERITY = { over: 4, last: 3, warn: 2, ok: 1, none: 0 };
 
@@ -86,11 +90,61 @@ function absenceCard(c, weeks) {
   </li>`;
 }
 
+const range = (w) => {
+  const end = parseISO(w.start);
+  end.setDate(end.getDate() + 6);
+  return `${fmtShort(w.start)} – ${fmtShort(toISO(end))}`;
+};
+
+function flowBlock(state) {
+  const open = state.tasks.filter((t) => !t.done);
+  const d = density(open, state.settings);
+  const byId = new Map(state.courses.map((c) => [c.id, c]));
+  const idx = selWeek ?? d.current ?? 0;
+  const w = d.weeks[Math.min(idx, d.weeks.length - 1)];
+
+  const cols = d.weeks.map((x, i) => `<button type="button" class="wk lv${x.level}${x.current ? " now" : ""}${x.past ? " past" : ""}${i === idx ? " sel" : ""}"
+      data-action="pick-week" data-i="${i}" aria-label="${x.n}. hafta, ${x.items.length} teslim${x.label ? `, ${x.label}` : ""}" aria-pressed="${i === idx}">
+      <span class="wk-tag ${x.final ? "fin" : x.vize ? "viz" : x.busy ? "busy" : ""}">${x.final ? "F" : x.vize ? "V" : x.busy ? "!" : ""}</span>
+      <span class="wk-bar"><i></i></span>
+      <span class="wk-n">${x.n}</span>
+    </button>`).join("");
+
+  let hint = "";
+  if (d.next && d.nextIn !== null && d.nextIn <= 2) {
+    const what = d.next.final ? "final haftası" : d.next.vize ? "vize haftası" : "yoğun bir hafta";
+    const first = [...d.next.items].sort((a, b) => (b.type === "proje") - (a.type === "proje"))[0];
+    hint = `<p class="flow-hint">${d.nextIn === 1 ? "Gelecek hafta" : `${d.nextIn} hafta sonra`} ${what}: <b>${d.next.items.length} teslim</b>. ${first ? `Hazırlığa bu hafta başla, önce <b>${esc(first.title)}</b>.` : ""}</p>`;
+  } else if (d.next) {
+    hint = `<p class="flow-hint calm">Sıradaki ${d.next.final ? "final" : d.next.vize ? "vize" : "yoğun"} haftası: ${d.next.n}. hafta (${range(d.next)}).</p>`;
+  }
+
+  const list = w.items.length
+    ? `<ul class="kv">${[...w.items].sort((a, b) => a.due.localeCompare(b.due)).map((t) => {
+        const c = byId.get(t.courseId);
+        return `<li><b>${esc(t.title)}</b><span>${c ? esc(c.code || c.name) + " · " : ""}${fmtShort(t.due)}</span></li>`;
+      }).join("")}</ul>`
+    : '<p class="calc-note">Bu hafta teslim yok.</p>';
+
+  return `<section class="section">
+    <div class="section-head"><h2>Dönem akışı</h2>${d.current !== null ? `<span class="u-term">${d.current + 1}. hafta / ${d.weeks.length}</span>` : ""}</div>
+    ${hint}
+    <div class="flow" style="--n:${d.weeks.length}">${cols}</div>
+    <div class="flow-legend"><span><i class="lg viz"></i>Vize</span><span><i class="lg fin"></i>Final</span><span><i class="lg busy"></i>Yoğun</span><span><i class="lg now"></i>Bu hafta</span></div>
+    <div class="flow-week">
+      <p class="mini-title">${w.n}. hafta · ${range(w)}${w.label ? ` · ${w.label}` : ""}</p>
+      ${list}
+    </div>
+    <label class="flow-start">Dönem başlangıcı${d.guessed ? ' <small>(tahmini, ilk teslimden)</small>' : ""}
+      <input type="date" value="${d.guessed ? "" : state.settings.termStart}" data-change="term-start" aria-label="Dönem başlangıç tarihi"></label>
+  </section>`;
+}
+
 export function view() {
   const state = store.get();
   const head = `<header class="page-head">
     <h1 class="page-title">Dönem</h1>
-    <p class="page-sub">Ortalaman ve devamsızlığın, tek bakışta</p>
+    <p class="page-sub">Dönemin akışı, ortalaman ve devamsızlığın</p>
   </header>`;
   if (!state.courses.length) {
     return head + emptyState("Önce derslerini ekle", "Dönem ortalaması ve devamsızlık takibi derslerine göre hesaplanır.", "import-syllabus", "Syllabus yükle", ["new-course", "Elle ekle"]);
@@ -99,6 +153,7 @@ export function view() {
   const weeks = state.settings.termWeeks;
   return `${head}
     ${summary(state, p)}
+    ${flowBlock(state)}
     <section class="section">
       <div class="section-head"><h2>Hedef</h2><a class="link" href="#/ortalama">Harfleri seç</a></div>
       ${targetBlock(p)}
@@ -111,6 +166,10 @@ export function view() {
 }
 
 export const actions = {
+  "pick-week"(el, { render }) {
+    selWeek = Number(el.dataset.i);
+    render();
+  },
   // Adres çubuğundaki # sayfa geçişi için kullanıldığından bağlantı yerine kaydırma
   "scroll-absence"() {
     document.getElementById("devamsizlik")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -118,6 +177,11 @@ export const actions = {
 };
 
 export const changes = {
+  "term-start"(el, { render }) {
+    store.setSettings({ termStart: el.value });
+    selWeek = null;
+    render();
+  },
   target(el, { render }) {
     saveTarget(el.value);
     render();
