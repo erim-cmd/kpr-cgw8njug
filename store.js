@@ -20,7 +20,38 @@ const arr = (v) => (Array.isArray(v) ? v : []);
 export const uid = () =>
   crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
 
-const empty = () => ({ version: 1, profile: { name: "" }, courses: [], tasks: [] });
+/**
+ * Not sistemi varsayılanları. Üniversiteden üniversiteye değiştiği için
+ * hepsi Ayarlar'dan düzenlenebilir; burası sadece ilk değerler.
+ */
+export const DEFAULT_SCALE = [
+  { letter: "AA", point: 4.0 }, { letter: "BA", point: 3.5 }, { letter: "BB", point: 3.0 },
+  { letter: "CB", point: 2.5 }, { letter: "CC", point: 2.0 }, { letter: "DC", point: 1.5 },
+  { letter: "DD", point: 1.0 }, { letter: "FD", point: 0.5 }, { letter: "FF", point: 0.0 },
+];
+// Puan → harf tahmini (mutlak sistem). Bağıl sistemde gerçek harf farklı olabilir.
+export const DEFAULT_SCORE_TABLE = [
+  { letter: "AA", min: 90 }, { letter: "BA", min: 85 }, { letter: "BB", min: 80 },
+  { letter: "CB", min: 75 }, { letter: "CC", min: 70 }, { letter: "DC", min: 65 },
+  { letter: "DD", min: 60 }, { letter: "FD", min: 50 }, { letter: "FF", min: 0 },
+];
+const defaultSettings = () => ({
+  weightBy: "akts", // "akts" | "kredi"
+  scale: DEFAULT_SCALE.map((s) => ({ ...s })),
+  scoreTable: DEFAULT_SCORE_TABLE.map((s) => ({ ...s })),
+  termWeeks: 14,
+  absenceLimit: 30, // yüzde
+});
+
+const empty = () => ({
+  version: 1,
+  profile: { name: "" },
+  settings: defaultSettings(),
+  past: { credits: null, gpa: null }, // önceki dönemlerin toplam AKTS/kredisi ve GNO'su
+  targetGpa: null,
+  courses: [],
+  tasks: [],
+});
 
 function normSession(s) {
   if (!s || !Number.isInteger(s.day) || s.day < 0 || s.day > 6) return null;
@@ -53,6 +84,39 @@ function normCourse(c) {
     sessions: arr(c.sessions).map(normSession).filter(Boolean),
     grading: arr(c.grading).map(normGrade).filter(Boolean).slice(0, 12),
     target: num(c.target, 0, 100) ?? 50,
+    // GNO
+    akts: num(c.akts, 0, 60),
+    kredi: num(c.kredi, 0, 60),
+    letter: str(c.letter, 4), // öğrencinin bu dersten beklediği/aldığı harf ("" = girilmedi)
+    retakeOld: str(c.retakeOld, 4), // tekrar alınan dersse eski harf notu ("" = tekrar değil)
+    // Devamsızlık
+    absenceLimit: num(c.absenceLimit, 0, 100), // null = Ayarlar'daki varsayılan
+    absences: arr(c.absences).map(normAbsence).filter(Boolean).slice(0, 200),
+  };
+}
+
+function normAbsence(a) {
+  if (!a || !DATE.test(a.date)) return null;
+  const hours = num(a.hours, 0.5, 12);
+  if (hours === null) return null;
+  return { id: str(a.id, 64) || uid(), date: a.date, hours };
+}
+
+function normSettings(s) {
+  const d = defaultSettings();
+  if (!s || typeof s !== "object") return d;
+  const scale = arr(s.scale)
+    .map((x) => ({ letter: str(x?.letter, 4), point: num(x?.point, 0, 10) }))
+    .filter((x) => x.letter && x.point !== null);
+  const scoreTable = arr(s.scoreTable)
+    .map((x) => ({ letter: str(x?.letter, 4), min: num(x?.min, 0, 100) }))
+    .filter((x) => x.letter && x.min !== null);
+  return {
+    weightBy: s.weightBy === "kredi" ? "kredi" : "akts",
+    scale: scale.length ? scale.slice(0, 20) : d.scale,
+    scoreTable: scoreTable.length ? scoreTable.slice(0, 20) : d.scoreTable,
+    termWeeks: num(s.termWeeks, 1, 30) ?? d.termWeeks,
+    absenceLimit: num(s.absenceLimit, 0, 100) ?? d.absenceLimit,
   };
 }
 
@@ -76,6 +140,9 @@ export function normalize(data) {
   const out = empty();
   if (!data || typeof data !== "object") return out;
   out.profile.name = str(data.profile?.name, 40);
+  out.settings = normSettings(data.settings);
+  out.past = { credits: num(data.past?.credits, 0, 1000), gpa: num(data.past?.gpa, 0, 10) };
+  out.targetGpa = num(data.targetGpa, 0, 10);
   out.courses = arr(data.courses).map(normCourse).filter(Boolean);
   const ids = new Set(out.courses.map((c) => c.id));
   out.tasks = arr(data.tasks).map((t) => normTask(t, ids)).filter(Boolean);
@@ -160,6 +227,34 @@ export const store = {
 
   deleteTask(id) {
     commit({ ...state, tasks: state.tasks.filter((t) => t.id !== id) });
+  },
+
+  /* --- Dönem: GNO ve devamsızlık --- */
+
+  setSettings(patch) {
+    commit({ ...state, settings: normSettings({ ...state.settings, ...patch }) });
+  },
+
+  setPast(patch) {
+    const past = { ...state.past, ...patch };
+    commit({ ...state, past: { credits: num(past.credits, 0, 1000), gpa: num(past.gpa, 0, 10) } });
+  },
+
+  setTargetGpa(value) {
+    commit({ ...state, targetGpa: num(value, 0, 10) });
+  },
+
+  addAbsence(courseId, { date, hours }) {
+    const course = state.courses.find((c) => c.id === courseId);
+    const entry = normAbsence({ date, hours });
+    if (!course || !entry) return null;
+    this.saveCourse({ ...course, absences: [...course.absences, entry] });
+    return entry;
+  },
+
+  removeAbsence(courseId, absenceId) {
+    const course = state.courses.find((c) => c.id === courseId);
+    if (course) this.saveCourse({ ...course, absences: course.absences.filter((a) => a.id !== absenceId) });
   },
 
   replace(data) {

@@ -16,15 +16,17 @@ import * as schedule from "./schedule.js";
 import * as tasks from "./tasks.js";
 import * as courses from "./courses.js";
 import * as settings from "./settings.js";
+import * as term from "./term.js";
 
 const ROUTES = {
   bugun: { mod: today, title: "Bugün", icon: "home", fab: "new-task" },
   program: { mod: schedule, title: "Program", icon: "calendar", fab: "import-syllabus" },
   gorevler: { mod: tasks, title: "Görevler", icon: "tasks", fab: "new-task" },
   dersler: { mod: courses, title: "Dersler", icon: "book", fab: "import-syllabus" },
+  donem: { mod: term, title: "Dönem", icon: "chart", fab: null },
   ayarlar: { mod: settings, title: "Ayarlar", fab: null },
 };
-const TABS = ["bugun", "program", "gorevler", "dersler"];
+const TABS = ["bugun", "program", "gorevler", "dersler", "donem"];
 
 const $view = document.getElementById("view");
 const $tabbar = document.getElementById("tabbar");

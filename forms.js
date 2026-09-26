@@ -4,6 +4,7 @@ import { store, COLORS, TASK_TYPES } from "./store.js";
 import { esc, openSheet, closeSheet, toast, armDelete } from "./ui.js";
 import { DAYS, todayIdx, todayISO, toMin, daysUntil, fmtShort, relLabel, byDue } from "./dates.js";
 import { icon } from "./icons.js";
+import { estimateLetter } from "./gpa.js";
 
 const head = (title) => `<header class="sheet-head">
   <h2>${title}</h2>
@@ -122,6 +123,31 @@ export function openCourseForm(course = null) {
           <div class="srows" data-rows="sessions">${c.sessions.map(sessionRow).join("")}</div>
           <button type="button" class="btn btn-ghost" data-add="sessions">${icon.plus}Saat ekle</button>
         </fieldset>
+        <details class="more" ${c.akts || c.kredi || c.retakeOld || c.absenceLimit !== null && c.absenceLimit !== undefined ? "open" : ""}>
+          <summary>Kredi, devamsızlık ve tekrar</summary>
+          <div class="more-body">
+            <div class="row2">
+              <label class="field"><span>AKTS</span>
+                <input name="akts" type="number" inputmode="decimal" min="0" max="60" step="0.5" value="${c.akts ?? ""}" placeholder="ör. 6">
+              </label>
+              <label class="field"><span>Ulusal kredi</span>
+                <input name="kredi" type="number" inputmode="decimal" min="0" max="60" step="0.5" value="${c.kredi ?? ""}" placeholder="ör. 3">
+              </label>
+            </div>
+            <div class="row2">
+              <label class="field"><span>Devamsızlık sınırı <span class="hint">(%)</span></span>
+                <input name="absenceLimit" type="number" inputmode="numeric" min="0" max="100" step="1" value="${c.absenceLimit ?? ""}" placeholder="Varsayılan %${store.get().settings.absenceLimit}">
+              </label>
+              <label class="field"><span>Tekrar alıyorsan eski notun</span>
+                <select name="retakeOld">
+                  <option value="">Tekrar değil</option>
+                  ${store.get().settings.scale.map((s) => `<option value="${esc(s.letter)}" ${s.letter === c.retakeOld ? "selected" : ""}>${esc(s.letter)}</option>`).join("")}
+                </select>
+              </label>
+            </div>
+            <p class="fine">Laboratuvar ve uygulama derslerinde sınır genelde %20'dir. Tekrar alınan dersin eski notu GNO'dan düşülür.</p>
+          </div>
+        </details>
         <details class="more" ${c.email || c.office || c.officeHours || c.grading.length ? "open" : ""}>
           <summary>Hoca iletişimi ve not dağılımı</summary>
           <div class="more-body">
@@ -169,6 +195,10 @@ export function openCourseForm(course = null) {
           color: fd.get("color"),
           sessions: list,
           grading: readGrading(grading, course?.grading),
+          akts: numOrNull(fd.get("akts")),
+          kredi: numOrNull(fd.get("kredi")),
+          absenceLimit: numOrNull(fd.get("absenceLimit")),
+          retakeOld: fd.get("retakeOld"),
         });
         closeSheet();
         toast(course ? "Ders güncellendi" : "Ders eklendi");
@@ -188,6 +218,7 @@ export function openCourseForm(course = null) {
 /* ------------------------------------------------------------------ */
 
 const fmtNum = (n) => (Math.round(n * 10) / 10).toLocaleString("tr-TR");
+const numOrNull = (v) => (v === "" || v === null ? null : Number(v));
 
 /** Girilen notlara göre ağırlıklı ortalama ve hedef için gereken ortalama. */
 export function calcGrades(grading, target) {
@@ -223,6 +254,11 @@ function calcSummary(course) {
     lines.push(`<b>${fmtNum(course.target)}</b> ile bitirmek için kalanlardan ortalama <b class="need">${fmtNum(r.needed)}</b> alman gerekiyor.`);
   }
   if (Math.abs(r.total - 100) > 0.01) lines.push(`<span class="warn-text">Ağırlıkların toplamı %${fmtNum(r.total)}, 100 değil. Düzenle'den kontrol et.</span>`);
+  if (r.average !== null) {
+    const complete = r.remaining <= 0;
+    const letter = estimateLetter(complete ? r.earned : r.average, store.get().settings);
+    if (letter) lines.push(`Tahmini harf notu: <b>${esc(letter)}</b> <span class="tag-est">tahmini</span><br><span class="hint">${complete ? "Dönem sonu puanına" : "Şu ana kadarki ortalamana"} göre, Ayarlar'daki puan tablosuyla hesaplandı. Bağıl sistemde (çan eğrisi) gerçek harfin farklı olabilir.</span>`);
+  }
   return lines.map((l) => `<p>${l}</p>`).join("");
 }
 

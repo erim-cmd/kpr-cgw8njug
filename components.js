@@ -5,6 +5,7 @@ import { esc } from "./ui.js";
 import { icon } from "./icons.js";
 import { daysUntil, relLabel, fmtShort, toMin } from "./dates.js";
 import { installMode, isDismissed } from "./install.js";
+import { attendanceOf, levelText } from "./attendance.js";
 
 /** Belirli bir gündeki tüm ders saatleri, saate göre sıralı. */
 export function sessionsOn(courses, day) {
@@ -69,6 +70,20 @@ export function importCard() {
     <span class="import-icon">${icon.upload}</span>
     <span><strong>Syllabus'tan ekle</strong><small>PDF ya da fotoğraf yükle, ders saatleri ve sınav tarihleri otomatik gelsin.</small></span>
   </button>`;
+}
+
+/** Devamsızlıkta sınıra yaklaşan/aşan dersler için "Bugün" ekranındaki uyarı. */
+export function attendanceAlert(courses, settings) {
+  const risky = courses
+    .map((c) => ({ c, a: attendanceOf(c, settings) }))
+    .filter((x) => ["warn", "danger", "over"].includes(x.a.level))
+    .sort((x, y) => x.a.remaining - y.a.remaining);
+  if (!risky.length) return "";
+  const worst = risky[0].a.level;
+  return `<a class="alert-card ${worst === "warn" ? "lv-warn" : "lv-danger"}" href="#/donem">
+    <strong>Devamsızlık uyarısı</strong>
+    ${risky.slice(0, 3).map((x) => `<span>${esc(x.c.code || x.c.name)}: ${levelText(x.a)}</span>`).join("")}
+  </a>`;
 }
 
 export function installCard() {
