@@ -10,7 +10,8 @@ const KEY = "kpr:data:v1";
 export const COLORS = ["#4CC9F0", "#8B5CF6", "#F472B6", "#F5B84C", "#4ADE80", "#F0607A", "#60A5FA", "#2DD4BF"];
 export const TASK_TYPES = { sinav: "Sınav", odev: "Ödev", proje: "Proje", diger: "Diğer" };
 // BAU harf notları (Yönetmelik Md. 26). Katsayılar gpa.js'te.
-export const GRADE_CODES = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "F", "NA", "S", "U", "EX", "W", "I", "NI", "PR"];
+// UMIS not hesaplama ekranındaki liste + yönetmelikteki NI, PR (eski yedekler için)
+export const GRADE_CODES = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "E", "F", "NA", "S", "U", "EX", "W", "I", "R", "NI", "PR"];
 export const SEASONS = { guz: "Güz", bahar: "Bahar", yaz: "Yaz" };
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -66,6 +67,7 @@ function normCourse(c) {
     target: num(c.target, 0, 100) ?? 50,
     // GNO: ulusal (yerel) kredi, beklenen harf notu, tekrar alınıyorsa önceki not
     credit: num(c.credit, 0, 30),
+    ects: num(c.ects, 0, 60),
     letter: grade(c.letter),
     prevGrade: grade(c.prevGrade),
     // Devamsızlık: devam zorunluluğu (%) ya da elle girilen hak (ders sayısı)
@@ -99,7 +101,7 @@ function normEntry(e) {
   const code = str(e.code, 20);
   const name = str(e.name, 80);
   if (!code && !name) return null;
-  return { id: str(e.id, 64) || uid(), year, season: e.season, code, name, credit, grade: g };
+  return { id: str(e.id, 64) || uid(), year, season: e.season, code, name, credit, ects: num(e.ects, 0, 60), grade: g };
 }
 
 function normSettings(s) {

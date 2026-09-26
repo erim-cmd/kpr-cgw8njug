@@ -22,6 +22,23 @@ export const OTHER = {
   I: "Eksik", NI: "Ortalama dışı", PR: "Devam ediyor",
 };
 
+/**
+ * UMIS'in listesinde olup yönetmelikte (Md. 26) olmayan notlar.
+ * Katsayıları doğrulanana kadar ortalamaya katılmaz ve kullanıcı uyarılır.
+ * Doğrulama: UMIS not hesaplama ekranında bir derse bu notu verip HESAPLA'ya bas.
+ */
+export const UNVERIFIED = { "D-": "katsayısı doğrulanmadı", E: "katsayısı doğrulanmadı", R: "anlamı doğrulanmadı" };
+
+/** UMIS'teki harf listesi, sıralı. */
+export const UMIS_GRADES = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "E", "F", "NA", "S", "U", "EX", "W", "I", "R"];
+
+export function gradeLabel(g) {
+  if (g in COEF) return `${g} · ${COEF[g].toFixed(2)}`;
+  if (g in UNVERIFIED) return `${g} · ${UNVERIFIED[g]}`;
+  if (g in OTHER) return `${g} · ${OTHER[g]}`;
+  return g;
+}
+
 export const counts = (g) => g in COEF;
 
 /** "gecti" | "kosullu" | "kaldi" | null — Md. 29 */
@@ -38,7 +55,15 @@ export const fmtGpa = (x) => (x === null || x === undefined ? "—" : x.toFixed(
 
 const SEASON_ORDER = Object.keys(SEASONS);
 export const termKey = (e) => e.year * 3 + SEASON_ORDER.indexOf(e.season);
-export const termLabel = (e) => `${e.year}–${e.year + 1} ${SEASONS[e.season]}`;
+export const termLabel = (e) => `${e.year}-${e.year + 1} / ${SEASONS[e.season]}`;
+
+/** Bugünün dönemi, UMIS'teki gibi "2026-2027 / Güz". Eylül–Ocak Güz, Şubat–Haziran Bahar, Temmuz–Ağustos Yaz. */
+export function currentTerm(d = new Date()) {
+  const m = d.getMonth();
+  const start = m >= 8 ? d.getFullYear() : d.getFullYear() - 1;
+  const season = m >= 8 || m === 0 ? "guz" : m <= 5 ? "bahar" : "yaz";
+  return { year: start, season, label: termLabel({ year: start, season }) };
+}
 
 /** Aynı dersin tekrarlarını eşleştirmek için anahtar: kod, yoksa ad. */
 export const courseKey = (e) => (e.code || e.name || "").toLocaleUpperCase("tr-TR").replace(/\s+/g, "");
@@ -145,11 +170,12 @@ export function projection({ transcript, courses, gpaBase }) {
 
   return {
     source,
+    unverified: transcript.filter((e) => e.grade in UNVERIFIED).length,
     prev,
     term: { ...term, graded: graded.length, total: current.length },
     after,
     complete: graded.length === current.length && current.length > 0,
-    missingCredit: courses.filter((c) => !(c.credit > 0)).length,
+    missingCredit: courses.filter((c) => c.credit === null || c.credit === undefined).length,
     /** Hedef GNO için bu dönem gereken ortalama (4.00 üzerinden). */
     needed(target) {
       if (!curCredits) return null;

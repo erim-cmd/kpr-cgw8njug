@@ -14,6 +14,7 @@ const ENDPOINT = "/api/syllabus";
 const MAX_BYTES = 4 * 1024 * 1024;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const numOrNull = (v) => (v === "" || v === null || v === undefined ? null : Number(v));
 
 const head = (title) => `<header class="sheet-head">
   <h2>${title}</h2>
@@ -240,6 +241,8 @@ function openReview(r) {
   const existing = code ? courses.find((c) => c.code.trim().toLowerCase() === code) : null;
   const color = existing?.color || COLORS[courses.length % COLORS.length];
   const sessions = r.sessions.filter((s) => TIME.test(s.start) && TIME.test(s.end));
+  const att = r.attendance || { percent: null, max_absences: null, source: "" };
+  r.warnings = r.warnings || [];
   const found = [
     sessions.length && `${sessions.length} ders saati`,
     r.items.length && `${r.items.length} tarih`,
@@ -265,6 +268,10 @@ function openReview(r) {
           <label class="field"><span>Ofis</span><input name="office" value="${esc(r.course.office)}" maxlength="60"></label>
         </div>
         <label class="field"><span>Ofis saatleri</span><input name="officeHours" value="${esc(r.course.office_hours)}" maxlength="80"></label>
+        <div class="row2">
+          <label class="field"><span>Kredi <span class="hint">(GNO için)</span></span><input name="credit" type="number" min="0" max="30" step="0.5" inputmode="decimal" value="${r.course.credit ?? existing?.credit ?? ""}"></label>
+          <label class="field"><span>AKTS</span><input name="ects" type="number" min="0" max="60" step="0.5" inputmode="decimal" value="${r.course.ects ?? existing?.ects ?? ""}"></label>
+        </div>
         <fieldset class="field"><legend>Renk</legend>${swatches(color)}</fieldset>
 
         <h3 class="mini-title">Haftalık ders saatleri</h3>
@@ -273,6 +280,15 @@ function openReview(r) {
 
         <h3 class="mini-title">Sınav ve ödev tarihleri</h3>
         ${r.items.length ? `<ul class="irows">${r.items.map(itemRow).join("")}</ul>` : '<p class="calc-note">Tarih bulunamadı. Kaydettikten sonra elle ekleyebilirsin.</p>'}
+
+        <h3 class="mini-title">Devam şartı</h3>
+        <div class="row2">
+          <label class="field"><span>Devam zorunluluğu</span>
+            <span class="pct"><input name="attendPct" type="number" min="0" max="100" step="1" inputmode="numeric" value="${att.percent ?? existing?.attendPct ?? ""}" placeholder="ör. 70"><span>%</span></span></label>
+          <label class="field"><span>ya da en fazla devamsızlık</span>
+            <input name="absLimit" type="number" min="0" max="200" step="1" inputmode="numeric" value="${att.max_absences ?? existing?.absLimit ?? ""}" placeholder="ders sayısı"></label>
+        </div>
+        ${att.source ? `<small class="irow-src">“${esc(att.source)}”</small>` : '<p class="calc-note">Syllabus\'ta devam şartı bulunamadı. Biliyorsan gir; devamsızlık takibi buna göre çalışır.</p>'}
 
         <h3 class="mini-title">Not dağılımı</h3>
         <div class="srows" data-rows="grading">${r.grading.map(gradeRow).join("")}</div>
@@ -334,11 +350,17 @@ function openReview(r) {
             color: fd.get("color"),
             sessions: list.length ? list : existing?.sessions ?? [],
             grading: readGrading(gradingBox, existing?.grading),
+            credit: numOrNull(fd.get("credit")),
+            ects: numOrNull(fd.get("ects")),
+            attendPct: numOrNull(fd.get("attendPct")),
+            absLimit: fd.get("absLimit") === "" ? null : Math.round(Number(fd.get("absLimit"))),
           },
           tasks
         );
         closeSheet();
-        toast(res ? `${res.course.code || res.course.name} eklendi · ${res.count} tarih` : "Kaydedilemedi");
+        if (!res) return toast("Kaydedilemedi");
+        // Ders artık Ortalama'daki dönem tablosunda (UMIS görünümü)
+        toast(`${res.course.code || res.course.name} eklendi · ${res.count} tarih`, { label: "Tabloda gör", onClick: () => (location.hash = "#/ortalama") });
       });
     }
   );

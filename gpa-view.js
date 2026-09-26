@@ -3,7 +3,7 @@
 import { store, SEASONS } from "./store.js";
 import { esc, openSheet, closeSheet, toast, armDelete } from "./ui.js";
 import { icon } from "./icons.js";
-import { COEF, LETTERS, OTHER, projection, terms, standing, fmtGpa, nearestLetter, passStatus, termKey } from "./gpa.js";
+import { COEF, UMIS_GRADES, UNVERIFIED, gradeLabel, projection, terms, standing, fmtGpa, nearestLetter, passStatus, termKey, currentTerm } from "./gpa.js";
 
 const TARGET_KEY = "kpr:target-gno";
 const readTarget = () => {
@@ -15,10 +15,15 @@ const readTarget = () => {
   }
 };
 
-const gradeOptions = (selected, { blank = "—", withOther = true } = {}) =>
+/** UMIS'teki harf listesi. short: sadece harf (tablo hücresi için), değilse katsayısıyla. */
+const gradeOptions = (selected, { blank = "", short = false, only = null } = {}) =>
   `<option value="">${blank}</option>` +
-  LETTERS.map((l) => `<option value="${l}" ${l === selected ? "selected" : ""}>${l} · ${COEF[l].toFixed(2)}</option>`).join("") +
-  (withOther ? Object.entries(OTHER).map(([k, v]) => `<option value="${k}" ${k === selected ? "selected" : ""}>${k} · ${v}</option>`).join("") : "");
+  (only || UMIS_GRADES).map((g) => `<option value="${g}" ${g === selected ? "selected" : ""}>${short ? g : gradeLabel(g)}</option>`).join("");
+
+let showRetake = false; // "tekrar aldığım ders var" açılınca önceki not seçimi görünür
+let showResult = false; // UMIS'teki gibi: HESAPLA'ya basınca sonuç kutusu açılır
+
+const fmt1 = (n) => (n === null || n === undefined ? "" : Number(n).toLocaleString("tr-TR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
 
 const gradeTag = (g) => {
   const st = passStatus(g);
@@ -42,6 +47,7 @@ function summary(p) {
       </div>
       ${st ? `<span class="standing ${st.level}">${st.label}</span>` : ""}
     </div>
+    ${p.unverified ? `<p class="warn-text fine">${p.unverified} geçmiş derste katsayısı doğrulanmamış not (D-, E, R) var; hesaba katılmadı.</p>` : ""}
     ${lines.length ? `<ul class="kv">${lines.join("")}</ul>` : '<p class="calc-note">Geçmiş notlarını ve bu dönemin kredilerini gir; ortalaman burada hesaplanır.</p>'}
   </div>`;
 }
@@ -68,27 +74,54 @@ function targetBlock(p) {
 
 function currentBlock(state, p) {
   const { courses } = state;
+  const term = currentTerm();
   if (!courses.length) {
     return `<section class="section"><div class="section-head"><h2>Bu dönem</h2></div>
-      <p class="muted-note">Önce derslerini ekle; burada her dersin kredisini ve beklediğin harf notunu seçeceksin.</p></section>`;
+      <div class="empty">
+        <strong>Derslerin burada listelenecek</strong>
+        <p>Syllabus'larını yükle; ders kodu, adı, kredisi ve AKTS'si bu tabloya gelsin. Sonra her derse beklediğin harfi seç.</p>
+        <div class="empty-actions"><button class="btn btn-primary" type="button" data-action="import-syllabus">${icon.upload}Syllabus yükle</button></div>
+      </div></section>`;
   }
   const base = p.source === "base";
-  const rows = courses.map((c) => `<li class="crow" style="--c:${c.color}">
-      <span class="crow-name"><b>${esc(c.code || c.name)}</b>${c.code ? `<small>${esc(c.name)}</small>` : ""}</span>
-      <label class="crow-f"><span>Kredi</span>
-        <input type="number" min="0" max="30" step="0.5" inputmode="decimal" value="${c.credit ?? ""}" placeholder="—" data-change="credit" data-id="${esc(c.id)}" aria-label="${esc(c.name)} kredisi">
-      </label>
-      <label class="crow-f"><span>Beklenen harf</span>
-        <select data-change="letter" data-id="${esc(c.id)}" aria-label="${esc(c.name)} beklenen harf">${gradeOptions(c.letter, { withOther: false })}</select>
-      </label>
-      ${base ? `<label class="crow-f wide"><span>Tekrar alıyorsan önceki notun</span>
-        <select data-change="prev" data-id="${esc(c.id)}" aria-label="${esc(c.name)} önceki not">${gradeOptions(c.prevGrade, { blank: "İlk kez alıyorum", withOther: false })}</select>
-      </label>` : ""}
-    </li>`).join("");
+  const retake = base && (showRetake || courses.some((c) => c.prevGrade));
+  const unverified = courses.filter((c) => c.letter in UNVERIFIED);
+  const totalCr = courses.reduce((t, c) => t + (c.credit || 0), 0);
+  const totalEcts = courses.reduce((t, c) => t + (c.ects || 0), 0);
+  const rows = courses.map((c) => `<tr style="--c:${c.color}">
+      <td class="u-code"><b>${esc(c.code || "—")}</b><small class="u-name-sm">${esc(c.name)}</small></td>
+      <td class="u-name">${esc(c.name)}</td>
+      <td class="u-num"><input type="number" min="0" max="30" step="0.5" inputmode="decimal" value="${c.credit ?? ""}" placeholder="—" data-change="credit" data-id="${esc(c.id)}" aria-label="${esc(c.name)} kredi"></td>
+      <td class="u-num"><input type="number" min="0" max="60" step="0.5" inputmode="decimal" value="${c.ects ?? ""}" placeholder="—" data-change="ects" data-id="${esc(c.id)}" aria-label="${esc(c.name)} AKTS"></td>
+      <td class="u-grade"><select data-change="letter" data-id="${esc(c.id)}" aria-label="${esc(c.name)} harf notu">${gradeOptions(c.letter, { short: true })}</select></td>
+    </tr>
+    ${retake ? `<tr class="u-sub"><td colspan="5"><label>Tekrar alıyorsan önceki notun
+      <select data-change="prev" data-id="${esc(c.id)}" aria-label="${esc(c.name)} önceki not">${gradeOptions(c.prevGrade, { blank: "İlk kez alıyorum", only: Object.keys(COEF) })}</select></label></td></tr>` : ""}`).join("");
+
+  const result = showResult
+    ? `<div class="calc-result u-result" aria-live="polite">
+        ${p.term.graded ? `<p>Dönem ortalaması (YNO): <b class="need">${fmtGpa(p.term.avg)}</b> · ${fmt1(p.term.credits)} kredi</p>` : "<p>Önce derslere harf notu seç.</p>"}
+        ${p.after !== null && p.term.graded ? `<p>Genel not ortalaması (GNO): <b class="need">${fmtGpa(p.after)}</b></p>` : ""}
+        ${p.term.graded && p.term.graded < p.term.total ? `<p class="warn-text">${p.term.total - p.term.graded} ders hesaba katılmadı: harfi seçilmedi ya da seçilen not ortalamaya girmiyor.</p>` : ""}
+        ${p.source === "none" ? '<p class="fine">Geçmiş dönemlerini aşağıdan eklersen GNO da hesaplanır.</p>' : ""}
+      </div>`
+    : "";
+
   return `<section class="section">
-    <div class="section-head"><h2>Bu dönem</h2></div>
-    ${p.missingCredit ? `<p class="fine gap-b">Kredisi girilmeyen ${p.missingCredit} ders hesaba katılmıyor. Kredi = ulusal (yerel) kredi, AKTS değil.</p>` : ""}
-    <ul class="list">${rows}</ul>
+    <div class="section-head"><h2>Bu dönem</h2><span class="u-term">${esc(term.label)}</span></div>
+    <div class="u-table-wrap">
+      <table class="u-table">
+        <colgroup><col><col class="u-name"><col class="u-numc"><col class="u-numc"><col class="u-gradec"></colgroup>
+        <thead><tr><th>Ders kodu</th><th class="u-name">Ders adı</th><th class="u-num">Kredi</th><th class="u-num">AKTS</th><th class="u-grade">Harf<span class="u-wide"> notu</span></th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr><td>Toplam</td><td class="u-name"></td><td class="u-num">${fmt1(totalCr)}</td><td class="u-num">${fmt1(totalEcts)}</td><td></td></tr></tfoot>
+      </table>
+    </div>
+    ${unverified.length ? `<p class="warn-text fine gap-t">${unverified.map((c) => esc(c.letter)).join(", ")} notunun katsayısı yönetmelikte yok; doğrulanana kadar hesaba katılmıyor.</p>` : ""}
+    ${p.missingCredit ? `<p class="fine gap-t">Kredisi girilmeyen ${p.missingCredit} ders hesaba katılmıyor. GNO'da KREDİ sütunu kullanılır, AKTS değil.</p>` : ""}
+    ${base && !retake ? '<button class="link gap-t" type="button" data-action="show-retake">Bu dönem tekrar aldığım ders var</button>' : ""}
+    <div><button class="btn btn-primary u-calc" type="button" data-action="calc">HESAPLA</button></div>
+    ${result}
   </section>`;
 }
 
@@ -116,7 +149,7 @@ function historyBlock(state, p) {
         <div class="term-head"><strong>${esc(g.label)}</strong><span>YNO ${fmtGpa(g.yno)}</span></div>
         <ul class="term-list">${g.entries.map((e) => `<li><button type="button" data-action="edit-entry" data-id="${esc(e.id)}">
           <span class="term-name"><b>${esc(e.code || e.name)}</b>${e.code && e.name ? `<small>${esc(e.name)}</small>` : ""}</span>
-          <span class="term-cr">${e.credit.toLocaleString("tr-TR")} kr</span>${gradeTag(e.grade)}
+          <span class="term-cr">${e.credit.toLocaleString("tr-TR")} kr${e.ects !== null ? ` · ${e.ects.toLocaleString("tr-TR")} AKTS` : ""}</span>${gradeTag(e.grade)}
         </button></li>`).join("")}</ul>
       </div>`).join("") + `<button class="btn btn-ghost gap-t" type="button" data-action="new-entry">${icon.plus}Ders ekle</button>`;
   }
@@ -156,7 +189,7 @@ function defaultTerm() {
 }
 
 function openEntryForm(entry = null, term = null) {
-  const e = entry || { ...(term || defaultTerm()), code: "", name: "", credit: "", grade: "" };
+  const e = entry || { ...(term || defaultTerm()), code: "", name: "", credit: "", ects: null, grade: "" };
   const thisYear = new Date().getFullYear();
   const years = [];
   for (let y = thisYear; y >= thisYear - 8; y--) years.push(y);
@@ -177,7 +210,10 @@ function openEntryForm(entry = null, term = null) {
           <label class="field"><span>Kredi <span class="hint">(ulusal)</span></span><input name="credit" type="number" min="0" max="30" step="0.5" inputmode="decimal" value="${e.credit}" required></label>
         </div>
         <label class="field"><span>Ders adı <span class="hint">(isteğe bağlı)</span></span><input name="name" value="${esc(e.name)}" maxlength="80"></label>
-        <label class="field"><span>Harf notu</span><select name="grade" required>${gradeOptions(e.grade, { blank: "Seç" })}</select></label>
+        <div class="row2">
+          <label class="field"><span>AKTS <span class="hint">(isteğe bağlı)</span></span><input name="ects" type="number" min="0" max="60" step="0.5" inputmode="decimal" value="${e.ects ?? ""}"></label>
+          <label class="field"><span>Harf notu</span><select name="grade" required>${gradeOptions(e.grade, { blank: "Seç" })}</select></label>
+        </div>
         <p class="fine">Aynı dersi birden fazla kez aldıysan her denemeyi kendi dönemine ekle; ortalamaya son not girer.</p>
       </div>
       <footer class="sheet-foot">
@@ -203,6 +239,7 @@ function openEntryForm(entry = null, term = null) {
           code: fd.get("code"),
           name: fd.get("name"),
           credit: Number(fd.get("credit")),
+          ects: fd.get("ects") === "" ? null : Number(fd.get("ects")),
           grade: fd.get("grade"),
         });
         if (!saved) return toast("Kayıt eksik: kredi ve harf notu gerekli");
@@ -266,6 +303,15 @@ export const actions = {
   "new-entry": () => openEntryForm(),
   "edit-entry": (el) => openEntryForm(store.get().transcript.find((e) => e.id === el.dataset.id)),
   "edit-base": () => openBaseForm(),
+  "show-retake"(_el, { render }) {
+    showRetake = true;
+    render();
+  },
+  calc(_el, { render }) {
+    showResult = true;
+    render();
+    document.querySelector(".u-result")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  },
 };
 
 export const changes = {
@@ -274,6 +320,11 @@ export const changes = {
     if (!c) return;
     const v = el.value === "" ? null : Number(el.value);
     store.saveCourse({ ...c, credit: v });
+  },
+  ects(el) {
+    const c = course(el.dataset.id);
+    if (!c) return;
+    store.saveCourse({ ...c, ects: el.value === "" ? null : Number(el.value) });
   },
   letter(el) {
     const c = course(el.dataset.id);
