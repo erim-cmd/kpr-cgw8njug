@@ -4,13 +4,15 @@ Yarım kalan ve sıradaki işler. Bitenler en alta "Yapıldı"ya taşınır.
 
 ## Açık
 - [ ] **Yayın:** Cloudflare Pages kurulumu + `ANTHROPIC_API_KEY` + KV (`docs/YAYIN.md`). Syllabus okuma bu olmadan çalışmaz.
-- [ ] **Syllabus doğruluk testi:** 10 gerçek BAU syllabus'u (MCH 2016 dahil) yükle; her biri için bulunan/kaçan alanları tabloya yaz. Hedef: tarihlerin ≥ %90'ı doğru.
+- [ ] **Gerçek syllabus testi:** Gerçek BAU syllabus'larını (MCH 2016 dahil) `test/syllabus/`e ekle (kişisel bilgi olmadan), beklenen değerleri `expected.json`'a yaz, `node test/check.mjs` sıfır hata verene kadar ayrıştırıcıyı düzelt.
+- [ ] **Fotoğraf / taranmış PDF:** Cihaz içi metin tanıma (OCR) yok; şimdilik açık hata mesajı veriyor.
 - [ ] **UMIS notları:** D-, E, R'nin katsayısı/anlamı doğrulanmadı. UMIS not hesaplama ekranında bir derse D- verip HESAPLA'ya bas, çıkan ortalamadan katsayıyı bul; `gpa.js` → `COEF`'e ekle, `UNVERIFIED`'dan çıkar.
 - [ ] **Push bildirim sunucusu:** Uygulama kapalıyken (özellikle iPhone) zamanında bildirim için Web Push. Önerilen: Cloudflare Worker + dakikalık cron + D1; `sw.js`'teki `push` işleyicisi hazır.
 - [ ] **AI akademik asistan (Ace tarzı):** Tasarım Kuluçka'da. Aynı Cloudflare projesine `functions/api/ask.js`; öğrencinin kendi verisi + syllabus'u; her cevapta kaynak; değişiklikten önce onay.
 - [ ] **Onur/yüksek onur eşikleri** ve yönetmeliğin 1.4.2026 değişikliği doğrulanmadı.
 
 ## Yapıldı
+- [x] v2.8 (26 Eyl 2026): Cihaz içi syllabus okuma: PDF (Flate, nesne akışı, ToUnicode, Türkçe glifler, tablo çizgileriyle satır ayrımı) ve Word okuyucu, kural tabanlı ayrıştırıcı (ders bilgisi, yatay/dikey tablolar, ders saatleri + derslik, tarih/hafta/12 saat, not dağılımı + Bologna ölçekleme, devam %/sayı, final barajı, 8 tür kural Türkçe sonuçlu). 6 format × PDF/DOCX = 202 kontrol, 0 hata. İnternet ve rıza gerekmez.
 - [x] v2.7 (26 Eyl 2026): Bugün sadeleşti: üstte sıradaki teslim kartı (geri sayım, 1 gün kala kırmızı, tek dokunuşla "Bitti"), altında en yakın sınava geri sayım; bu hafta/gelecek hafta satırı (Dönem akışına gider); 3 kutuluk istatistik kaldırıldı; liste 2 hafta → bu hafta; kartta gösterilen görev Dikkat'te tekrarlanmaz.
 - [x] v2.6 (26 Eyl 2026): Dönem akışı: Dönem ekranında hafta hafta yoğunluk şeridi (sınav 2, proje 1,5, ödev 1 puan; vize/final/yoğun etiketi), haftaya dokununca o haftanın teslimleri, 1–2 hafta içinde yoğun hafta varsa "bu hafta başla" uyarısı. Dönem başlangıcı ayarlanabilir; girilmezse ilk teslimden tahmin.
 - [x] v2.5 (26 Eyl 2026): Kırmızı bayraklar: syllabus okuyucu kuralları (devam, geç teslim, telafi, bütünleme, baraj, not kuralı, dürüstlük) Kritik/Dikkat/İpucu olarak ve kaynak cümlesiyle çıkarıyor; final barajını harf tahminine otomatik dolduruyor. Ders sayfasının en üstünde gösterilir, gizlenebilir; Dersler kartında kritik kural rozeti.

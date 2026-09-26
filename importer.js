@@ -1,8 +1,9 @@
 /**
  * KPR — Syllabus'tan içe aktarma
- * 1) Dosya seç (PDF / fotoğraf) + açık rıza  →  2) /api/syllabus yapay zekâ ile okur
+ * 1) Dosya seç (PDF / Word / metin)  →  2) Cihazda okunur: doc-text.js metni çıkarır,
+ *    syllabus-local.js alanlara ayırır (internet gerekmez, dosya cihazdan çıkmaz)
  * 3) Öğrenci sonucu kontrol eder, düzeltir  →  4) Ders + görevler tek seferde kaydedilir
- * Dosya sunucuda saklanmaz; sadece okuma süresince işlenir.
+ * Yapay zekâ ile okuma (functions/api/syllabus.js) şimdilik bağlı değil; çıktı şekli aynı.
  */
 
 import { store, COLORS, TASK_TYPES } from "./store.js";
@@ -10,9 +11,9 @@ import { esc, openSheet, closeSheet, toast } from "./ui.js";
 import { icon } from "./icons.js";
 import { flagItem, sortFlags } from "./components.js";
 import { sessionRow, gradeRow, swatches, bindRows, readSessions, readGrading, openCourseForm } from "./forms.js";
+import { extractText, DocError } from "./doc-text.js";
+import { parseSyllabus } from "./syllabus-local.js";
 
-const ENDPOINT = "/api/syllabus";
-const MAX_BYTES = 4 * 1024 * 1024;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const numOrNull = (v) => (v === "" || v === null || v === undefined ? null : Number(v));
@@ -23,48 +24,6 @@ const head = (title) => `<header class="sheet-head">
 </header>`;
 
 /* ------------------------------------------------------------------ */
-/* Dosya hazırlama                                                     */
-/* ------------------------------------------------------------------ */
-
-const blobToBase64 = (blob) =>
-  new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result).split(",")[1]);
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(blob);
-  });
-
-/** Fotoğrafları küçültüp JPEG'e çevirir: hem hızlı yüklenir hem sınırın altında kalır. */
-async function compressImage(file) {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  const blob = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.85));
-  return blob;
-}
-
-async function prepareFile(file) {
-  if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) {
-    if (file.size > MAX_BYTES) throw new Error("PDF en fazla 4 MB olabilir. Sadece ilgili sayfaları ayrı bir PDF olarak kaydetmeyi dene.");
-    return { data: await blobToBase64(file), mediaType: "application/pdf" };
-  }
-  if (file.type.startsWith("image/")) {
-    let blob;
-    try {
-      blob = await compressImage(file);
-    } catch {
-      throw new Error("Bu fotoğraf biçimi açılamadı. JPG veya PNG olarak kaydedip tekrar dene.");
-    }
-    if (blob.size > MAX_BYTES) throw new Error("Fotoğraf çok büyük. Daha düşük çözünürlükle tekrar dene.");
-    return { data: await blobToBase64(blob), mediaType: "image/jpeg" };
-  }
-  throw new Error("Sadece PDF veya fotoğraf yükleyebilirsin.");
-}
-
-/* ------------------------------------------------------------------ */
 /* 1) Dosya seçme ekranı                                               */
 /* ------------------------------------------------------------------ */
 
@@ -73,18 +32,14 @@ export function openImport() {
     `<form class="sheet-form" data-step="pick">
       ${head("Syllabus'tan ekle")}
       <div class="sheet-body">
-        <p class="lead-text">Dersin syllabus'unu (izlence) yükle. KPR ders saatlerini, vize-final ve ödev tarihlerini, not dağılımını bulsun. Kaydetmeden önce her şeyi kontrol edebilirsin.</p>
+        <p class="lead-text">Dersin syllabus'unu (izlence) yükle. KPR ders bilgilerini, ders saatlerini, vize-final ve ödev tarihlerini, not dağılımını, devam şartını ve dikkat edilecek kuralları bulsun. Kaydetmeden önce her şeyi kontrol edebilirsin.</p>
         <label class="drop" data-drop>
-          <input type="file" name="file" accept="application/pdf,.pdf,image/*" required class="visually-hidden">
+          <input type="file" name="file" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.txt,text/plain" required class="visually-hidden">
           <span class="drop-icon">${icon.upload}</span>
           <strong data-file-label>Dosya seç</strong>
-          <small>PDF veya fotoğraf · en fazla 4 MB</small>
+          <small>PDF, Word (.docx) ya da metin</small>
         </label>
-        <label class="consent">
-          <input type="checkbox" name="consent" required>
-          <span><a href="gizlilik.html" target="_blank" rel="noopener">Aydınlatma metnini</a> okudum. Dosyamın, içeriğinin okunması için yurt dışındaki yapay zekâ hizmetine (Anthropic) aktarılmasına açık rıza veriyorum.</span>
-        </label>
-        <p class="fine">Dosyan kaydedilmez; sadece okuma süresince işlenir. Kişisel bilgi (öğrenci numarası vb.) içeren sayfaları yüklememeni öneririz. Günde 5 yükleme hakkın var.</p>
+        <p class="fine">Dosyan cihazında okunur, hiçbir yere gönderilmez. İnternet olmadan da çalışır.</p>
       </div>
       <footer class="sheet-foot">
         <button type="button" class="btn btn-ghost" data-manual>Elle ekle</button>
@@ -127,7 +82,7 @@ export function openImport() {
 /* 2) Okuma                                                            */
 /* ------------------------------------------------------------------ */
 
-const STEPS = ["Dosya hazırlanıyor", "Ders bilgileri okunuyor", "Sınav ve ödev tarihleri çıkarılıyor", "Not dağılımı kontrol ediliyor"];
+const STEPS = ["Dosya açılıyor", "Ders bilgileri okunuyor", "Tarihler ve not dağılımı çıkarılıyor", "Kurallar bulunuyor"];
 
 function showProgress() {
   const d = openSheet(`<div class="sheet-form">
@@ -136,7 +91,7 @@ function showProgress() {
       <div class="reading" role="status" aria-live="polite">
         <div class="reading-orb"><span class="brand-mark">K</span></div>
         <ol class="steps">${STEPS.map((s, i) => `<li data-s="${i}">${s}</li>`).join("")}</ol>
-        <p class="fine">Bu genelde 10–40 saniye sürer. Pencereyi kapatma.</p>
+        <p class="fine">Birkaç saniye sürer.</p>
       </div>
     </div>
   </div>`);
@@ -152,7 +107,7 @@ function showProgress() {
       li.classList.toggle("active", k === i);
     });
   mark();
-  const timer = setInterval(() => { if (i < STEPS.length - 1) { i++; mark(); } }, 7000);
+  const timer = setInterval(() => { if (i < STEPS.length - 1) { i++; mark(); } }, 120);
   return () => { clearInterval(timer); d.removeEventListener("cancel", blockEsc); };
 }
 
@@ -173,41 +128,18 @@ function showError(message, file) {
 
 async function run(file) {
   if (!file) return;
-  if (!navigator.onLine) return showError("Syllabus okumak için internet bağlantısı gerekiyor. Uygulamanın geri kalanı internetsiz de çalışır.");
-
   const stop = showProgress();
-  let payload;
   try {
-    payload = await prepareFile(file);
+    const { text } = await extractText(file);
+    const result = parseSyllabus(text);
+    // İlerleme ekranı bir an görünsün (çok hızlı biter)
+    await new Promise((r) => setTimeout(r, 400));
+    stop();
+    openReview(result);
   } catch (err) {
     stop();
-    return showError(err.message);
-  }
-
-  const ctrl = new AbortController();
-  const timeout = setTimeout(() => ctrl.abort(), 75_000);
-  try {
-    const res = await fetch(ENDPOINT, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ...payload, fileName: file.name }),
-      signal: ctrl.signal,
-    });
-    const body = await res.json().catch(() => ({}));
-    stop();
-    if (res.status === 404 || res.status === 405) {
-      return showError("Syllabus okuma bu önizleme sürümünde henüz açık değil. Şimdilik dersleri elle ekleyebilirsin.");
-    }
-    if (!res.ok || !body.result) {
-      const retryable = res.status >= 500 || res.status === 504;
-      return showError(body.error || "Syllabus okunamadı. Lütfen tekrar dene.", retryable ? file : null);
-    }
-    openReview(body.result);
-  } catch (err) {
-    stop();
-    showError(err.name === "AbortError" ? "Okuma çok uzun sürdü. Tekrar dene ya da daha kısa bir dosya yükle." : "Sunucuya ulaşılamadı. İnternet bağlantını kontrol et.", file);
-  } finally {
-    clearTimeout(timeout);
+    showError(err instanceof DocError ? err.message : "Dosya okunamadı. Başka bir dosya dene ya da dersi elle ekle.");
+    if (!(err instanceof DocError)) console.error(err);
   }
 }
 
@@ -215,9 +147,19 @@ async function run(file) {
 /* 3) Kontrol et ve kaydet                                             */
 /* ------------------------------------------------------------------ */
 
+/** Dönem başlangıcı ayarlıysa "N. hafta" → o haftanın pazartesisi (tahmini, işaretsiz gelir). */
+function weekDate(week) {
+  const start = store.get().settings.termStart;
+  if (!week || !DATE.test(start)) return "";
+  const d = new Date(start + "T00:00:00");
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + (week - 1) * 7);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function itemRow(it, i) {
+  const guess = !DATE.test(it.date) ? weekDate(it.week) : "";
   const hasDate = DATE.test(it.date);
-  const hint = hasDate ? "" : it.week ? `Tarih yazmıyor (${it.week}. hafta). Tarihi girersen eklenir.` : "Tarih bulunamadı. Tarihi girersen eklenir.";
+  const hint = hasDate ? "" : guess ? `Tarih yazmıyor; ${it.week}. haftanın başı olarak dolduruldu. Doğruysa işaretle.` : it.week ? `Tarih yazmıyor (${it.week}. hafta). Tarihi girersen eklenir.` : "Tarih bulunamadı. Tarihi girersen eklenir.";
   return `<li class="irow ${hasDate ? "" : "no-date"}">
     <label class="irow-check"><input type="checkbox" data-f="on" ${hasDate ? "checked" : ""} aria-label="Bu tarihi ekle"></label>
     <div class="irow-body">
@@ -226,7 +168,7 @@ function itemRow(it, i) {
         <input data-f="title" value="${esc(it.title)}" maxlength="120" aria-label="Başlık">
       </div>
       <div class="irow-when">
-        <input type="date" data-f="due" value="${hasDate ? esc(it.date) : ""}" aria-label="Tarih">
+        <input type="date" data-f="due" value="${hasDate ? esc(it.date) : guess}" aria-label="Tarih">
         <input type="time" data-f="time" value="${TIME.test(it.time) ? esc(it.time) : ""}" aria-label="Saat">
       </div>
       ${hint ? `<small class="irow-hint">${hint}</small>` : ""}
@@ -248,6 +190,7 @@ function openReview(r) {
     sessions.length && `${sessions.length} ders saati`,
     r.items.length && `${r.items.length} tarih`,
     r.grading.length && `${r.grading.length} not bileşeni`,
+    (r.policies || []).length && `${r.policies.length} kural`,
   ].filter(Boolean).join(", ");
 
   openSheet(
