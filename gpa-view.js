@@ -5,8 +5,9 @@ import { esc, openSheet, closeSheet, toast, armDelete } from "./ui.js";
 import { icon } from "./icons.js";
 import { COEF, UMIS_GRADES, UNVERIFIED, gradeLabel, projection, terms, standing, fmtGpa, nearestLetter, passStatus, termKey, currentTerm } from "./gpa.js";
 
+// Hedef GNO "Ortalama" ve "Dönem" ekranlarında ortak; hesap projection().needed() ile
 const TARGET_KEY = "kpr:target-gno";
-const readTarget = () => {
+export const readTarget = () => {
   try {
     const v = Number(localStorage.getItem(TARGET_KEY));
     return v > 0 && v <= 4 ? v : 3;
@@ -14,6 +15,21 @@ const readTarget = () => {
     return 3;
   }
 };
+export const saveTarget = (value) => {
+  const v = Math.min(4, Math.max(0, Number(value)));
+  try {
+    localStorage.setItem(TARGET_KEY, String(v));
+  } catch {}
+};
+
+/** Hedef GNO için bu dönem gereken ortalamanın açıklaması (HTML). */
+export function targetText(p, target) {
+  const need = p.needed(target);
+  if (need === null) return "";
+  if (need > 4) return `Bu dönem hepsinden A alsan da GNO <b>${target.toFixed(2)}</b> olmuyor. Daha düşük bir hedef dene ya da not yükseltmek için ders tekrarını düşün.`;
+  if (need <= 0) return `Bu dönem ne alırsan al GNO'n <b>${target.toFixed(2)}</b>'nin üstünde kalıyor.`;
+  return `GNO'n <b>${target.toFixed(2)}</b> olsun istiyorsan bu dönem en az <b class="need">${need.toFixed(2)}</b> ortalama gerekiyor (yaklaşık ${nearestLetter(need)} ortalaması).`;
+}
 
 /** UMIS'teki harf listesi. short: sadece harf (tablo hücresi için), değilse katsayısıyla. */
 const gradeOptions = (selected, { blank = "", short = false, only = null } = {}) =>
@@ -55,12 +71,7 @@ function summary(p) {
 function targetBlock(p) {
   if (!p.term.total) return "";
   const target = readTarget();
-  const need = p.needed(target);
-  let text;
-  if (need === null) text = "";
-  else if (need > 4) text = `Bu dönem hepsinden A alsan da GNO <b>${target.toFixed(2)}</b> olmuyor. Daha düşük bir hedef dene ya da not yükseltmek için ders tekrarını düşün.`;
-  else if (need <= 0) text = `Bu dönem ne alırsan al GNO'n <b>${target.toFixed(2)}</b>'nin üstünde kalıyor.`;
-  else text = `GNO'n <b>${target.toFixed(2)}</b> olsun istiyorsan bu dönem en az <b class="need">${need.toFixed(2)}</b> ortalama gerekiyor (yaklaşık ${nearestLetter(need)} ortalaması).`;
+  const text = targetText(p, target);
   return `<section class="section">
     <div class="section-head"><h2>Hedef</h2></div>
     <div class="group">
@@ -335,10 +346,7 @@ export const changes = {
     if (c) store.saveCourse({ ...c, prevGrade: el.value });
   },
   target(el, { render }) {
-    const v = Math.min(4, Math.max(0, Number(el.value)));
-    try {
-      localStorage.setItem(TARGET_KEY, String(v));
-    } catch {}
+    saveTarget(el.value);
     render();
   },
 };

@@ -13,6 +13,7 @@ export const icon = {
   upload: svg('<path d="M12 16V5m0 0-4 4m4-4 4 4M5 20h14"/>'),
   bell: svg('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'),
   chart: svg('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
+  gauge: svg('<path d="M3.5 15a8.5 8.5 0 0 1 17 0"/><path d="m12 15 4-5"/><path d="M3 19h18"/>'),
   alert: svg('<path d="M12 3 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.01"/>'),
   calendarPlus: svg('<rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M12 12.5v5M9.5 15h5"/>'),
   wifiOff: svg('<path d="M3 3l18 18M8.5 16.5a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 4.3-2.6M19 12.9a10 10 0 0 0-2.6-1.9M2 9.3a15 15 0 0 1 4.2-2.7M22 9.3A15 15 0 0 0 11 5.1"/><circle cx="12" cy="20" r=".6"/>'),
