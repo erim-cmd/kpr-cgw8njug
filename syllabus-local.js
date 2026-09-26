@@ -133,8 +133,15 @@ function labelPairs(line, fline) {
   const cells = line.split("\t");
   if (cells.length >= 2) {
     const fc = fold(cells[0]).replace(/[:*]/g, "").trim();
-    const hit = ALL_LABELS.find((x) => fc === x.l || (fc.includes(x.l) && fc.length - x.l.length <= 14 && x.l.length >= 4));
-    if (hit) pairs.push({ k: hit.k, v: clean(cells.slice(1).join(" ")), label: cells[0] });
+    // Birleşik "Credits/ ECTS" ya da "Kredi/AKTS" sütunu: değer "4 / 5" gibi ikiye ayrılır
+    if (/(credit|kredi)/.test(fc) && /(ects|akts)/.test(fc)) {
+      const parts = clean(cells.slice(1).join(" ")).split(/\//).map(clean);
+      if (parts[0]) pairs.push({ k: "credit", v: parts[0], label: cells[0] });
+      if (parts[1]) pairs.push({ k: "ects", v: parts[1], label: cells[0] });
+    } else {
+      const hit = ALL_LABELS.find((x) => fc === x.l || (fc.includes(x.l) && fc.length - x.l.length <= 14 && x.l.length >= 4));
+      if (hit) pairs.push({ k: hit.k, v: clean(cells.slice(1).join(" ")), label: cells[0] });
+    }
   }
   INLINE_LABEL_RE.lastIndex = 0;
   const hits = [];
@@ -179,11 +186,16 @@ function parseGrading(lines, flines) {
         headerWeightCol = wc;
         continue;
       }
-      const name = cells[0];
-      const fname = fcells[0];
-      if (shareRow(fname, cells.slice(1).join(" "), shares)) continue;
+      // "CLO No. / Assessment Component / Weight" gibi tablolarda ilk sütun ders çıktısı numarasıdır
+      // ("1-5", "2-4, 7-9", "-"), asıl bileşen adı ikinci sütundadır.
+      const cloLike = /^-$|^\d+(-\d+)?(\s*,\s*\d+(-\d+)?)*$/;
+      let nameIdx = 0;
+      if (!COMPONENT.test(fcells[0]) && cloLike.test(fcells[0]) && cells[1] && COMPONENT.test(fcells[1])) nameIdx = 1;
+      const name = cells[nameIdx];
+      const fname = fcells[nameIdx];
+      if (shareRow(fname, cells.slice(nameIdx + 1).join(" "), shares)) continue;
       if (!name || !COMPONENT.test(fname) || SKIP_ROW.test(fname)) continue;
-      const vals = cells.slice(1);
+      const vals = cells.slice(nameIdx + 1);
       let w = null;
       if (headerWeightCol > 0 && vals[headerWeightCol - 1] !== undefined) w = numIn(vals[headerWeightCol - 1]);
       if (w === null) {
@@ -270,7 +282,7 @@ const tailNum = (s) => {
 };
 const stripPct = (s) =>
   clean(
-    s.replace(/^[^:]{2,40}:\s*(?=\S)/, (m) => (GRADING_HEAD.test(fold(m).trim()) || !COMPONENT.test(fold(m)) ? "" : m)).replace(/\(\s*%\s*\d+[.,]?\d*\s*\)|\(\s*\d+[.,]?\d*\s*%\s*\)/g, "")
+    s.replace(/^[^:]{2,40}:\s*(?=\S)/, (m) => (GRADING_HEAD.test(fold(m).trim()) || !COMPONENT.test(fold(m)) ? "" : m)).replace(/\([^()]*%[^()]*\)/g, "")
       .replace(/%\s*\d+[.,]?\d*|\d+[.,]?\d*\s*%/g, "")
       .replace(/[:\-–]\s*\d{1,3}\s*$/, "")
   );
@@ -289,7 +301,7 @@ const ITEM_KINDS = [
   { type: "sinav", re: /\b(exam|sinav|sinavi)\b/, tr: "Sınav", group: "sinav" },
 ];
 // Bu kelimeler geçen cümleler takvim değil kuraldır (tarih içermedikçe öğe üretmez)
-const RULE_WORDS = /\ben az\b|\bat least\b|zorunlu|required|must|kabul edilmez|not accepted|penalty|ceza|kesinti|puan alin|gerekmektedir|gerekir|sevk|disiplin|plagiarism|intihal|kopya|devam sartini|%/;
+const RULE_WORDS = /\ben az\b|\bat least\b|zorunlu|required|must|kabul edilmez|not accepted|penalty|ceza|kesinti|puan alin|gerekmektedir|gerekir|sevk|disiplin|plagiarism|intihal|kopya|devam sartini|%|revision|revise|review\b|tekrar\b|gozden gecir/;
 const SCHEDULE_WORDS = /\bhafta\b|\bweek\b|\btba\b|\btbd\b|ilan edilecek|announced|akademik takvim|academic calendar|tarih|date|final exam week|sinav haftasi|exam week/;
 
 function titleFrom(orig, fk, kind, datesInCell) {
@@ -318,6 +330,39 @@ function parseItems(lines, flines, termYear, warnings) {
   const items = [];
   let weekCol = -1;
   let dateCol = -1;
+
+  // Ön tarama: PDF'te bir tablo satırı birkaç fiziksel satıra bölünebilir (sütun kayması).
+  // Kendi hafta numarası olmayan bir satırdaki bulgu, en yakın "çapa" (hafta numarası taşıyan) satırın haftasına atanır.
+  let scanWeekCol = -1;
+  const anchors = [];
+  for (let i = 0; i < lines.length; i++) {
+    const cells = lines[i].split("\t");
+    const fcells = cells.map(fold);
+    if (cells.length >= 2) {
+      const wc = fcells.findIndex((c) => /^(hafta|week|wk|hf)\b/.test(c.trim()));
+      if (wc >= 0 && !fcells.some((c) => COMPONENT.test(c) && /\d/.test(c))) {
+        scanWeekCol = wc;
+        continue;
+      }
+    }
+    if (scanWeekCol >= 0 && cells.length >= 2 && /^\d{1,2}$/.test((cells[scanWeekCol] || "").trim())) {
+      const w = parseInt(cells[scanWeekCol], 10);
+      if (w > 0 && w < 30) anchors.push({ i, week: w });
+    }
+  }
+  const nearestWeek = (i) => {
+    let best = null;
+    let bestDist = Infinity;
+    for (const a of anchors) {
+      const dist = Math.abs(a.i - i);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = a.week;
+      }
+    }
+    return bestDist <= 3 ? best : null;
+  };
+
   for (let i = 0; i < lines.length; i++) {
     const cells = lines[i].split("\t");
     const fcells = cells.map(fold);
@@ -354,7 +399,13 @@ function parseItems(lines, flines, termYear, warnings) {
     const byGroup = new Map();
     for (const r of rowFound) {
       const prev = byGroup.get(r.kind.group);
-      if (!prev || (!prev.dates.length && r.dates.length) || (prev.dates.length === r.dates.length && r.cell.length > prev.cell.length && r.dates.length)) byGroup.set(r.kind.group, r);
+      if (
+        !prev ||
+        (!prev.dates.length && r.dates.length) ||
+        (prev.dates.length === r.dates.length && r.dates.length && r.cell.length > prev.cell.length) ||
+        (prev.dates.length === r.dates.length && !r.dates.length && r.cell.length < prev.cell.length)
+      )
+        byGroup.set(r.kind.group, r);
     }
     // Tek hücreli satırda birden fazla tür varsa (ör. "Vize ve final tarihleri") ilkini al
     const picks = cells.length === 1 ? [rowFound[0]] : [...byGroup.values()];
@@ -395,6 +446,12 @@ function parseItems(lines, flines, termYear, warnings) {
       if (week === null) {
         const wm = /(\d{1,2})\s*\.?\s*(?:hafta|haftada|haftasi)|\bweek\s*(\d{1,2})|(\d{1,2})(?:st|nd|rd|th)\s+week/.exec(flines[i]);
         if (wm) week = +(wm[1] || wm[2] || wm[3]);
+      }
+      // Kendi haftası yok ama tablo satırı sarmalıyla bölünmüş olabilir: en yakın çapa haftayı kullan
+      // (yalnızca gerçek çok sütunlu tablo parçaları için; tek hücreli kural/politika cümlelerine uygulanmaz)
+      if (week === null && !Number.isFinite(rowWeek) && cells.length >= 2 && !/oran|percentage|katki|contribution|basari|share/.test(fc)) {
+        const nw = nearestWeek(i);
+        if (nw !== null) week = nw;
       }
 
       // Tarihsiz ve haftasız öğe: sadece takvim cümlesiyse (TBA, ilan edilecek…) kabul et
@@ -479,12 +536,15 @@ function parseSessions(text, flines, lines, pairsBy) {
       pending = before;
       const use = own.length ? own : before.slice(-1);
       // Sınıf: aralıktan sonraki parantez ya da "Room X" / "Derslik: X"
-      const after = c.slice(r.end, r.end + 40);
+      let after = c.slice(r.end, r.end + 40);
       let room = "";
+      // "(Section#4)" / "(Section 4)" gibi şube işareti oda değildir, atla
+      const secPar = /^\s*\(\s*(?:section|sube|şube|grup|group)\s*#?\s*\d+\s*\)/i.exec(after);
+      if (secPar) after = after.slice(secPar[0].length).replace(/^[\s,;:\-–—]+/, "");
       const par = /^\s*,?\s*\(([^)]{1,30})\)/.exec(after);
       if (par) {
         const inner = clean(par[1].replace(/^(lab|laboratuvar|room|derslik|sinif|sınıf|classroom)\s*:\s*/i, ""));
-        if (/\d/.test(inner) && dayOf(fold(inner).split(/[\s-]/)[0]) < 0) room = inner;
+        if (/\d/.test(inner) && !/^(section|sube|şube|grup|group)\b/i.test(inner) && dayOf(fold(inner).split(/[\s-]/)[0]) < 0) room = inner;
       }
       if (!room) {
       const pm = /^\s*[,(]?\s*\(?\s*([A-ZÇĞİÖŞÜ][\w-]*\s?-?\s?\d{1,4}[A-Za-z]?|Lab[\w -]*\d*|[A-Z]{1,3}-?\d{2,4})\s*\)?/.exec(after);
@@ -613,6 +673,7 @@ function parsePolicies(sents, att, finalMin) {
     push({ kind: "baraj", severity: "kritik", rule: `Finalden en az ${finalMin.value} alman gerekiyor.`, consequence: "Altında kalırsan diğer notlarından bağımsız F alabilirsin.", source: finalMin.source });
   }
   for (const s of sents) {
+    if (/[☐☒□■✓✔]/.test(s)) continue; // form kutucuğu satırı, kural cümlesi değil
     const f = fold(s);
     // Geç teslim
     if (/gec teslim|gec gelen|gec gonderilen|late (submission|work|homework|assignment)|submitted late|after the deadline|teslim tarihinden sonra|son teslim tarihinden sonra/.test(f)) {
@@ -708,7 +769,24 @@ const unitTr = (u) => (/saat|hour/.test(u) ? "saat" : /hafta|week/.test(u) ? "ha
 /* Ders bilgileri                                                         */
 /* ------------------------------------------------------------------ */
 
-const CODE_RE = /\b([A-ZÇĞİÖŞÜ]{2,5})\s?-?\s?(\d{3,4}[A-Z]?)\b/;
+// İlk harf büyük, geri kalanı büyük/küçük karışık olabilir ("MAT 2045" · "Mat2045" · "CmpE-251").
+const CODE_RE = /\b([A-ZÇĞİÖŞÜ][A-Za-zçğıöşü]{1,4})\s?-?\s?(\d{3,4}[A-Z]?)\b/;
+// Ders koduna benzeyen ama olmayan yaygın kelimeler (mevsim adı + yıl, "Week 12" gibi yanlış eşleşmeleri ele)
+const CODE_STOP = new Set([
+  "fall", "spring", "summer", "guz", "bahar", "yaz", "week", "hafta", "section", "secim", "room", "derslik",
+  "note", "lecture", "page", "sayfa", "isbn", "credit", "kredi", "ects", "akts", "student", "course", "syllabus",
+  "semester", "donem", "yariyil", "exam", "sinav", "quiz", "chapter", "unit", "part", "group", "grup", "class",
+  "sinif", "team", "teams", "version", "edition", "code", "kod", "ders",
+]);
+/** CODE_RE'nin tüm eşleşmelerini tarar, yaygın-kelime yanlış pozitiflerini atlar. */
+function findCode(s) {
+  const re = new RegExp(CODE_RE.source, "g");
+  let m;
+  while ((m = re.exec(s))) {
+    if (!CODE_STOP.has(fold(m[1]))) return m;
+  }
+  return null;
+}
 
 function creditFrom(v) {
   const f = fold(v || "");
@@ -728,11 +806,11 @@ function parseCourse(lines, flines, pairsBy, text) {
 
   // Kod
   const codeVal = first("code");
-  let cm = CODE_RE.exec(codeVal);
+  let cm = findCode(codeVal);
   if (!cm) {
-    for (const l of lines.slice(0, 25)) if ((cm = CODE_RE.exec(l))) break;
+    for (const l of lines.slice(0, 25)) if ((cm = findCode(l))) break;
   }
-  if (cm) course.code = `${cm[1]} ${cm[2]}`;
+  if (cm) course.code = `${cm[1].toUpperCase()} ${cm[2]}`;
 
   // Ad: etiketli değer → "Ders: KOD Ad" → başlıkta "KOD – Ad"
   let name = first("name");
@@ -740,19 +818,51 @@ function parseCourse(lines, flines, pairsBy, text) {
     const c = first("course");
     if (c) name = c;
   }
+  let nameLineIdx = -1;
   if (!name && cm) {
-    const l = lines.slice(0, 25).find((x) => CODE_RE.test(x) && x.replace(CODE_RE, "").replace(/[-–:|\s]/g, "").length > 3 && !/@/.test(x));
-    if (l) name = l;
+    nameLineIdx = lines.slice(0, 25).findIndex((x) => CODE_RE.test(x) && x.replace(CODE_RE, "").replace(/[-–:|\s]/g, "").length > 3 && !/@/.test(x));
+    if (nameLineIdx >= 0) name = lines[nameLineIdx];
   }
   if (name) {
     name = name.replace(CODE_RE, "").replace(/^[\s:–\-|,]+/, "");
     name = clean(name.split(/\t|\s{2,}| \| /)[0]);
+    // Başlık iki satıra bölünmüş olabilir: "Mat2045 - Numerical\nMethods for Engineers"
+    if (nameLineIdx >= 0 && nameLineIdx + 1 < lines.length && name && name.length < 60 && !/[.!?]$/.test(name)) {
+      const rawNxt = lines[nameLineIdx + 1];
+      const nxt = clean(rawNxt);
+      const fnxt = fold(nxt);
+      const looksLikeOther =
+        !nxt ||
+        nxt.length > 60 ||
+        /[@\t]/.test(rawNxt) ||
+        /^\d+[.)]\s/.test(nxt) ||
+        CODE_RE.test(nxt) ||
+        ALL_LABELS.some((x) => fnxt === x.l) ||
+        /20\d{2}/.test(nxt) ||
+        /guz|bahar|yaz|fall|spring|summer|donem|yariyil|semester/.test(fnxt);
+      if (!looksLikeOther) name = clean(`${name} ${nxt}`);
+    }
     if (/@|\d{2}[:.]\d{2}/.test(name) || name.length > 80) name = "";
   }
   course.name = cut(name, 80);
 
-  // Hoca: etiket; değerde e-posta varsa ayır
+  // Hoca: etiket; yoksa "Instructor Information" gibi bölüm başlığından sonraki isim satırı
   let ins = first("instructor");
+  if (!ins) {
+    const hdrRe = /instructor information|ogretim (uyesi|elemani|gorevlisi) bilgileri|instructor info\b/;
+    const idx = flines.findIndex((f) => hdrRe.test(f.replace(/^\d+[.)]\s*/, "")));
+    if (idx >= 0) {
+      for (let j = idx + 1; j < Math.min(idx + 5, lines.length); j++) {
+        const l = clean(lines[j]);
+        if (!l) continue;
+        const fl = fold(l).replace(/[:*]/g, "").trim();
+        if (!/@/.test(l) && !/\d/.test(l) && l.length <= 50 && l.split(" ").length <= 5 && !ALL_LABELS.some((x) => fl === x.l) && /^[A-ZÇĞİÖŞÜ]/.test(l)) {
+          ins = l;
+        }
+        break;
+      }
+    }
+  }
   const emailRe = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/;
   const em = emailRe.exec(ins);
   if (em && !first("email")) course.email = em[0];
@@ -776,8 +886,16 @@ function parseCourse(lines, flines, pairsBy, text) {
     const om = /(?:room|oda|ofis|office)\s*:?\s*([A-Za-zÇĞİÖŞÜçğıöşü]{0,4}-?\s?\d{1,4}[A-Za-z]?)/i.exec(contact);
     if (om) office = om[1];
   }
+  let officeHours = first("office_hours");
+  if (!office && officeHours) {
+    // "Ad Soyad: D310; Pazartesi: 12:30-14:30" gibi birleşik hücreden oda kodu
+    const om2 = /\b([A-Za-zÇĞİÖŞÜçğıöşü]{1,3}\d{2,4})\b/.exec(officeHours);
+    if (om2) office = om2[1];
+  }
+  if (ins && officeHours.startsWith(ins)) officeHours = clean(officeHours.slice(ins.length).replace(/^[\s:,-]+/, ""));
+  if (office && officeHours.startsWith(office)) officeHours = clean(officeHours.slice(office.length).replace(/^[\s:;,-]+/, ""));
   course.office = cut(clean(office.replace(emailRe, "")), 60);
-  course.office_hours = cut(first("office_hours"), 80);
+  course.office_hours = cut(officeHours, 80);
   course.credit = creditFrom(first("credit"));
   const ects = creditFrom(first("ects"));
   course.ects = ects !== null && ects <= 60 ? ects : null;
