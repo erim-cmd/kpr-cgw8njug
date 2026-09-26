@@ -1,8 +1,10 @@
 // Her test syllabus'unu (PDF ve DOCX) ayrıştırır, expected.json ile alan alan karşılaştırır.
 import { readFileSync, existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { extractText } from "../doc-text.js";
 import { parseSyllabus, fold } from "../syllabus-local.js";
-const dir = new URL("./syllabus/", import.meta.url).pathname;
+// fileURLToPath: Windows'ta URL.pathname "/C:/..." verir ve yol bozulur
+const dir = fileURLToPath(new URL("./syllabus/", import.meta.url));
 const exp = JSON.parse(readFileSync(dir + "expected.json", "utf8"));
 const now = new Date(2026, 8, 26);
 const verbose = process.argv.includes("-v");
