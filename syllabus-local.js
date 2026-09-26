@@ -359,6 +359,8 @@ const SCHEDULE_WORDS = /\bhafta\b|\bweek\b|\btba\b|\btbd\b|ilan edilecek|announc
 // Katlanmış (fold) metinde, tarihin hemen önündeki ~30 karakterde aranır.
 const NO_CLASS = /(no class(?:es)?|no lecture|ders yok|ders yapilmayacak|holiday|tatil|break)[^\d]{0,12}$/;
 const noClassAt = (ftext, idx) => NO_CLASS.test(ftext.slice(Math.max(0, idx - 30), idx));
+// "ders saatinde" yapılacak sınav (katlanmış metin)
+const CLASS_TIME_RE = /(during class time|during class|in class|ders saatinde|ders saati icinde|derste)\)?\s*$/;
 // Tarihin sonradan ilan edileceğini söyleyen ifadeler
 const TBA_RE = /\btba\b|\btbd\b|to be announced|will be announced|ilan edilecek|belirlenecek|duyurulacak/;
 
@@ -557,10 +559,16 @@ function parseItems(lines, flines, termYear, warnings) {
       if (!d && RULE_WORDS.test(fc) && !SCHEDULE_WORDS.test(fc)) continue;
 
       if (d?.assumed) warnings.add(`Bazı tarihlerde yıl yazmıyor; ${d.iso.slice(0, 4)} varsayıldı.`);
+      // "Mid Term Exam 2 during class time": başlıktan at, saati ders saatine bağlı olduğunu uyar
+      let title = titleFrom(r.cell, fc, r.kind, r.dates);
+      if (CLASS_TIME_RE.test(fold(title))) {
+        title = title.replace(/\s*[-–,(]?\s*(during class time|during class|in class|ders saatinde|ders saati icinde|derste)\)?\s*$/i, "").trim() || title;
+        if (!time) warnings.add(`${title} ders saatinde; saatini kendi şubenin ders saatine göre gir.`);
+      }
       items.push({
         type: r.kind.type,
         group: r.kind.group,
-        title: titleFrom(r.cell, fc, r.kind, r.dates),
+        title,
         date: d ? d.iso : "",
         time,
         week: d ? null : week,
@@ -1077,6 +1085,14 @@ export function parseSyllabus(text, now = new Date()) {
   if (!course.code) warnings.add("Ders kodu bulunamadı.");
   if (course.credit === null) warnings.add("Kredi bulunamadı; GNO için UMIS'teki kredisini gir.");
   if (!sessions.length) warnings.add("Ders saatleri bulunamadı.");
+  // "Section · Day · Time · Room" tablosunda birden çok şube: öğrenci yalnız birine gider
+  if (sessions.length > 1 && flines.some((l) => /(^|\t)(section|sections|sube|subeler|grup|group)(\t|$)/.test(l.trim())))
+    warnings.add("Birden fazla şube listelenmiş; sadece kendi şubenin ders saatini bırak, diğerlerini sil.");
+  // Finali olmayan derste (ör. vize + vize + final projesi) "final tarihi bulunamadı" yanıltıcı
+  const hasFinalExam =
+    /final (exam|sinav)|yariyil sonu|donem sonu sinav/.test(flines.join("\n")) ||
+    grading.some((g) => /final|yariyil sonu/.test(fold(g.name)) && !/proje|project|rapor|report|paper|essay|odev|sunum|presentation|portfol/.test(fold(g.name)));
+  if (!hasFinalExam) warnings.delete("Final tarihi bulunamadı; akademik takvimden kontrol et.");
   const total = grading.reduce((s, g) => s + g.weight, 0);
   if (!grading.length) warnings.add("Not dağılımı bulunamadı.");
   else if (Math.abs(total - 100) > 0.5) warnings.add(`Not ağırlıklarının toplamı %${Math.round(total * 10) / 10}, 100 değil; kontrol et.`);
