@@ -138,8 +138,12 @@ function labelPairs(line, fline) {
       const parts = clean(cells.slice(1).join(" ")).split(/\//).map(clean);
       if (parts[0]) pairs.push({ k: "credit", v: parts[0], label: cells[0] });
       if (parts[1]) pairs.push({ k: "ects", v: parts[1], label: cells[0] });
+    } else if (/derslik|\broom\b|classroom|\bsinif\b/.test(fc) && /zaman|saat|\btime\b|\bhour/.test(fc)) {
+      // Birleşik "Derslik ve Zaman" / "Classroom & Time" sütunu: değer bir ders saati+gün ifadesidir,
+      // salt oda adı değil — ders saatleri adayı olarak işaretle (aksi halde tüm satır yanlışlıkla "oda" sanılır).
+      pairs.push({ k: "sessions", v: clean(cells.slice(1).join(" ")), label: cells[0] });
     } else {
-      const hit = ALL_LABELS.find((x) => fc === x.l || (fc.includes(x.l) && fc.length - x.l.length <= 14 && x.l.length >= 4));
+      const hit = ALL_LABELS.find((x) => fc === x.l || (x.k !== "course" && fc.includes(x.l) && fc.length - x.l.length <= 14 && x.l.length >= 4));
       if (hit) pairs.push({ k: hit.k, v: clean(cells.slice(1).join(" ")), label: cells[0] });
     }
   }
@@ -164,7 +168,7 @@ function labelPairs(line, fline) {
 
 const GRADING_HEAD = /^(olcme ve )?degerlendirme|notlandirma|basari notu|degerlendirme sistemi|grading|assessment|evaluation|course evaluation|grade distribution|basari degerlendirme|degerlendirme olcutleri/;
 const SKIP_ROW = /\b(toplam|total|genel toplam|sum)\b|basariya (katkisi|orani)|basari notuna katkisi|yariyil ici calismalari|donem ici calismalar|yil ici|katkisi$/;
-const COMPONENT = /(vize|ara sinav|arasinav|midterm|final|yariyil sonu|quiz|kisa sinav|odev|homework|assignment|proje|project|lab|laboratuvar|sunum|presentation|rapor|report|katilim|participation|attendance|devam|uygulama|practice|seminer|seminar|tartisma|discussion|bitirme|portfolyo|portfolio|arazi|atolye|workshop|problem set|case|vaka|exam|sinav|test)/;
+const COMPONENT = /(vize|ara sinav|arasinav|midterm|final|yariyil sonu|quiz|kisa sinav|odev|homework|assignment|proje|project|lab|laboratuvar|sunum|presentation|rapor|report|katilim|participation|attendance|devam|uygulama|practice|seminer|seminar|tartisma|discussion|bitirme|portfolyo|portfolio|arazi|atolye|workshop|problem set|case|vaka|exam|sinav|test|sertifika|certificate|mooc)/;
 
 function parseGrading(lines, flines) {
   // 1) Bölüm başlığından sonraki ~25 satır ve 2) belgenin tamamında yüzdeli bileşen satırları
@@ -174,25 +178,66 @@ function parseGrading(lines, flines) {
   let inSection = 0;
   for (let i = 0; i < lines.length; i++) {
     const f = flines[i].trim();
-    if (GRADING_HEAD.test(f.replace(/^\d+[.)]\s*/, ""))) inSection = 30;
-    else if (inSection) inSection--;
+    // Gerçek bölüm başlıkları kısa ve büyük harfle başlar ("Değerlendirme", "6. ..."); uzun bir cümle ya da
+    // tablo satırı içinde geçen "değerlendirme" gibi bir sözcük (ör. haftalık planın bir hücresinde) başlık sayılmaz.
+    const lineTrim = lines[i].trim();
+    if (lineTrim.length <= 90 && /^[0-9A-ZÇĞİÖŞÜ]/.test(lineTrim) && GRADING_HEAD.test(f.replace(/^\d+[.)]\s*/, ""))) {
+      inSection = 30;
+      headerWeightCol = -1; // yeni bölüm: önceki tablodan kalma sütun indeksini unut
+    } else if (inSection) {
+      inSection--;
+      if (inSection === 0) headerWeightCol = -1; // pencere kapandı: eski sütun indeksi başka bir tabloya sızmasın
+    }
     const cells = lines[i].split("\t").map(clean);
     const fcells = cells.map(fold);
 
+    // Farklı bir tablonun başlığına geçildiyse (ör. haftalık planın "Hafta" sütunu), önceki tablodan
+    // kalma ağırlık-sütunu indeksini unut — yoksa çok sonraki alakasız bir satıra yanlışlıkla sızabilir.
+    if (cells.length >= 2 && fcells.some((c) => /^(hafta|week|wk|hf)\b/.test(c.trim()))) {
+      headerWeightCol = -1;
+      inSection = 0;
+    }
+
     if (cells.length >= 2) {
       // Başlık satırı: hangi sütun ağırlık?
-      const wc = fcells.findIndex((c) => /katki|agirlik|weight|oran|yuzde|percent|%|puan|etki/.test(c) && !COMPONENT.test(c));
+      // Not: salt "%" bir başlık işareti olabilir ("Ağırlık (%)"), ama "%20" gibi bir veri değeri değil —
+      // yalnızca rakam içermeyen "%" hücreleri başlık sayılır.
+      // Not: "etki" kelimesi "etkinlik" (activity) içinde de geçtiği için başlık ipucu listesinden çıkarıldı.
+      const wc = fcells.findIndex((c) => (/katki|agirlik|weight|oran|yuzde|percent|puan|notuna etkisi/.test(c) || (/%/.test(c) && !/\d/.test(c))) && !COMPONENT.test(c));
       if (wc > 0 && !fcells.some((c) => /^\d/.test(c))) {
         headerWeightCol = wc;
         continue;
       }
       // "CLO No. / Assessment Component / Weight" gibi tablolarda ilk sütun ders çıktısı numarasıdır
-      // ("1-5", "2-4, 7-9", "-"), asıl bileşen adı ikinci sütundadır.
-      const cloLike = /^-$|^\d+(-\d+)?(\s*,\s*\d+(-\d+)?)*$/;
+      // ("1-5", "2-4, 7-9", "-", "DK1, DK2, DK4" gibi), asıl bileşen adı ikinci sütunda olabilir;
+      // adı bazen de sarmadan ötürü satırın hemen üstündeki tek hücreli satır(lar)a düşmüş olabilir.
+      const cloLike = /^-$|^((\d+|dk\d+|clo\d+)(-\d+)?)(\s*,\s*(\d+|dk\d+|clo\d+)(-\d+)?)*$/i;
       let nameIdx = 0;
-      if (!COMPONENT.test(fcells[0]) && cloLike.test(fcells[0]) && cells[1] && COMPONENT.test(fcells[1])) nameIdx = 1;
-      const name = cells[nameIdx];
-      const fname = fcells[nameIdx];
+      let name = cells[0];
+      let fname = fcells[0];
+      if (!COMPONENT.test(fname) && cloLike.test(fname.replace(/\s+/g, ""))) {
+        if (cells[1] && COMPONENT.test(fcells[1])) {
+          nameIdx = 1;
+          name = cells[1];
+          fname = fcells[1];
+        } else if (/^(dk|clo)\d/i.test(fname.replace(/\s+/g, "")) || /,/.test(fname)) {
+          // Üstteki tek hücreli, kutucuk içermeyen satırları (en fazla 3) birleştirip ad adayı yap.
+          // Sadece "DK1, DK2" gibi açıkça bir öğrenme çıktısı listesiyse denenir; yalın "4" gibi bir
+          // hafta numarasıyla karışabilecek durumlarda bu adımı atla.
+          let cand = "";
+          for (let j = i - 1; j >= Math.max(0, i - 4); j--) {
+            const pcells = lines[j].split("\t");
+            if (pcells.length !== 1) break;
+            const pt = clean(pcells[0]);
+            if (!pt || /[☐☒□■]/.test(pt)) break;
+            cand = cand ? `${pt} ${cand}` : pt;
+          }
+          if (cand && COMPONENT.test(fold(cand))) {
+            name = cand;
+            fname = fold(cand);
+          }
+        }
+      }
       if (shareRow(fname, cells.slice(nameIdx + 1).join(" "), shares)) continue;
       if (!name || !COMPONENT.test(fname) || SKIP_ROW.test(fname)) continue;
       const vals = cells.slice(nameIdx + 1);
@@ -333,8 +378,12 @@ function parseItems(lines, flines, termYear, warnings) {
 
   // Ön tarama: PDF'te bir tablo satırı birkaç fiziksel satıra bölünebilir (sütun kayması).
   // Kendi hafta numarası olmayan bir satırdaki bulgu, en yakın "çapa" (hafta numarası taşıyan) satırın haftasına atanır.
+  // Bazı biçimlerde hafta hücresi yalın ("3"), bazılarında tireli ("3 –") verilir; tireli biçimde tarih
+  // parçaları da (gün numarası) yalın rakam olarak ayrı satırlara düşebileceğinden ("21", "28" gibi),
+  // belgede tireli çapa çoğunluktaysa SADECE tireli biçim güvenilir çapa sayılır.
   let scanWeekCol = -1;
-  const anchors = [];
+  const dashAnchors = [];
+  const bareAnchors = [];
   for (let i = 0; i < lines.length; i++) {
     const cells = lines[i].split("\t");
     const fcells = cells.map(fold);
@@ -345,11 +394,29 @@ function parseItems(lines, flines, termYear, warnings) {
         continue;
       }
     }
-    if (scanWeekCol >= 0 && cells.length >= 2 && /^\d{1,2}$/.test((cells[scanWeekCol] || "").trim())) {
-      const w = parseInt(cells[scanWeekCol], 10);
-      if (w > 0 && w < 30) anchors.push({ i, week: w });
+    if (scanWeekCol >= 0 && cells.length >= 2) {
+      const cellTxt = (cells[scanWeekCol] || "").trim();
+      let m = /^(\d{1,2})\s*[-–—]\s*$/.exec(cellTxt);
+      if (m) {
+        const w = +m[1];
+        if (w > 0 && w < 30) dashAnchors.push({ i, week: w });
+        continue;
+      }
+      m = /^(\d{1,2})$/.exec(cellTxt);
+      if (m) {
+        const w = +m[1];
+        if (w > 0 && w < 30) bareAnchors.push({ i, week: w });
+      }
     }
   }
+  const useDashWeeks = dashAnchors.length >= 2;
+  const anchors = useDashWeeks ? dashAnchors : bareAnchors;
+  /** Bir hücrenin metninden, belgenin kullandığı biçime göre (yalın/tireli) hafta numarasını çıkarır. */
+  const weekCellNum = (cellTxt) => {
+    const t = (cellTxt || "").trim();
+    const m = useDashWeeks ? /^(\d{1,2})\s*[-–—]\s*$/.exec(t) : /^(\d{1,2})$/.exec(t);
+    return m ? +m[1] : NaN;
+  };
   const nearestWeek = (i) => {
     let best = null;
     let bestDist = Infinity;
@@ -378,7 +445,7 @@ function parseItems(lines, flines, termYear, warnings) {
     } else if (!lines[i].trim()) {
       // boş satır tabloyu bitirmez (PDF'te sayfa geçişi), ama başlık satırı gelirse sıfırlanır
     }
-    const rowWeek = weekCol >= 0 && cells.length >= 2 ? parseInt(cells[weekCol], 10) : NaN;
+    const rowWeek = weekCol >= 0 && cells.length >= 2 ? weekCellNum(cells[weekCol]) : NaN;
     const rowDates = dateCol >= 0 && cells[dateCol] ? findDates(fcells[dateCol], termYear) : [];
 
     // Satırdaki her hücre için: anahtar kelime var mı?
@@ -447,9 +514,11 @@ function parseItems(lines, flines, termYear, warnings) {
         const wm = /(\d{1,2})\s*\.?\s*(?:hafta|haftada|haftasi)|\bweek\s*(\d{1,2})|(\d{1,2})(?:st|nd|rd|th)\s+week/.exec(flines[i]);
         if (wm) week = +(wm[1] || wm[2] || wm[3]);
       }
-      // Kendi haftası yok ama tablo satırı sarmalıyla bölünmüş olabilir: en yakın çapa haftayı kullan
-      // (yalnızca gerçek çok sütunlu tablo parçaları için; tek hücreli kural/politika cümlelerine uygulanmaz)
-      if (week === null && !Number.isFinite(rowWeek) && cells.length >= 2 && !/oran|percentage|katki|contribution|basari|share/.test(fc)) {
+      // Kendi haftası yok ama tablo satırı sarmalıyla bölünmüş olabilir: en yakın çapa haftayı kullan.
+      // Çok sütunlu satırlar güvenle kabul edilir; tek hücreli satırlarda ise ancak kısa, cümle
+      // noktalamasıyla bitmeyen bir "tablo parçası" görünümündeyse (bir kural/politika cümlesi değilse) kabul edilir.
+      const looksLikeSentence = cells.length === 1 && (/[.!?]\s*$/.test(lines[i].trim()) || lines[i].trim().length > 40);
+      if (week === null && !Number.isFinite(rowWeek) && !looksLikeSentence && !/oran|percentage|katki|contribution|basari|share/.test(fc)) {
         const nw = nearestWeek(i);
         if (nw !== null) week = nw;
       }
@@ -607,7 +676,7 @@ function parseAttendance(sents) {
   let source = "";
   for (const s of sents) {
     const f = fold(s);
-    if (!/devam|katilim|attend|absen|devamsiz|yoklama/.test(f)) continue;
+    if (!/devam|katil|attend|absen|devamsiz|yoklama/.test(f)) continue;
     if (/katilim\s*(notu|puani)|participation grade/.test(f) && !/zorunlu|required|en az|at least/.test(f)) continue;
     let m;
     if (percent === null && (m = /(?:%\s*(\d{2,3})|(\d{2,3})\s*%)/.exec(f))) {
@@ -659,7 +728,15 @@ function parsePolicies(sents, att, finalMin) {
     const src = att.source;
     // Sonuç çoğu zaman bir sonraki cümlede: "…%70'ine devam zorunludur. Sağlamayan öğrenci NA alır."
     const k = sents.indexOf(src);
-    const f = fold(src + " " + (k >= 0 && sents[k + 1] ? sents[k + 1] : ""));
+    const f = fold(
+      src +
+        " " +
+        (k >= 0 && sents[k + 1] ? sents[k + 1] : "") +
+        " " +
+        (k >= 0 && sents[k + 2] ? sents[k + 2] : "") +
+        " " +
+        (k >= 0 && sents[k + 3] ? sents[k + 3] : "")
+    );
     const na = /\bna\b|finale giremez|final sinavina giremez|not be allowed|cannot take the final|\bfail|kalir|basarisiz|devamsizliktan/.test(f);
     push({
       kind: "devam",
@@ -942,7 +1019,7 @@ export function parseSyllabus(text, now = new Date()) {
     if (head.length < 3) continue;
     const keys = head.map((h) => {
       const fh = fold(h).replace(/[:*]/g, "").trim();
-      return ALL_LABELS.find((x) => fh === x.l || (fh.includes(x.l) && fh.length - x.l.length <= 8 && x.l.length >= 4))?.k || null;
+      return ALL_LABELS.find((x) => fh === x.l || (x.k !== "course" && fh.includes(x.l) && fh.length - x.l.length <= 8 && x.l.length >= 4))?.k || null;
     });
     if (keys.filter(Boolean).length < 2) continue;
     let j = i + 1;
