@@ -542,5 +542,56 @@
       "durustluk",
       "telafi"
     ]
+  },
+  "en_sube_tba": {
+    "code": "ME 2020",
+    "name": "Manufacturing Lab Practice",
+    "instructor": "Dr. Deniz Test",
+    "email": "deniz.test@example.edu",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "sessions": [
+      [
+        1,
+        "13:30",
+        "16:20",
+        "C105"
+      ],
+      [
+        1,
+        "09:30",
+        "12:20",
+        "C207"
+      ]
+    ],
+    "grading": {
+      "Mid-term Exam 1": 40,
+      "Mid-term Exam 2": 40,
+      "Final Project": 20
+    },
+    "attendance": null,
+    "max_absences": null,
+    "final_min": null,
+    "items": [
+      [
+        "Mid-Term Exam 1",
+        ""
+      ],
+      [
+        "Mid Term Exam 2",
+        "2026-06-16"
+      ]
+    ],
+    "policies": [],
+    "warnings_include": [
+      "Birden fazla şube",
+      "ders saatinde",
+      "Kredi bulunamadı",
+      "Devam şartı bulunamadı"
+    ],
+    "warnings_exclude": [
+      "Final tarihi bulunamadı"
+    ]
   }
 }
