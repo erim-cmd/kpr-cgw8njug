@@ -211,7 +211,8 @@ function parseGrading(lines, flines) {
       // "CLO No. / Assessment Component / Weight" gibi tablolarda ilk sütun ders çıktısı numarasıdır
       // ("1-5", "2-4, 7-9", "-", "DK1, DK2, DK4" gibi), asıl bileşen adı ikinci sütunda olabilir;
       // adı bazen de sarmadan ötürü satırın hemen üstündeki tek hücreli satır(lar)a düşmüş olabilir.
-      const cloLike = /^-$|^((\d+|dk\d+|clo\d+)(-\d+)?)(\s*,\s*(\d+|dk\d+|clo\d+)(-\d+)?)*$/i;
+      // Aralık tireleri PDF'te "-" değil "–"/"—" (en/em dash) olabilir (ör. "1–4").
+      const cloLike = /^[-–—]$|^((\d+|dk\d+|clo\d+)([-–—]\d+)?)(\s*,\s*(\d+|dk\d+|clo\d+)([-–—]\d+)?)*$/i;
       let nameIdx = 0;
       let name = cells[0];
       let fname = fcells[0];
@@ -242,7 +243,10 @@ function parseGrading(lines, flines) {
       if (!name || !COMPONENT.test(fname) || SKIP_ROW.test(fname)) continue;
       const vals = cells.slice(nameIdx + 1);
       let w = null;
-      if (headerWeightCol > 0 && vals[headerWeightCol - 1] !== undefined) w = numIn(vals[headerWeightCol - 1]);
+      // headerWeightCol, başlık satırındaki MUTLAK hücre indeksi; ad CLO sütunundan kaydırıldıysa (nameIdx)
+      // vals içindeki karşılığı da aynı miktarda kaymış olur.
+      const wIdx = headerWeightCol - nameIdx - 1;
+      if (headerWeightCol > 0 && wIdx >= 0 && vals[wIdx] !== undefined) w = numIn(vals[wIdx]);
       if (w === null) {
         const pct = vals.map((v) => (/%/.test(v) ? numIn(v) : null)).filter((x) => x !== null);
         const nums = vals.map(numIn).filter((x) => x !== null);
@@ -257,8 +261,10 @@ function parseGrading(lines, flines) {
     }
 
     // Tek hücreli satır: "Vize %35, Proje %25, Final %40" · "Midterm Exam: 30%" · "Quizzes (best 4 of 5): 10%"
+    // Not: cümle sınırında da böl ("...Turnitin. The maximum ratio is 30%.") — yoksa alakasız bir cümledeki
+    // yüzde, önceki cümledeki "project" gibi bir anahtar kelimeyle yanlışlıkla eşleşip sahte bir not bileşeni üretebilir.
     const line = lines[i];
-    const parts = line.split(/[,;]|\s{2,}|\s+(?:ve|and)\s+(?=[A-ZÇĞİÖŞÜa-zçğıöşü]+\s*[:(%-]?\s*%?\d)/);
+    const parts = line.split(/[,;]|\s{2,}|(?<!\d)\.\s+(?=[A-ZÇĞİÖŞÜ])|\s+(?:ve|and)\s+(?=[A-ZÇĞİÖŞÜa-zçğıöşü]+\s*[:(%-]?\s*%?\d)/);
     if (shareRow(fold(line), line, shares)) continue;
     for (const part of parts) {
       const fp = fold(part);
@@ -487,13 +493,18 @@ function parseItems(lines, flines, termYear, warnings) {
         const any = cells.flatMap((c, k) => (k === r.ci ? [] : findDates(fcells[k], termYear)));
         d = any[0];
       }
-      // Saat: tarihten sonra gelen ilk saat (aralık değil)
+      // "Final exam period: 14–27.12.2026; exact date will be announced." gibi: hemen ardından "ilan
+      // edilecek/announced" geçiyorsa bu bir ARALIK bitişi, gerçek sınav tarihi değil — tarihsiz say.
+      if (d && /will be announced|to be announced|\btba\b|\btbd\b|ilan edilecek/.test(fc.slice(d.end, d.end + 45))) d = null;
+      // Saat: tarihten sonra gelen ilk saat (aralık değil); "09.12.2026" gibi bir tarihin parçası
+      // ("09.12") yanlışlıkla saat sanılmasın diye hücrede bulunan HERHANGİ bir tarihin aralığı elenir.
       let time = "";
       const tsrc = fc;
       TIME_RE.lastIndex = 0;
       const ranges = [...tsrc.matchAll(RANGE_RE)];
+      const inAnyDate = (idx) => r.dates.some((x) => idx >= x.index && idx < x.end);
       if (!ranges.length) {
-        const tm = [...tsrc.matchAll(TIME_RE)].find((t) => !d || t.index >= (r.dates.includes(d) ? d.end : 0));
+        const tm = [...tsrc.matchAll(TIME_RE)].find((t) => !inAnyDate(t.index) && (!d || t.index >= (r.dates.includes(d) ? d.end : 0)));
         if (tm && !(d && tm.index >= d.index && tm.index < d.end)) time = hm(tm[1], tm[2]);
       } else time = hm(ranges[0][1], ranges[0][2]);
       const ap = /\b(1[0-2]|0?[1-9])(?:[:.]([0-5]\d))?\s*(am|pm|a\.m\.|p\.m\.)/.exec(fc);
@@ -598,6 +609,9 @@ function parseSessions(text, flines, lines, pairsBy) {
     const days = [...f.matchAll(DAY_RE)].map((m) => ({ i: m.index, day: dayOf(m[1]) }));
     const ranges = [...f.matchAll(RANGE_RE)].map((m) => ({ i: m.index, end: m.index + m[0].length, start: hm(m[1], m[2]), stop: hm(m[3], m[4]) }));
     if (!days.length || !ranges.length) continue;
+    // "Classroom & Time" gibi birleşik hücrelerde oda kodu gün adından ÖNCE gelebilir ("D301 / Wednesday 12:30-15:20")
+    const leadMatch = /^\s*([A-Z]{1,3}\s?-?\s?\d{2,4}[A-Za-z]?)\s*[\/,]/.exec(c);
+    const leadRoom = leadMatch && dayOf(fold(leadMatch[1]).split(/[\s-]/)[0]) < 0 ? leadMatch[1] : "";
     let pending = [];
     for (const r of ranges) {
       const before = days.filter((d) => d.i < r.i && !sessions.some((s) => s._i === d.i && s._c === c));
@@ -625,7 +639,7 @@ function parseSessions(text, flines, lines, pairsBy) {
       for (const d of use) {
         if (d.day < 0) continue;
         if (r.stop <= r.start) continue;
-        sessions.push({ day: d.day, start: r.start, end: r.stop, room: clean(room || globalRoom), _i: d.i, _c: c });
+        sessions.push({ day: d.day, start: r.start, end: r.stop, room: clean(room || leadRoom || globalRoom), _i: d.i, _c: c });
       }
     }
   }

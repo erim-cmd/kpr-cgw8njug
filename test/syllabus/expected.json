@@ -458,5 +458,89 @@
       "durustluk",
       "telafi"
     ]
+  },
+  "en_bau_real3": {
+    "code": "ENM 4116",
+    "name": "New Product and Service Development",
+    "instructor": "Assoc. Prof. Dr. Test Kişi",
+    "email": "test3@ornek.edu.tr",
+    "office": "D434",
+    "credit": 3,
+    "ects": 6,
+    "sessions": [
+      [
+        2,
+        "12:30",
+        "15:20",
+        "D301"
+      ]
+    ],
+    "grading": {
+      "Assignment/Project": 40,
+      "Midterm Exam": 20,
+      "Final Exam": 40
+    },
+    "attendance": null,
+    "final_min": null,
+    "items": [
+      [
+        "Project topic development",
+        "2026-10-07",
+        "",
+        null
+      ],
+      [
+        "In-class activity Graded Project presentation",
+        "2026-11-04",
+        "",
+        null
+      ],
+      [
+        "Midterm Exam",
+        "2026-11-11",
+        "",
+        null
+      ],
+      [
+        "Case activity Graded Project presentation",
+        "2026-10-28",
+        "",
+        null
+      ],
+      [
+        "Case analysis / project development",
+        "2026-11-18",
+        "",
+        null
+      ],
+      [
+        "Graded Project presentation",
+        "2026-11-25",
+        "",
+        null
+      ],
+      [
+        "Graded project presentation",
+        "2026-12-02",
+        "",
+        null
+      ],
+      [
+        "Term Project Student Presentations and Semester Overview",
+        "2026-12-09",
+        "",
+        null
+      ],
+      [
+        "Final sınavı",
+        "",
+        "",
+        null
+      ]
+    ],
+    "policies": [
+      "durustluk",
+      "telafi"
+    ]
   }
 }
