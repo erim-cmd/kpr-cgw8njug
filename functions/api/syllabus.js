@@ -235,6 +235,14 @@ async function overLimit(request, env) {
 /* İstek                                                                */
 /* ------------------------------------------------------------------ */
 
+/**
+ * GET /api/syllabus → { ready } — uygulama yükleme ekranında "yapay zekâ seçeneğini göstereyim mi?"
+ * diye sorar. Claude çağrılmaz, günlük sayaç artmaz; her zaman 200 döner (konsolda hata görünmesin).
+ */
+export async function onRequestGet({ env }) {
+  return json({ ready: Boolean(env.ANTHROPIC_API_KEY) });
+}
+
 export async function onRequestPost({ request, env }) {
   if (!env.ANTHROPIC_API_KEY) return fail(503, "Syllabus okuma henüz yapılandırılmadı. Dersi şimdilik elle ekleyebilirsin.");
 

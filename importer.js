@@ -30,17 +30,22 @@ const AI_MAX_BYTES = 4 * 1024 * 1024;
 let apiState = null; // "ready" | "off" | "none"
 
 /**
- * Sunucu var mı, yapılandırılmış mı? Boş bir POST gönderir: fonksiyon bunu Claude'u
- * çağırmadan ve günlük sayacı artırmadan JSON ile reddeder (anahtar yoksa 503, varsa 400).
- * Statik barındırmada (GitHub Pages) JSON gelmez → "none".
+ * Sunucu var mı, yapılandırılmış mı? GET /api/syllabus sorar: fonksiyon Claude'u çağırmadan ve
+ * günlük sayacı artırmadan 200 + { ready } döner. Yanıtta hata kodu olmadığı için konsola hata düşmez.
+ * GitHub Pages'te hiç sorulmaz (statik; sunucu yok) → "none".
  */
 async function aiStatus() {
   if (apiState) return apiState;
+  // GitHub Pages yalnızca statik dosya sunar: sunucu yok. Yoklama orada 405 döner ve
+  // tarayıcı konsoluna kırmızı hata yazar; hiç sormadan "none" say.
+  if (/\.github\.io$/i.test(location.hostname)) return (apiState = "none");
   if (!navigator.onLine) return "none";
   try {
-    const res = await fetch(API, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
-    const json = (res.headers.get("content-type") || "").includes("json");
-    apiState = !json ? "none" : res.status === 503 ? "off" : "ready";
+    // GET /api/syllabus her zaman 200 + { ready } döner (Claude çağrılmaz, sayaç artmaz).
+    // JSON gelmezse (statik barındırma) sunucu yok demektir.
+    const res = await fetch(API, { cache: "no-store" });
+    const body = (res.headers.get("content-type") || "").includes("json") ? await res.json().catch(() => null) : null;
+    apiState = !body || typeof body.ready !== "boolean" ? "none" : body.ready ? "ready" : "off";
   } catch {
     apiState = "none";
   }
