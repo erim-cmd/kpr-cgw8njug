@@ -217,6 +217,12 @@
       [
         "Lab Report 1",
         "2026-11-20"
+      ],
+      [
+        "Final",
+        "",
+        null,
+        null
       ]
     ],
     "policies": [
@@ -317,6 +323,12 @@
         "",
         null,
         11
+      ],
+      [
+        "Final",
+        "",
+        null,
+        null
       ]
     ],
     "policies": [
@@ -400,6 +412,12 @@
         "",
         null,
         11
+      ],
+      [
+        "Final Exam",
+        "",
+        null,
+        null
       ]
     ],
     "policies": [
@@ -539,8 +557,8 @@
       ]
     ],
     "policies": [
-      "durustluk",
-      "telafi"
+      "devam",
+      "durustluk"
     ]
   },
   "en_sube_tba": {
@@ -592,6 +610,129 @@
     ],
     "warnings_exclude": [
       "Final tarihi bulunamadı"
+    ]
+  },
+  "en_ofis_ekseni": {
+    "code": "FIN 4100",
+    "name": "Derivatives and Risk",
+    "instructor": "Dr. Ada Deneme",
+    "email": "ada.deneme@example.edu",
+    "office": "C312",
+    "office_hours": "Tuesdays 11:30 – 12:20; Monday 11:30 – 12:20; Thursdays 14:30 – 15:20",
+    "credit": 3,
+    "ects": 6,
+    "sessions": [
+      [
+        2,
+        "09:30",
+        "12:20",
+        "B205"
+      ]
+    ],
+    "grading": {
+      "Midterm Exam": 30,
+      "Homework (2)": 20,
+      "Final Exam": 50
+    },
+    "attendance": null,
+    "max_absences": null,
+    "final_min": null,
+    "items": [
+      [
+        "Homework 1",
+        "",
+        null,
+        4
+      ],
+      [
+        "Project",
+        "",
+        null,
+        11
+      ],
+      [
+        "project",
+        "",
+        null,
+        12
+      ],
+      [
+        "Midterm Exam",
+        "",
+        null,
+        null
+      ],
+      [
+        "Final Exam",
+        "",
+        null,
+        null
+      ]
+    ],
+    "policies": [
+      "butunleme",
+      "devam",
+      "durustluk",
+      "telafi"
+    ],
+    "policies_kritik": [
+      "telafi"
+    ],
+    "warnings_include": [
+      "Midterm Exam tarihi",
+      "Final tarihi syllabus",
+      "devam oranı yazmıyor"
+    ],
+    "warnings_exclude": [
+      "Devam şartı bulunamadı",
+      "Birden fazla şube"
+    ]
+  },
+  "tr_olcme_sutunu": {
+    "code": "GEP 1700",
+    "name": "Deneme İletişimi",
+    "instructor": "Dr. Deniz Örnek",
+    "email": "deniz.ornek@example.edu",
+    "office": "A Blok 2. Kat No: 5",
+    "office_hours": "Salı 10:00-12:00",
+    "credit": 3,
+    "ects": 4,
+    "sessions": [],
+    "grading": {
+      "Ödev/proje": 20,
+      "Arasınav": 30,
+      "Katılım": 10,
+      "Dönemsonu sınavı": 40
+    },
+    "attendance": 70,
+    "max_absences": null,
+    "final_min": null,
+    "items": [
+      [
+        "Arasınav",
+        "",
+        null,
+        null
+      ],
+      [
+        "Dönemsonu sınavı",
+        "",
+        null,
+        null
+      ]
+    ],
+    "policies": [
+      "devam"
+    ],
+    "policies_kritik": [
+      "devam"
+    ],
+    "warnings_include": [
+      "Ders çevrimiçi",
+      "Arasınav tarihi"
+    ],
+    "warnings_exclude": [
+      "Sınav/ödevler sadece hafta"
     ]
   }
 }

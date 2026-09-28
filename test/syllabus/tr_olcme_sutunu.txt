@@ -1,0 +1,26 @@
+Dersin Kodu ve Adı
+GEP 1700 – Deneme İletişimi
+2. Öğretim Elemanı Bilgileri
+Öğretim Elemanı	Dr. Deniz Örnek
+Ofis ve Ofis saatleri	A Blok 2. Kat No: 5 - Salı 10:00-1200
+E-posta	deniz.ornek@example.edu
+Kredi/ AKTS	3/4
+Derslik ve Zaman	Çevrimiçi
+6. Değerlendirme ve Yapay Zekâ Kullanımı
+DK No	Ölçme Araçları	Puanlama	Ağırlık (%)
+1-8	Ödev/proje	20
+1-4	Arasınav	30
+1-8	Katılım	10
+5-10	Dönemsonu sınavı	40
+Derse Devam
+Dersi alan tüm öğrencilerin derse düzenli olarak devam etmesi beklenmektedir. Devam zorunluluğu %70’tir. Ayrıca, derslere geç katılan ya da dersten erken ayrılan öğrencilerin yoklamada var sayılmak için haftalık ders süresinin en az %70’inde katılımcı olmaları beklenmektedir. Aksi halde bu öğrenciler derse katılmamış sayılacaklardır.
+12. Haftalık Öğrenme Planı
+Hafta	DK No	Konu	Etkinlik	Ölçme
+1	1	Giriş	Konu anlatımı	Katılım
+2	1	Temel kavramlar	Tartışma	Sınav, katılım
+3	2	Algılama	Tartışma	Sınav
+4	3	Kuramlar	Örnekolay	Sınav, ödev
+5	3	Stratejiler	Gösterim	Sınav, ödev, katılım
+6	4	Alanlar	Takım çalışması	Sınav, ödev
+7	5	Medya	Tartışma	Sınav, ödev, katılım
+8	6	Propaganda	Yansıtma	Sınav
