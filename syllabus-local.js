@@ -802,8 +802,15 @@ function parseFinalMin(sents) {
 /** Kural cümleleri → Türkçe, kısa, sonuçlu bayraklar. */
 function parsePolicies(sents, att, finalMin) {
   const out = [];
+  const sev = { kritik: 0, dikkat: 1, bilgi: 2 };
   const push = (p) => {
-    if (out.some((x) => x.kind === p.kind && x.rule === p.rule)) return;
+    const dup = out.find((x) => x.kind === p.kind && x.rule === p.rule);
+    // Aynı kural daha sert bir cümlede geçiyorsa ("…will result in a failing grade and disciplinary action") onu tut
+    if (dup) {
+      if (sev[p.severity] < sev[dup.severity] || (!dup.consequence && p.consequence && p.severity === dup.severity))
+        Object.assign(dup, { ...p, source: cut(p.source, 200) });
+      return;
+    }
     out.push({ ...p, source: cut(p.source, 200) });
   };
   if (att.percent !== null || att.max_absences !== null) {
@@ -924,7 +931,7 @@ function parsePolicies(sents, att, finalMin) {
     // Akademik dürüstlük
     if (/kopya|intihal|plagiar|cheat|academic (dishonesty|integrity|misconduct)|yapay zeka|artificial intelligence|\bai\b|chatgpt|generative/.test(f)) {
       const ai = /yapay zeka|artificial intelligence|\bai\b|chatgpt|generative/.test(f);
-      const hard = /\bf\b|\bff\b|disiplin|disciplinary|fail|sifir|zero|0 puan/.test(f);
+      const hard = /\bf\b|\bff\b|disiplin|disciplinary|referred to|sevk edil|fail|sifir|zero|0 puan/.test(f);
       push({
         kind: "durustluk",
         severity: hard || (ai && /yasak|not allowed|prohibited|plagiar|intihal|kopya/.test(f)) ? "kritik" : "dikkat",
