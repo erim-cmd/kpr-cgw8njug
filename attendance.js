@@ -11,7 +11,9 @@
  */
 
 export function attendance(course, weeks) {
-  const perWeek = course.sessions.length;
+  // Programı olmayan ders (çevrimiçi, saati yazmayan): haftada bir oturum say; yoksa devam oranı
+  // girilmiş olsa bile hak hesaplanamaz ve kart yanlışlıkla "Devam şartı girilmedi" der.
+  const perWeek = course.sessions.length || 1;
   const total = perWeek * weeks;
   const used = course.absences.length;
   let limit = null;
