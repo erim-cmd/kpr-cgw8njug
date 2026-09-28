@@ -1,0 +1,38 @@
+Course Code & Title
+FIN4100 Derivatives and Risk
+
+COURSE SYLLABUS
+2. Instructor Information
+Instructor	Dr. Ada Deneme
+South Campus, Building C, 3rd floor, Room C312
+Tuesdays 11:30 – 12:20
+Office & Office Hours
+Monday 11:30 – 12:20
+Thursdays 14:30 – 15:20
+E-mail	ada.deneme@example.edu
+3.Course Overview
+Semester	Fall 2026-2027
+Credits/ ECTS	3 / 6
+Wednesday B205, 09:30-12:20
+Classroom & Time
+Delivery Mode	Face-to-Face
+6. CLO, Assessment and AI Use
+CLO No.	Assessment Component	Weight (%)	AI Use Level of the student *
+CLO 1, 2	Midterm Exam	30%	AI Not Permitted
+CLO 2, 3	Homework (2)	20%	Limited and Conditional Use
+CLO 1, 2, 3	Final Exam	50%	AI Not Permitted
+*The permitted use of AI for each assessment task will be specified in the relevant task instructions.
+10. Course Policies
+Attendance
+Attendance is mandatory, will be taken and is necessary for quizzes and other in-class activities.
+Attendance is counted only if the student is present for the full session; arriving late or leaving early may result in that session's attendance not being recorded.
+Absence from the quizzes/exams will result in a grade of 0 for that exam. Resit exam serves as the make-up for the final exam.
+Students are expected to be respectful in lectures and exams (including resits).
+Have a backup plan: Since no make-ups are granted for connectivity, hardware, or power failures, keep a second device ready.
+12. Weekly Learning Plan
+Week	CLO No	Topic	Learning Activities	Before Class	Assessment
+1	CLO1	Introduction	Lecture	Read Ch.1	Attendance and active participation
+4	CLO2	Forward pricing	Lecture	Read Ch.5	Homework 1
+11	CLO3	Project	research	progress
+● Project work applying	Continue project	Project
+12	CLO3	Project finalization	Finalize project	Project submission

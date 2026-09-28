@@ -38,6 +38,12 @@ for (const [name, e] of Object.entries(exp)) {
     // Uyarılar (isteğe bağlı): olması gerekenler ve kesinlikle olmaması gerekenler
     for (const w of e.warnings_include || []) ok(r.warnings.some((x) => fold(x).includes(fold(w))), `uyarı yok: "${w}" · var olanlar: ${r.warnings.join(" / ")}`);
     for (const w of e.warnings_exclude || []) ok(!r.warnings.some((x) => fold(x).includes(fold(w))), `olmaması gereken uyarı var: "${w}"`);
+    if ("office_hours" in e) ok(c.office_hours === e.office_hours, `office_hours: ${JSON.stringify(c.office_hours)} ≠ ${JSON.stringify(e.office_hours)}`);
+    // Kırmızı (kritik) kural türleri (isteğe bağlı): yanlış alarm olmasın
+    if (e.policies_kritik) {
+      const kr = [...new Set(r.policies.filter((p) => p.severity === "kritik").map((p) => p.kind))].sort();
+      ok(JSON.stringify(kr) === JSON.stringify([...e.policies_kritik].sort()), `kritik kurallar: ${kr} ≠ ${[...e.policies_kritik].sort()}`);
+    }
     const kinds = [...new Set(r.policies.map((p) => p.kind))].sort();
     ok(JSON.stringify(kinds) === JSON.stringify([...e.policies].sort()), `policies: ${kinds} ≠ ${[...e.policies].sort()}`);
   }

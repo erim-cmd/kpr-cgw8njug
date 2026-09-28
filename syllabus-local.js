@@ -344,7 +344,7 @@ const stripPct = (s) =>
 
 const ITEM_KINDS = [
   { type: "sinav", re: /\b(ara sinav|arasinav|vize|midterm|mid-term)\b/, tr: "Vize sınavı", group: "vize" },
-  { type: "sinav", re: /\b(final|yariyil sonu sinavi|yariyil sonu)\b/, tr: "Final sınavı", group: "final" },
+  { type: "sinav", re: /\b(final|yariyil sonu sinavi|yariyil sonu|donem ?sonu sinavi)\b/, tr: "Final sınavı", group: "final" },
   { type: "sinav", re: /\b(butunleme|resit|make-?up exam|mazeret sinavi)\b/, tr: "Bütünleme", group: "butunleme" },
   { type: "sinav", re: /\b(quiz|kisa sinav|pop quiz)\b/, tr: "Quiz", group: "quiz" },
   { type: "proje", re: /\b(proje|project|sunum|presentation|poster)\b/, tr: "Proje", group: "proje" },
@@ -579,12 +579,28 @@ function parseItems(lines, flines, termYear, warnings) {
   return dedupeItems(items, warnings);
 }
 
+// Haftalık planın "Ölçme / Assessment" sütunu: "Sınav, katılım", "Sınav, ödev" her haftada tekrar eder.
+// Bunlar o haftanın sınavı değil, ölçme yöntemidir. Adı sadece genel kelime olan ("Sınav", "Ödev") tarihsiz
+// öğeler 4+ farklı haftaya yayılmışsa hepsi atılır.
+const GENERIC_TITLE = /^(sinav|sinavlar|exam|exams|odev|odevler|homework|assignment|assignments|proje|project|sunum|presentation)$/;
+function dropMeasureColumn(items) {
+  const generic = (it) => !it.date && it.week && GENERIC_TITLE.test(fold(it.title));
+  const weeks = new Set(items.filter(generic).map((it) => it.week));
+  return weeks.size >= 4 ? items.filter((it) => !generic(it)) : items;
+}
+
 function dedupeItems(items, warnings) {
   const out = [];
+  items = dropMeasureColumn(items);
   for (const it of items) {
     const dup = out.find((o) => {
       if (o.group !== it.group) return false;
       if (fold(o.title) === fold(it.title) && o.date === it.date && o.week === it.week) return true;
+      // Tarihsiz, aynı haftada aynı türden iki proje/ödev satırı: tablo satırı bölünmüş, tek teslim
+      if (["proje", "odev"].includes(it.group) && !o.date && !it.date && o.week && o.week === it.week) {
+        if (it.title.length < o.title.length) o.title = it.title;
+        return true;
+      }
       // Vize/final/bütünleme: aynı grup, 10 gün içinde → aynı sınav
       if (["vize", "final", "butunleme"].includes(it.group)) {
         if (o.date && it.date) return Math.abs(new Date(o.date) - new Date(it.date)) <= 10 * 86400000 && fold(o.title).replace(/\d/g, "") === fold(it.title).replace(/\d/g, "") ? true : Math.abs(new Date(o.date) - new Date(it.date)) <= 3 * 86400000;
@@ -612,14 +628,37 @@ function dedupeItems(items, warnings) {
 /* Ders saatleri                                                         */
 /* ------------------------------------------------------------------ */
 
+// PDF tablolarında "Office & Office Hours" etiketi hücrenin ortasına düşer; saatler etiketin üstünde/altında
+// ayrı satırlarda kalır. Etiketin ±3 satırındaki (araya başka bir etiket girmeden) gün+saat satırları ofis saatidir.
+const CLASS_LABEL = /classroom|derslik|class (time|hours|schedule)|ders saat|ders zaman|lecture|zaman\b|\btime\b/;
+const DAY_ONE = new RegExp(DAY_RE.source);
+const RANGE_ONE = new RegExp(RANGE_RE.source);
+function officeLines(lines, flines) {
+  const out = new Set();
+  flines.forEach((f, i) => {
+    if (!/\b(ofis|office)\b/.test(f) || f.length > 45 || CLASS_LABEL.test(f)) return;
+    for (const dir of [-1, 1]) {
+      for (let j = i + dir, n = 0; j >= 0 && j < flines.length && n < 3; j += dir, n++) {
+        const g = flines[j];
+        if (!g.trim() || CLASS_LABEL.test(g) || (lines[j].includes("\t") && !/\d{1,2}[:.]\d{2}/.test(g))) break;
+        DAY_RE.lastIndex = 0;
+        RANGE_RE.lastIndex = 0;
+        if (DAY_ONE.test(g) && RANGE_ONE.test(g)) out.add(j);
+      }
+    }
+  });
+  return out;
+}
+
 function parseSessions(text, flines, lines, pairsBy) {
   const sessions = [];
   const candidates = [];
+  const office = officeLines(lines, flines);
   // Önce "Ders saatleri:" gibi etiketli değerler, sonra gün + saat aralığı geçen ama ofis saati olmayan satırlar
   for (const p of pairsBy.sessions || []) candidates.push(p.v);
   if (!candidates.length) {
     flines.forEach((f, i) => {
-      if (/ofis|office|gorusme|consultation|sinav|exam|final|vize|midterm|teslim|due/.test(f)) return;
+      if (office.has(i) || /ofis|office|gorusme|consultation|sinav|exam|final|vize|midterm|teslim|due/.test(f)) return;
       DAY_RE.lastIndex = 0;
       RANGE_RE.lastIndex = 0;
       if (DAY_RE.test(f) && RANGE_RE.test(f)) candidates.push(lines[i]);
@@ -660,6 +699,11 @@ function parseSessions(text, flines, lines, pairsBy) {
       const seg = c.slice(r.end).split(/[;]|\s\/\s/)[0];
       const rm = /(?:room|derslik|sinif|sınıf|classroom)\s*:?\s*([A-Za-zÇĞİÖŞÜçğıöşü]*-?\s?\d{1,4}[A-Za-z]?)/i.exec(seg);
       if (!room && rm) room = rm[1];
+      // "Tuesday B404, 15:30-18:20": oda kodu gün adıyla saat arasında
+      if (!room && use.length) {
+        const mid = /\b([A-Z]{1,3}\s?-?\d{2,4}[A-Za-z]?)\s*[,/]?\s*$/.exec(c.slice(use[use.length - 1].i, r.i));
+        if (mid) room = mid[1];
+      }
       for (const d of use) {
         if (d.day < 0) continue;
         if (r.stop <= r.start) continue;
@@ -775,21 +819,51 @@ function parsePolicies(sents, att, finalMin) {
         " " +
         (k >= 0 && sents[k + 3] ? sents[k + 3] : "")
     );
-    const na = /\bna\b|finale giremez|final sinavina giremez|not be allowed|cannot take the final|\bfail|kalir|basarisiz|devamsizliktan/.test(f);
+    // BAU Yönetmeliği Md. 19: devam şartını sağlamayan NA alır ve finale giremez — syllabus yazmasa da geçerli
+    // (Dönem paneli de aynı kuralı gösterir), bu yüzden devam şartı her zaman kritik.
     push({
       kind: "devam",
-      severity: na ? "kritik" : "dikkat",
+      severity: "kritik",
       rule: att.percent !== null ? `Derslerin en az %${att.percent}'ine devam zorunlu.` : `En fazla ${att.max_absences} ${unitTr(att.unit)} devamsızlık hakkın var.`,
-      consequence: na ? "Sınırı aşarsan NA alırsın ve finale giremezsin." : "",
+      consequence: "Sınırı aşarsan NA alırsın ve finale giremezsin.",
       source: src,
     });
+  } else {
+    // Oran yazmayan zorunlu devam: "Attendance is mandatory", "Derslere devam zorunludur"
+    const s = sents.find((x) => /(attendance|devam)[^.]{0,30}(mandatory|compulsory|required|zorunlu|will be taken)|yoklama alin/.test(fold(x)));
+    if (s) push({ kind: "devam", severity: "dikkat", rule: "Yoklama alınıyor; devam oranı syllabus'ta yazmıyor.", consequence: "Oranı hocana sor ve Dönem panelinde gir.", source: s });
   }
+  // Geç gelen / erken çıkan devamsız sayılır
+  const late = sents.find((x) => {
+    const f = fold(x);
+    return /gec (katilan|gelen|kalan)|erken (ayrilan|cikan)|arriving late|leaving early|late arrival|full session|tamaminda/.test(f) && /devam|attend|yoklama|katilmamis|not being recorded|not recorded|absent/.test(f);
+  });
+  if (late) push({ kind: "devam", severity: "dikkat", rule: "Geç gelir ya da erken çıkarsan o ders devamsız sayılabilir.", consequence: "Devamsızlık hakkından düşer.", source: late });
   if (finalMin) {
     push({ kind: "baraj", severity: "kritik", rule: `Finalden en az ${finalMin.value} alman gerekiyor.`, consequence: "Altında kalırsan diğer notlarından bağımsız F alabilirsin.", source: finalMin.source });
   }
   for (const s of sents) {
     if (/[☐☒□■✓✔]/.test(s)) continue; // form kutucuğu satırı, kural cümlesi değil
+    if ((s.match(/ · /g) || []).length >= 2) continue; // haftalık plan / tablo satırı ("Make-up for 28.10 · …")
     const f = fold(s);
+    // Başlık ("CLO, Assessment and AI Use"): noktalama yok, kısa, yüklem yok → kural değil
+    if (!/[.!?]$/.test(s.trim()) && s.length < 90 && !/\b(not|no|yasak|edilmez|verilmez|yapilmaz|will|must|shall|zorunlu|olur|alir|sayilir|is|are|gerekir|gerekmektedir|cannot|may)\b/.test(f)) continue;
+    // Kaçırılan sınav/quiz 0: "Absence from the quizzes/exams will result in a grade of 0"
+    if (/(absence from|absent from|miss(ing|es)?|kacir\w*|girmeyen|girmezse)[^.]{0,40}(quiz|exam|sinav)[^.]{0,60}(\b0\b|zero|sifir)/.test(f)) {
+      push({ kind: "telafi", severity: "kritik", rule: "Sınava/quize girmezsen o not 0 olur.", consequence: "Mazeret sınavı yok; o günü boş tut.", source: s });
+      continue;
+    }
+    // Bütünleme / resit (make-up kelimesi geçse de): "Resit exam serves as the make-up for the final exam."
+    if (/butunleme|resit (exam|sinav)|resit exams?\b/.test(f)) {
+      push({
+        kind: "butunleme",
+        severity: "bilgi",
+        rule: /make-?up|telafi|mazeret/.test(f) ? "Finali kaçırırsan telafisi bütünleme sınavı." : /yerine gecer|replaces|instead of the final/.test(f) ? "Bütünleme notu final notunun yerine geçer." : "Bütünleme sınavı var.",
+        consequence: "",
+        source: s,
+      });
+      continue;
+    }
     // Geç teslim
     if (/gec teslim|gec gelen|gec gonderilen|late (submission|work|homework|assignment)|submitted late|after the deadline|teslim tarihinden sonra|son teslim tarihinden sonra/.test(f)) {
       const pen = /(\d{1,2})\s*%[^.]{0,30}(per day|her gun|gunluk|gun basina|daily)|%\s*(\d{1,2})[^.]{0,30}(per day|her gun|gunluk|gun basina)/.exec(f);
@@ -805,6 +879,11 @@ function parsePolicies(sents, att, finalMin) {
       const none = /verilmez|yapilmaz|no make-?up|will not be given|not offered/.test(f);
       // "Mazeret yok ama final notu o sınavın yerine sayılır" → kaçırmak 0 demek değil
       const replaced = /yerine (sayilir|gecer|kullanilir)|replace[sd]? (the|that|it)|final[^.]{0,40}(counts?|used) (for|instead)/.test(f);
+      // "No make-ups are granted for connectivity, hardware, or power failures": sınav değil, teknik arıza kuralı
+      if (/connectivity|internet|hardware|power (cut|failure)|battery|teknik (ariza|sorun)|baglanti|elektrik/.test(f)) {
+        push({ kind: "telafi", severity: "dikkat", rule: "İnternet, bilgisayar ya da elektrik arızası mazeret sayılmıyor.", consequence: "Teslimleri son dakikaya bırakma, yedek cihaz/yer planla.", source: s });
+        continue;
+      }
       if (none && replaced) {
         push({ kind: "telafi", severity: "dikkat", rule: "Ara sınav için mazeret sınavı yok; giremezsen final notun o sınavın yerine sayılır.", consequence: "Finalin ağırlığı artar; ikisini birden kaçırma.", source: s });
         continue;
@@ -814,17 +893,6 @@ function parsePolicies(sents, att, finalMin) {
         severity: none ? "kritik" : "dikkat",
         rule: none ? "Mazeret/telafi sınavı yapılmıyor." : doc ? "Mazeret sınavı sadece belgeli mazeretle (ör. sağlık raporu) veriliyor." : "Mazeret/telafi sınavı için kurallar var.",
         consequence: none ? "Sınavı kaçırırsan o not 0 olur." : doc ? "Belge yoksa kaçırdığın sınav 0 sayılır." : "",
-        source: s,
-      });
-      continue;
-    }
-    // Bütünleme
-    if (/butunleme|resit/.test(f)) {
-      push({
-        kind: "butunleme",
-        severity: "bilgi",
-        rule: /yerine gecer|replaces|instead of the final/.test(f) ? "Bütünleme notu final notunun yerine geçer." : "Bütünleme sınavı var.",
-        consequence: "",
         source: s,
       });
       continue;
@@ -859,7 +927,7 @@ function parsePolicies(sents, att, finalMin) {
       const hard = /\bf\b|\bff\b|disiplin|disciplinary|fail|sifir|zero|0 puan/.test(f);
       push({
         kind: "durustluk",
-        severity: hard || ai ? "kritik" : "dikkat",
+        severity: hard || (ai && /yasak|not allowed|prohibited|plagiar|intihal|kopya/.test(f)) ? "kritik" : "dikkat",
         rule: ai ? (/yasak|not allowed|prohibited|plagiar|intihal|kopya/.test(f) ? "Yapay zekâ ile ödev yazmak intihal sayılıyor." : "Yapay zekâ kullanımı için kurallar var.") : "Kopya ve intihal kesinlikle yasak.",
         consequence: hard ? "Tespit edilirse F ve disiplin cezası alabilirsin." : "",
         source: s,
@@ -1007,6 +1075,31 @@ function parseCourse(lines, flines, pairsBy, text) {
     const om2 = /\b([A-Za-zÇĞİÖŞÜçğıöşü]{1,3}\d{2,4})\b/.exec(officeHours);
     if (om2) office = om2[1];
   }
+  // "B Blok 1. Kat No: 9 - Pazartesi 13:00-1500": yer + saat tek hücrede → ayır
+  const fh = fold(officeHours);
+  DAY_RE.lastIndex = 0;
+  const dm = DAY_ONE.exec(fh);
+  DAY_RE.lastIndex = 0;
+  if (dm && dm.index > 3 && !office) {
+    office = clean(officeHours.slice(0, dm.index).replace(/[\s,;:\-–]+$/, ""));
+    officeHours = officeHours.slice(dm.index);
+  } else if (!dm && !/\d{1,2}[:.]\d{2}/.test(fh) && /\b(ofis|office|oda|room|blok|building|floor|kat)\b/.test(fh)) {
+    // "…, 3rd Floor, Office D434": saat değil, yer
+    if (!office) office = officeHours;
+    officeHours = "";
+  }
+  officeHours = officeHours.replace(/\b(\d{1,2})[:.](\d{2})\s*([-–])\s*(\d{2})(\d{2})\b/g, "$1:$2$3$4:$5");
+  // Etiketi ortada kalmış tablo hücresi: saatler ve yer komşu satırlarda
+  if (!office && !officeHours) {
+    const offs = [...officeLines(lines, flines)].sort((a, b) => a - b);
+    if (offs.length) {
+      officeHours = offs.map((j) => clean(lines[j])).join("; ");
+      for (let j = offs[0] - 2; j < offs[0]; j++) {
+        const rm = j >= 0 && /(?:room|oda|ofis|office)\s*:?\s*([A-Za-zÇĞİÖŞÜçğıöşü]{0,4}-?\s?\d{1,4}[A-Za-z]?)/i.exec(lines[j]);
+        if (rm) office = rm[1];
+      }
+    }
+  }
   if (ins && officeHours.startsWith(ins)) officeHours = clean(officeHours.slice(ins.length).replace(/^[\s:,-]+/, ""));
   if (office && officeHours.startsWith(office)) officeHours = clean(officeHours.slice(office.length).replace(/^[\s:;,-]+/, ""));
   course.office = cut(clean(office.replace(emailRe, "")), 60);
@@ -1074,6 +1167,20 @@ export function parseSyllabus(text, now = new Date()) {
   const sessions = parseSessions(norm, flines, lines, pairsBy);
   const items = parseItems(lines, flines, term, warnings);
   const grading = parseGrading(lines, flines);
+  // Not tablosunda olan ama takvimde hiç geçmeyen vize/final: tarihsiz sınav olarak ekle (öğrenci tarihini girer,
+  // geri sayım ve GNO simülasyonu o sınavı bilir). Uydurma tarih yok.
+  const groupOf = (t) => ITEM_KINDS.find((k) => k.re.test(fold(t)))?.group;
+  for (const g of grading) {
+    const fg = fold(g.name);
+    const grp = groupOf(g.name);
+    if (!["vize", "final"].includes(grp) || /proje|project|rapor|report|paper|essay|odev|sunum|presentation|portfol/.test(fg)) continue;
+    if (items.some((it) => groupOf(it.title) === grp)) continue;
+    items.push({ type: "sinav", title: g.name, date: "", time: "", week: null, source: cut(`Not dağılımı: ${g.name} %${g.weight}`, 150) });
+    if (grp === "final") {
+      warnings.delete("Final tarihi bulunamadı; akademik takvimden kontrol et.");
+      warnings.add("Final tarihi syllabus'ta yazmıyor (akademik takvimde ilan edilecek).");
+    } else warnings.add(`${g.name} tarihi syllabus'ta yazmıyor; ilan edilince gir.`);
+  }
   const sents = sentences(norm);
   const att = parseAttendance(sents);
   const finalMin = parseFinalMin(sents);
@@ -1084,7 +1191,9 @@ export function parseSyllabus(text, now = new Date()) {
   if (!course.name) warnings.add("Dersin adı bulunamadı.");
   if (!course.code) warnings.add("Ders kodu bulunamadı.");
   if (course.credit === null) warnings.add("Kredi bulunamadı; GNO için UMIS'teki kredisini gir.");
-  if (!sessions.length) warnings.add("Ders saatleri bulunamadı.");
+  // "Derslik ve Zaman: Çevrimiçi" → saati olmaması normal
+  const online = flines.some((l) => /(derslik|classroom|zaman|time|delivery|verilis)[^\t]*\t\s*(cevrimici|online|uzaktan)/.test(l));
+  if (!sessions.length) warnings.add(online ? "Ders çevrimiçi, saati yazmıyor; UMIS'teki saatini gir." : "Ders saatleri bulunamadı.");
   // "Section · Day · Time · Room" tablosunda birden çok şube: öğrenci yalnız birine gider
   if (sessions.length > 1 && flines.some((l) => /(^|\t)(section|sections|sube|subeler|grup|group)(\t|$)/.test(l.trim())))
     warnings.add("Birden fazla şube listelenmiş; sadece kendi şubenin ders saatini bırak, diğerlerini sil.");
@@ -1096,7 +1205,8 @@ export function parseSyllabus(text, now = new Date()) {
   const total = grading.reduce((s, g) => s + g.weight, 0);
   if (!grading.length) warnings.add("Not dağılımı bulunamadı.");
   else if (Math.abs(total - 100) > 0.5) warnings.add(`Not ağırlıklarının toplamı %${Math.round(total * 10) / 10}, 100 değil; kontrol et.`);
-  if (att.percent === null && att.max_absences === null) warnings.add("Devam şartı bulunamadı.");
+  if (att.percent === null && att.max_absences === null)
+    warnings.add(policies.some((p) => p.kind === "devam" && /orani syllabus.ta yazmiyor/.test(fold(p.rule))) ? "Yoklama alınıyor ama devam oranı yazmıyor; hocana sorup gir." : "Devam şartı bulunamadı.");
   if (att.unit && /saat|hour/.test(att.unit)) warnings.add("Devamsızlık saat olarak verilmiş; KPR ders sayısıyla sayar, kontrol et.");
   if (att.unit && /hafta|week/.test(att.unit)) warnings.add("Devamsızlık hafta olarak verilmiş; haftada birden çok ders varsa sayıyı ona göre düzelt.");
   if (!items.length) warnings.add("Sınav veya ödev tarihi bulunamadı.");
