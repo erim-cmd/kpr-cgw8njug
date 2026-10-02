@@ -391,7 +391,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 .calc-note { margin: 0; color: var(--text-muted); font-size: var(--fs-sm); }
 .warn-text { color: var(--warn); }
 
-.source-quote { margin: 0; padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--bg); border-radius: 0 10px 10px 0; font-size: var(--fs-xs); color: var(--text-muted); font-style: italic; }
+.source-quote { position: relative; overflow: hidden; margin: 0; padding: 10px 12px 10px 15px; background: var(--bg); border-radius: var(--r-md); font-size: var(--fs-xs); color: var(--text-muted); font-style: italic; }
+.source-quote::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); }
 .source-quote b { display: block; font-style: normal; font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
 /* ==========================================================
    v2.1 — Uyarılar, bildirimler, devamsızlık, ortalama
@@ -405,7 +406,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 .alert {
   --lc: var(--cyan);
   display: flex; align-items: center; gap: 4px;
-  background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--lc);
+  background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--r-md); padding: 4px 4px 4px 0;
 }
 .alert.danger { --lc: var(--danger); }
@@ -570,10 +571,11 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 
 /* Kırmızı bayraklar */
 .flags { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.flag { padding: 10px 12px; border-radius: var(--r-md); background: var(--bg); border-left: 3px solid var(--text-muted); }
-.flag.kritik { border-left-color: var(--danger); }
-.flag.dikkat { border-left-color: var(--warn); }
-.flag.bilgi { border-left-color: var(--cyan); }
+.flag { --fc: var(--text-muted); position: relative; overflow: hidden; padding: 10px 12px 10px 15px; border-radius: var(--r-md); background: var(--bg); }
+.flag::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--fc); }
+.flag.kritik { --fc: var(--danger); }
+.flag.dikkat { --fc: var(--warn); }
+.flag.bilgi { --fc: var(--cyan); }
 .flag-tag { font-size: var(--fs-2xs); font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-muted); }
 .flag.kritik .flag-tag { color: var(--danger); }
 .flag.dikkat .flag-tag { color: var(--warn); }
@@ -699,7 +701,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 
 /* Ders ekranı (ders.js) */
 .cd .sheet-body { display: flex; flex-direction: column; gap: 14px; }
-.cd-next { padding: 12px 14px; border-radius: var(--r-md); background: var(--bg); border-left: 4px solid var(--c); }
+.cd-next { position: relative; overflow: hidden; flex: none; padding: 12px 14px 12px 18px; border-radius: var(--r-md); background: var(--bg); }
+.cd-next::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c); }
 .cd-next-line { margin: 0; font-size: var(--fs-md); color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .cd-next-line b { color: var(--text); }
 .cd-next-title { margin: 2px 0 0; font-weight: 600; }
@@ -966,7 +969,6 @@ button.tl-row { width: 100%; padding: 10px 14px; border-radius: var(--r-md); bac
 .focus-exam > span:nth-child(2) b { color: var(--text); font-weight: 600; }
 
 /* Uyarılar: tek kenar şeridi yok; seviye ikonda */
-.alert { border-left-width: 1px; border-left-color: var(--border); padding: 4px 4px 4px 0; }
 .alert.danger { border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); }
 .alert-icon { border-radius: var(--r-sm); }
 
