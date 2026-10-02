@@ -30,13 +30,10 @@ function courseCard(c, tasks) {
 
 export function view() {
   const { courses, tasks } = store.get();
-  const weekly = courses.reduce((sum, c) => sum + c.sessions.reduce((m, s) => m + toMin(s.end) - toMin(s.start), 0), 0);
-  const hours = Math.round((weekly / 60) * 10) / 10;
-
   return `
     <header class="page-head">
       <h1 class="page-title">Dersler</h1>
-      <p class="page-sub">${courses.length ? `${courses.length} ders · haftada ${hours.toLocaleString("tr-TR")} saat` : "Bu dönemki derslerin"}</p>
+      ${courses.length ? "" : '<p class="page-sub">Bu dönemki derslerin</p>'}
     </header>
     ${courses.length
       ? `${importCard()}<ul class="list">${courses.map((c) => courseCard(c, tasks)).join("")}</ul>`

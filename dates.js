@@ -44,6 +44,17 @@ export function relLabel(n) {
 export const fmtLong = (d) => d.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long" });
 export const fmtShort = (iso) => parseISO(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
 
+/**
+ * Göreli gün adı: "Bugün", "Yarın", bu hafta içindeyse gün adı ("Cuma"), daha ileriyse "12 Kas".
+ * Geçmişte kalmışsa relLabel ("Dün", "3 gün gecikti").
+ */
+export function dayLabel(iso) {
+  const n = daysUntil(iso);
+  if (n <= 1) return relLabel(n);
+  if (n <= 6) return DAYS[(parseISO(iso).getDay() + 6) % 7];
+  return fmtShort(iso);
+}
+
 export function greeting() {
   const h = new Date().getHours();
   if (h < 5) return "İyi geceler";

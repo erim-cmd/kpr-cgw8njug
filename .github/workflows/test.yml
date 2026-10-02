@@ -41,3 +41,9 @@ jobs:
 
       - name: Asistan (internetsiz cevaplar)
         run: node test/asistan.mjs
+
+      - name: Not girişi tuş takımı
+        run: node test/grade-sheet.mjs
+
+      - name: Syllabus'u var olan derse birleştirme
+        run: node test/merge.mjs

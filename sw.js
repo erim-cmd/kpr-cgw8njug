@@ -11,7 +11,7 @@
  * Uygulamada "Yeni sürüm hazır → Yenile" uyarısı çıkar (bkz. js/app.js).
  */
 
-const VERSION = "2.11.0";
+const VERSION = "2.12.0";
 const SHELL_CACHE = `kpr-shell-${VERSION}`;
 const FONT_CACHE = "kpr-fonts";
 
@@ -48,6 +48,8 @@ const SHELL = [
   "./migrate.js",
   "./ders-calc.js",
   "./asistan-core.js",
+  "./grade-sheet.js",
+  "./course-merge.js",
   "./secmeli.js",
   "./attendance.js",
   "./alerts.js",

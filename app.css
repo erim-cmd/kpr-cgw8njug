@@ -609,10 +609,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 .badges .badge { white-space: nowrap; }
 
 /* Dönem akışı: özet cümlesi ve seçili hafta */
-.flow-hint { margin: 0; padding: 10px 12px; border-radius: 12px; background: rgba(242, 181, 68, 0.12); font-size: 0.86rem; }
-.flow-hint.calm { background: var(--bg); color: var(--text-muted); }
-.flow-week { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: var(--bg); }
-.flow-week .mini-title { margin: 0 0 6px; }
 .flow-start { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; font-size: 0.84rem; color: var(--text-muted); }
 .flow-start small { font-size: 0.74rem; }
 .flow-start input { max-width: 160px; }
@@ -763,10 +759,6 @@ button.stat { text-align: left; color: inherit; font: inherit; cursor: pointer; 
 .cd-plan-sum { background: var(--bg); font-weight: 500; }
 .cd-sec { display: flex; flex-direction: column; gap: 8px; }
 .cd-sec .mini-title { margin: 0; }
-.grade-bar { display: flex; gap: 3px; height: 26px; border-radius: 9px; overflow: hidden; }
-.grade-bar i { min-width: 0; display: grid; place-items: center; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; font-style: normal; }
-.grade-bar i.done { background: var(--gradient); border-color: transparent; color: #0E1320; }
-.grade-bar span { font-size: 0.68rem; font-weight: 700; overflow: hidden; white-space: nowrap; }
 .cd-plan { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .cd-plan li { display: flex; gap: 10px; align-items: baseline; padding: 7px 10px; border-radius: 10px; font-size: 0.86rem; }
 .cd-plan li b { flex: none; width: 30px; color: var(--text-muted); font-size: 0.78rem; }
@@ -779,20 +771,34 @@ button.stat { text-align: left; color: inherit; font: inherit; cursor: pointer; 
 .tl-res { margin-top: 8px; }
 .cd-src { text-align: center; margin-top: 4px; }
 
-/* Görev formu: tür çipleri + "Daha fazla" */
-.type-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.type-chips .seg-item label {
-  display: block; padding: 7px 12px; border-radius: 999px; cursor: pointer;
+/* Görev formu (v2.12): radyo çipleri, hepsi ilk ekranda */
+.task-form .sheet-body { gap: 14px; }
+.pchips { display: flex; gap: 6px; }
+.pchips.one-row { flex-wrap: nowrap; }
+.pchips.one-row .pchip { flex: 1 1 0; min-width: 0; }
+.pchips.scroll-row { overflow-x: auto; scrollbar-width: none; margin: 0 -20px; padding: 2px 20px; }
+.pchips.scroll-row::-webkit-scrollbar { display: none; }
+.pchip { position: relative; flex: none; }
+.pchip input { position: absolute; opacity: 0; pointer-events: none; }
+.pchip span {
+  display: block; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  padding: 8px 12px; border-radius: 999px; cursor: pointer;
   background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); font-weight: 600; font-size: 0.84rem;
 }
-.type-chips .seg-item input { position: absolute; opacity: 0; pointer-events: none; }
-.type-chips .seg-item input:checked + label { background: var(--surface-2); border-color: var(--cyan); color: var(--text); }
-.type-chips .seg-item input:focus-visible + label { outline: 2px solid var(--cyan); }
-.more-fields { border-top: 1px solid var(--border); padding-top: 10px; }
-.more-fields summary { cursor: pointer; color: var(--cyan); font-size: 0.86rem; font-weight: 600; list-style: none; }
-.more-fields summary::-webkit-details-marker { display: none; }
-.more-fields[open] summary { margin-bottom: 12px; }
-.more-fields > * + * { margin-top: 12px; }
+.pchips.one-row .pchip span { padding: 8px 4px; }
+.pchip input:checked + span { background: var(--surface-2); border-color: var(--cyan); color: var(--text); }
+.pchip input:focus-visible + span { outline: 2px solid var(--cyan); }
+.field-label { display: block; margin-bottom: 6px; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); }
+.title-field input { font: 600 1.15rem var(--font-display); padding: 12px 14px; }
+.due-pick { margin-top: 8px; }
+.time-link { margin-top: 8px; font-size: 0.82rem; }
+.time-pick { margin-top: 8px; max-width: 140px; }
+textarea.grow { resize: none; overflow: hidden; min-height: 44px; }
+.fixed-type { margin: 0; display: flex; align-items: center; gap: 8px; }
+.fixed-type .tag { font-size: 0.8rem; padding: 3px 10px; }
+.fixed-type small { color: var(--text-muted); }
+.task-form .sheet-foot { position: sticky; bottom: 0; background: var(--surface); }
+
 /* Görev türü etiketleri (tokens.css renkleri) */
 .tag-quiz { background: rgba(245, 184, 76, 0.16); color: var(--warn); }
 .tag-okuma { background: rgba(124, 140, 248, 0.16); color: var(--accent); }
@@ -824,26 +830,6 @@ button.week-line[aria-expanded="true"] { margin-bottom: 8px; border-color: var(-
 .gno-foot { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
 .gno-foot:empty { display: none; }
 
-/* Dönem akışı: not ağırlığı grafiği (SVG; renkler tokens.css) */
-.flow-chart { display: block; width: 100%; height: auto; margin-top: 10px; overflow: visible; }
-/* tokens.css "svg { stroke: currentColor }" simgeler için; grafikte sadece çizgiler kendi rengini alır */
-.flow-chart, .flow-chart * { stroke: none; }
-.fl-hit { fill: transparent; cursor: pointer; }
-.fl-bar { fill: var(--accent); }
-.fl-bar.viz { fill: var(--warn); }
-.fl-bar.fin { fill: var(--danger); }
-.fl-bar.past { opacity: 0.4; }
-.fl-bar.sel { stroke: var(--text); stroke-width: 1.5; }
-.fl-col:focus-visible { outline: none; }
-.fl-col:focus-visible .fl-hit { fill: rgba(76, 201, 240, 0.12); }
-.fl-grid { stroke: var(--border); stroke-width: 1; }
-.fl-ax, .fl-n, .fl-today-t { fill: var(--text-muted); font-size: 9px; font-family: var(--font-body); }
-.fl-tag { font-size: 9px; font-weight: 700; font-family: var(--font-body); }
-.fl-tag.viz { fill: var(--warn); }
-.fl-tag.fin { fill: var(--danger); }
-.fl-today { stroke: var(--cyan); stroke-width: 1.2; stroke-dasharray: 3 3; }
-.fl-today-t { fill: var(--cyan); }
-.flow-legend-1 { margin-top: 6px; }
 
 /* Asistan sohbeti (oturumluk; düz metin) */
 .chat { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -853,3 +839,117 @@ button.week-line[aria-expanded="true"] { margin-bottom: 8px; border-color: var(-
 .msg.a { align-self: flex-start; background: var(--surface); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
 .msg-src { display: block; margin-top: 6px; font-size: 0.72rem; color: var(--text-muted); }
 .msg-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+/* ==========================================================
+   v2.12 — Ortak not girişi (grade-sheet.js)
+   ========================================================== */
+dialog.gsheet {
+  margin: auto auto 0; padding: 0; border: 0; width: 100%; max-width: 480px; max-height: 92dvh;
+  background: transparent; color: var(--text); overflow: visible;
+}
+dialog.gsheet::backdrop { background: rgba(8, 11, 20, 0.72); }
+dialog.gsheet[open] .gs-panel { animation: sheet-up 0.22s ease-out; }
+.gs-panel {
+  display: flex; flex-direction: column; align-items: stretch; gap: 12px;
+  padding: 6px 18px calc(16px + var(--safe-b)); border-radius: 22px 22px 0 0;
+  background: var(--surface); border: 1px solid var(--border); border-bottom: 0;
+  transition: transform 0.15s;
+}
+.gs-grip { align-self: center; width: 64px; height: 22px; display: grid; place-items: center; background: none; border: 0; cursor: grab; touch-action: none; }
+.gs-grip i { width: 40px; height: 4px; border-radius: 4px; background: var(--border); }
+.gs-ctx { margin: 0; text-align: center; font-size: 0.86rem; font-weight: 600; color: var(--text-muted); }
+.gs-value { margin: 0; text-align: center; font-variant-numeric: tabular-nums; }
+.gs-value b { font: 700 2.6rem/1.1 var(--font-display); }
+.gs-value span { color: var(--text-muted); font-size: 1.05rem; }
+.gs-impact { margin: -4px 0 0; text-align: center; font-size: 0.86rem; color: var(--cyan); }
+.gs-quick { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
+.gs-quick button { min-width: 52px; padding: 7px 10px; border-radius: 999px; cursor: pointer; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.gs-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.gs-keys button {
+  height: 52px; border-radius: 14px; cursor: pointer; background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text); font: 600 1.3rem var(--font-display);
+}
+.gs-keys button:active { background: var(--border); }
+.gs-keys button:disabled { opacity: 0.3; cursor: default; }
+.gs-save { height: 50px; font-size: 1rem; }
+.gs-save:disabled { opacity: 0.45; }
+.gs-clear { align-self: center; color: var(--text-muted); }
+.gs-letters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.gs-letters button {
+  height: 52px; border-radius: 14px; cursor: pointer; background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text); font: 700 1.15rem var(--font-display);
+}
+.gs-letters button[aria-pressed="true"] { border-color: var(--cyan); background: rgba(76, 201, 240, 0.14); }
+
+/* Bugün: sıradaki kartı — gün en başta; bugün/yarın değilse nötr */
+.hero-day { margin: 0; font-size: 0.86rem; color: var(--text-muted); }
+.hero-day b { font: 700 1.05rem var(--font-display); color: var(--text); }
+.hero.urgent .hero-day b { color: #F0616D; }
+.hero.calm { background: var(--surface); }
+.hero-count small { display: block; }
+
+/* Ders ekranı (v2.12): kural kaynağı dokununca, plan satırı, boş plan çağrısı */
+.flag { position: relative; }
+.flag-src { margin-top: 6px; }
+.flag-src summary { cursor: pointer; list-style: none; font-size: 0.78rem; color: var(--cyan); }
+.flag-src summary::-webkit-details-marker { display: none; }
+.flag-src small { display: block; margin-top: 4px; }
+.flag-hide { position: absolute; top: 9px; right: 12px; font-size: 0.74rem; color: var(--text-muted); }
+.cd-plan li span small { display: block; color: var(--text-muted); font-size: 0.76rem; }
+.cd-plan-sum b { color: var(--text); }
+.cd-noplan { padding: 12px 14px; border-radius: 12px; background: var(--bg); border: 1px dashed var(--border); }
+.cd-noplan .btn { align-self: flex-start; }
+
+/* Ders ekranı: değerlendirme satırları (dokununca ortak not girişi) */
+.grade-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.grade-row {
+  width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; cursor: pointer;
+  padding: 12px 14px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font: inherit;
+}
+.grade-row:hover { border-color: var(--text-muted); }
+.gr-n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.92rem; }
+.gr-add { color: var(--cyan); font-size: 0.8rem; font-weight: 600; }
+.gr-score { font: 700 1.1rem var(--font-display); font-variant-numeric: tabular-nums; }
+.gr-w { flex: none; min-width: 52px; text-align: center; padding: 4px 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); font: 700 0.95rem var(--font-display); font-variant-numeric: tabular-nums; }
+.grade-row.has .gr-w { background: rgba(76, 201, 240, 0.14); color: var(--cyan); }
+button.tl-row { width: 100%; padding: 10px 14px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text); cursor: pointer; font: inherit; }
+.tl-letter { font: 700 1.2rem var(--font-display); color: var(--cyan); }
+.scale-cell { display: grid; gap: 2px; padding: 8px 10px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); color: var(--text); cursor: pointer; text-align: left; font: inherit; }
+.scale-cell span { font-size: 0.74rem; color: var(--text-muted); font-weight: 600; }
+.scale-cell b { font: 700 1rem var(--font-display); font-variant-numeric: tabular-nums; }
+.u-pick { min-width: 56px; padding: 7px 10px; border-radius: 9px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font: 700 0.92rem var(--font-display); cursor: pointer; }
+.u-pick:hover { border-color: var(--cyan); }
+.tgt-pick { font-size: 1.05rem; color: var(--cyan); }
+.att-opt { width: 100%; display: flex; flex-direction: column; gap: 2px; text-align: left; cursor: pointer; padding: 14px 16px; border-radius: 14px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font: inherit; }
+.att-opt:hover { border-color: var(--cyan); }
+.att-opt small { color: var(--text-muted); }
+
+/* Dönem akışı (v2.12): belli olan pay + önemli haftalar */
+.fw-title { margin: 0; font: 600 1.25rem var(--font-display); }
+.fw-title b { color: var(--cyan); }
+.fw-bar { height: 6px; margin-top: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.fw-bar i { display: block; height: 100%; border-radius: 999px; background: var(--gradient); }
+.fw-sub { margin: 6px 0 0; font-size: 0.84rem; color: var(--text-muted); }
+.fw-h { margin: 18px 0 8px; }
+.fw-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.fw-card { padding: 12px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); }
+.fw-card.hot { border-color: var(--warn); box-shadow: 0 0 0 1px var(--warn) inset; }
+.fw-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.fw-head b { display: block; font: 600 1rem var(--font-display); }
+.fw-head small { color: var(--text-muted); font-size: 0.78rem; }
+.fw-badge { flex: none; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); font-weight: 700; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.fw-card.hot .fw-badge { background: rgba(245, 184, 76, 0.16); color: var(--warn); }
+.fw-items { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.fw-item { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; cursor: pointer; padding: 7px 10px; border-radius: 10px; background: var(--bg); border: 0; color: var(--text); font: inherit; font-size: 0.86rem; }
+.fw-item span { min-width: 0; }
+.fw-item small { display: block; color: var(--text-muted); font-size: 0.74rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fw-item em { flex: none; font-style: normal; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fw-past-btn { margin-top: 12px; width: 100%; padding: 10px 14px; border-radius: 12px; background: none; border: 1px dashed var(--border); color: var(--text-muted); cursor: pointer; font: inherit; font-size: 0.86rem; }
+.fw-list.past { margin-top: 8px; opacity: 0.8; }
+/* İlk görünüm sığsın: kompakt bilgi kartı ve kurallar */
+.cd .sheet-body { gap: 12px; }
+.cd-cell { padding: 8px 10px; font-size: 0.82rem; }
+.cd-flags-head { margin-bottom: 0; }
+.cd .flag { padding: 9px 12px; }
+.cd .flag-rule { font-size: 0.88rem; }
+.cd .flag-cons { font-size: 0.8rem; }
