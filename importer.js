@@ -402,8 +402,8 @@ function openReview(r, { reader = "local", aiError = "" } = {}) {
         );
         closeSheet();
         if (!res) return toast("Kaydedilemedi");
-        // Ders artık Ortalama'daki dönem tablosunda (UMIS görünümü)
-        toast(`${res.course.code || res.course.name} eklendi · ${res.count} tarih`, { label: "Tabloda gör", onClick: () => (location.hash = "#/ortalama") });
+        // Ders artık Dönem → Ortalama bölümündeki tabloda (UMIS görünümü)
+        toast(`${res.course.code || res.course.name} eklendi · ${res.count} tarih`, { label: "Tabloda gör", onClick: () => (location.hash = "#/donem?bolum=ortalama") });
       });
     }
   );

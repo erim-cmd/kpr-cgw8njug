@@ -1,6 +1,6 @@
 /**
  * KPR — Uygulama girişi
- * Yönlendirme (#/bugun, #/program …), ekran çizimi, olay dağıtımı
+ * Yönlendirme (#/bugun, #/donem …), ekran çizimi, olay dağıtımı
  * ve service worker kaydı + güncelleme akışı burada.
  */
 
@@ -12,12 +12,12 @@ import { openImport } from "./importer.js";
 import { onInstallChange, promptInstall, dismissInstall } from "./install.js";
 import * as onboarding from "./onboarding.js";
 import * as today from "./today.js";
-import * as schedule from "./schedule.js";
 import * as tasks from "./tasks.js";
 import * as courses from "./courses.js";
 import * as settings from "./settings.js";
-import * as gpaView from "./gpa-view.js";
 import * as term from "./term.js";
+import * as asistan from "./asistan.js";
+import * as secmeli from "./secmeli.js";
 import { attendance } from "./attendance.js";
 import { dismiss } from "./today.js";
 import { todayISO } from "./dates.js";
@@ -25,16 +25,22 @@ import { enableNotifications, checkReminders, sync, permissionState } from "./no
 
 const ROUTES = {
   bugun: { mod: today, title: "Bugün", icon: "home", fab: "new-task" },
-  program: { mod: schedule, title: "Program", icon: "calendar", fab: "import-syllabus" },
   gorevler: { mod: tasks, title: "Görevler", icon: "tasks", fab: "new-task" },
   dersler: { mod: courses, title: "Dersler", icon: "book", fab: "import-syllabus" },
+  asistan: { mod: asistan, title: "Asistan", icon: "chat", fab: null, accent: true },
   donem: { mod: term, title: "Dönem", icon: "gauge", fab: null },
-  ortalama: { mod: gpaView, title: "Ortalama", icon: "chart", fab: null },
+  secmeli: { mod: secmeli, title: "Seçmeli", icon: "compass", fab: null },
   ayarlar: { mod: settings, title: "Ayarlar", fab: null },
 };
-// Alt menü 5 sekme: 6'sı telefonda göz yoruyor. Görevler Bugün'ün altında ("Tümü" bağlantısı).
-const TABS = ["bugun", "program", "dersler", "donem", "ortalama"];
+// Alt menü 5 sekme: 6'sı telefonda göz yoruyor. Program Bugün'ün "Hafta" görünümünde,
+// Ortalama Dönem'in bir bölümünde; Görevler Bugün'ün altında ("Tümü" bağlantısı).
+const TABS = ["bugun", "dersler", "asistan", "donem", "secmeli"];
 const TAB_OF = { gorevler: "bugun" };
+// v2.10 öncesi adresler (bildirimler, yer imleri): sorgu korunarak yeni yere
+const REDIRECTS = {
+  program: ["bugun", "gorunum", "hafta"],
+  ortalama: ["donem", "bolum", "ortalama"],
+};
 
 const $view = document.getElementById("view");
 const $tabbar = document.getElementById("tabbar");
@@ -42,14 +48,44 @@ const $fab = document.getElementById("fab");
 const $settings = document.getElementById("settings-link");
 
 $tabbar.innerHTML = `<div class="tabbar-inner">${TABS.map(
-  (r) => `<a class="tab" href="#/${r}" data-route="${r}">${icon[ROUTES[r].icon]}<span>${ROUTES[r].title}</span></a>`
+  (r) => `<a class="tab${ROUTES[r].accent ? " tab-accent" : ""}" href="#/${r}" data-route="${r}"><span class="tab-ic">${icon[ROUTES[r].icon]}</span><span>${ROUTES[r].title}</span></a>`
 ).join("")}</div>`;
 $fab.innerHTML = icon.plus;
 $settings.innerHTML = icon.settings;
 
+/** Eski adresi yenisine çevirir; bilinmeyen rota Bugün'e düşmeden ÖNCE çalışır, sorgu korunur. */
+function redirectOld() {
+  const [path, query = ""] = location.hash.replace(/^#\/?/, "").split("?");
+  const to = REDIRECTS[path];
+  if (!to) return;
+  const params = new URLSearchParams(query);
+  params.set(to[1], to[2]);
+  history.replaceState(null, "", `#/${to[0]}?${params}`);
+}
+
 function parseHash() {
+  redirectOld();
   const [path, query = ""] = location.hash.replace(/^#\/?/, "").split("?");
   return { name: ROUTES[path] ? path : "bugun", params: new URLSearchParams(query) };
+}
+
+/**
+ * Tek seferlik adres parametreleri: ?gorunum=hafta (Bugün → Hafta), ?bolum=ortalama (Dönem'de bölüme kaydır).
+ * Uygulanınca adresten silinir; yoksa her yeniden çizimde tekrar kaydırırdı.
+ */
+function applyParams() {
+  if (!store.get().profile.name) return;
+  const { name, params } = parseHash();
+  const view = params.get("gorunum");
+  const section = params.get("bolum");
+  if (!view && !section) return;
+  params.delete("gorunum");
+  params.delete("bolum");
+  const rest = params.toString();
+  history.replaceState(null, "", `#/${name}${rest ? `?${rest}` : ""}`);
+  if (view === "hafta" || view === "bugun") store.setSettings({ todayView: view });
+  // hashchange dinleyicisinin scrollTo(0, 0) çağrısından sonra çalışsın
+  if (section) setTimeout(() => term.scrollToSection(section, false), 0);
 }
 
 function currentModule() {
@@ -81,6 +117,8 @@ function render() {
   $fab.hidden = !route.fab;
   $fab.dataset.action = route.fab || "";
   $fab.setAttribute("aria-label", route.fab === "import-syllabus" ? "Ders ekle" : "Görev ekle");
+  // Onboarding sonrası ilk çizim dahil: eski adresten gelen ?gorunum / ?bolum burada uygulanır
+  applyParams();
 }
 
 // ------------------------------------------------------------------

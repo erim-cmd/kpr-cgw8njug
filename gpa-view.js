@@ -1,11 +1,15 @@
-/** KPR — "Ortalama" ekranı: BAU kurallarıyla YNO/GNO, dönem simülasyonu, geçmiş dönemler. */
+/**
+ * KPR — Ortalama: BAU kurallarıyla YNO/GNO, UMIS tablosu (harf, kredi, AKTS, HESAPLA), geçmiş dönemler.
+ * v2.10'dan beri ayrı sekme değil, Dönem ekranının "Ortalama" bölümü (term.js → section()).
+ * Hedef GNO kartı Dönem'in Özet bölümünde tek kart (readTarget/saveTarget/targetText buradan).
+ */
 
 import { store, SEASONS } from "./store.js";
 import { esc, openSheet, closeSheet, toast, armDelete } from "./ui.js";
 import { icon } from "./icons.js";
 import { COEF, UMIS_GRADES, UNVERIFIED, gradeLabel, projection, terms, standing, fmtGpa, nearestLetter, passStatus, termKey, currentTerm } from "./gpa.js";
 
-// Hedef GNO "Ortalama" ve "Dönem" ekranlarında ortak; hesap projection().needed() ile
+// Hedef GNO: hesap projection().needed() ile; kart Dönem → Özet'te
 const TARGET_KEY = "kpr:target-gno";
 export const readTarget = () => {
   try {
@@ -38,6 +42,7 @@ const gradeOptions = (selected, { blank = "", short = false, only = null } = {})
 
 let showRetake = false; // "tekrar aldığım ders var" açılınca önceki not seçimi görünür
 let showResult = false; // UMIS'teki gibi: HESAPLA'ya basınca sonuç kutusu açılır
+let historyOpen = false; // Geçmiş dönemler katlanır (varsayılan kapalı); durum yeniden çizimde korunur
 
 const fmt1 = (n) => (n === null || n === undefined ? "" : Number(n).toLocaleString("tr-TR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
 
@@ -46,53 +51,28 @@ const gradeTag = (g) => {
   return `<span class="gtag ${st || ""}">${esc(g)}</span>`;
 };
 
-function summary(p) {
-  const main = p.after ?? p.prev.avg;
-  const st = standing(main);
+/** Ortalamanın ayrıntısı (büyük GNO rakamı Dönem → Özet'te). */
+function details(p) {
   const lines = [];
   if (p.prev.avg !== null) lines.push(`<li><b>Geçmiş GNO</b><span>${fmtGpa(p.prev.avg)} · ${p.prev.credits.toLocaleString("tr-TR")} kredi</span></li>`);
   if (p.term.total) {
     lines.push(`<li><b>Bu dönem (YNO)</b><span>${p.term.graded ? fmtGpa(p.term.avg) : "—"} · ${p.term.graded}/${p.term.total} derste harf seçildi</span></li>`);
     if (p.after !== null) lines.push(`<li><b>Dönem sonu GNO</b><span>${fmtGpa(p.after)}</span></li>`);
   }
-  return `<div class="gpa-card">
-    <div class="gpa-top">
-      <div>
-        <p class="eyebrow">${p.after !== null && p.term.graded ? "Dönem sonu tahmini" : "Genel not ortalaman"}</p>
-        <div class="gpa-big">${fmtGpa(main)}<small>/ 4.00</small></div>
-      </div>
-      ${st ? `<span class="standing ${st.level}">${st.label}</span>` : ""}
-    </div>
-    ${p.unverified ? `<p class="warn-text fine">${p.unverified} geçmiş derste katsayısı doğrulanmamış not (D-, E, R) var; hesaba katılmadı.</p>` : ""}
-    ${lines.length ? `<ul class="kv">${lines.join("")}</ul>` : '<p class="calc-note">Geçmiş notlarını ve bu dönemin kredilerini gir; ortalaman burada hesaplanır.</p>'}
-  </div>`;
-}
-
-function targetBlock(p) {
-  if (!p.term.total) return "";
-  const target = readTarget();
-  const text = targetText(p, target);
-  return `<section class="section">
-    <div class="section-head"><h2>Hedef</h2></div>
-    <div class="group">
-      <label class="group-row"><div><strong>Hedef GNO</strong><p>Dönem sonunda ulaşmak istediğin ortalama</p></div>
-        <input type="number" min="0" max="4" step="0.01" inputmode="decimal" value="${target.toFixed(2)}" data-change="target" aria-label="Hedef GNO" class="num-in">
-      </label>
-    </div>
-    ${text ? `<div class="calc-result"><p>${text}</p></div>` : ""}
-  </section>`;
+  return `${p.unverified ? `<p class="warn-text fine">${p.unverified} geçmiş derste katsayısı doğrulanmamış not (D-, E, R) var; hesaba katılmadı.</p>` : ""}
+    ${lines.length ? `<ul class="kv gpa-kv">${lines.join("")}</ul>` : '<p class="calc-note">Geçmiş notlarını ve bu dönemin kredilerini gir; ortalaman burada hesaplanır.</p>'}`;
 }
 
 function currentBlock(state, p) {
   const { courses } = state;
   const term = currentTerm();
   if (!courses.length) {
-    return `<section class="section"><div class="section-head"><h2>Bu dönem</h2></div>
+    return `<div class="sub-block"><div class="section-head"><h3 class="sub-title">Bu dönem</h3></div>
       <div class="empty">
         <strong>Derslerin burada listelenecek</strong>
         <p>Syllabus'larını yükle; ders kodu, adı, kredisi ve AKTS'si bu tabloya gelsin. Sonra her derse beklediğin harfi seç.</p>
         <div class="empty-actions"><button class="btn btn-primary" type="button" data-action="import-syllabus">${icon.upload}Syllabus yükle</button></div>
-      </div></section>`;
+      </div></div>`;
   }
   const base = p.source === "base";
   const retake = base && (showRetake || courses.some((c) => c.prevGrade));
@@ -118,8 +98,8 @@ function currentBlock(state, p) {
       </div>`
     : "";
 
-  return `<section class="section">
-    <div class="section-head"><h2>Bu dönem</h2><span class="u-term">${esc(term.label)}</span></div>
+  return `<div class="sub-block">
+    <div class="section-head"><h3 class="sub-title">Bu dönem</h3><span class="u-term">${esc(term.label)}</span></div>
     <div class="u-table-wrap">
       <table class="u-table">
         <colgroup><col><col class="u-name"><col class="u-numc"><col class="u-numc"><col class="u-gradec"></colgroup>
@@ -133,7 +113,7 @@ function currentBlock(state, p) {
     ${base && !retake ? '<button class="link gap-t" type="button" data-action="show-retake">Bu dönem tekrar aldığım ders var</button>' : ""}
     <div><button class="btn btn-primary u-calc" type="button" data-action="calc">HESAPLA</button></div>
     ${result}
-  </section>`;
+  </div>`;
 }
 
 function historyBlock(state, p) {
@@ -164,22 +144,22 @@ function historyBlock(state, p) {
         </button></li>`).join("")}</ul>
       </div>`).join("") + `<button class="btn btn-ghost gap-t" type="button" data-action="new-entry">${icon.plus}Ders ekle</button>`;
   }
-  return `<section class="section"><div class="section-head"><h2>Geçmiş dönemler</h2></div>${body}</section>`;
+  const count = groups.length ? `${groups.length} dönem` : state.gpaBase ? "UMIS özeti" : "boş";
+  return `<details class="sub-block fold" ${historyOpen ? "open" : ""}>
+    <summary data-action="toggle-history"><span class="sub-title">Geçmiş dönemler</span><small>${count}</small></summary>
+    <div class="fold-body">${body}</div>
+  </details>`;
 }
 
-export function view() {
-  const state = store.get();
-  const p = projection(state);
-  return `
-    <header class="page-head">
-      <h1 class="page-title">Ortalama</h1>
-      <p class="page-sub">BAU not sistemi · A–F, 4.00 üzerinden</p>
-    </header>
-    ${summary(p)}
+/** Dönem ekranının "Ortalama" bölümü. */
+export function section(state, p) {
+  return `<section class="section" id="ortalama">
+    <div class="section-head"><h2>Ortalama</h2><span class="u-term">BAU · A–F, 4.00 üzerinden</span></div>
+    ${details(p)}
     ${currentBlock(state, p)}
-    ${targetBlock(p)}
     ${historyBlock(state, p)}
-    <p class="footnote">Hesap BAU Eğitim-Öğretim ve Sınav Yönetmeliği'ne göre (Md. 26, 28): ders puanı = ulusal kredi × katsayı, tekrar edilen derste son not geçerli, sonuç iki haneye yuvarlanır. NA ve F ortalamaya 0.00 girer; S, U, EX, W ortalamaya girmez. BAU bağıl değerlendirme kullandığı için harfi sen seçersin. Sonucu UMIS'teki ile karşılaştır.</p>`;
+    <p class="footnote">Hesap BAU Eğitim-Öğretim ve Sınav Yönetmeliği'ne göre (Md. 26, 28): ders puanı = ulusal kredi × katsayı, tekrar edilen derste son not geçerli, sonuç iki haneye yuvarlanır. NA ve F ortalamaya 0.00 girer; S, U, EX, W ortalamaya girmez. BAU bağıl değerlendirme kullandığı için harfi sen seçersin. Sonucu UMIS'teki ile karşılaştır.</p>
+  </section>`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -317,6 +297,12 @@ export const actions = {
   "show-retake"(_el, { render }) {
     showRetake = true;
     render();
+  },
+  // Olay dağıtıcı varsayılan davranışı engellediği için <details> burada açılıp kapanır; durum yeniden çizimde korunur
+  "toggle-history"(el) {
+    const d = el.closest("details");
+    d.open = !d.open;
+    historyOpen = d.open;
   },
   calc(_el, { render }) {
     showResult = true;

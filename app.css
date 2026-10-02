@@ -45,7 +45,7 @@ body.onboarding .site-link { margin-left: auto; }
   backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
   border-top: 1px solid var(--border);
 }
-.tabbar-inner { display: grid; grid-template-columns: repeat(6, 1fr); width: 100%; max-width: 560px; }
+.tabbar-inner { display: grid; grid-template-columns: repeat(5, 1fr); width: 100%; max-width: 560px; }
 .tab {
   height: var(--tabbar-h);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
@@ -647,3 +647,83 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 .hero-exam { all: unset; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 0.86rem; }
 .week-line { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; padding: 10px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); font-size: 0.86rem; color: var(--text); text-decoration: none; }
 .week-line { margin-bottom: 28px; flex-wrap: wrap; }
+
+/* ==========================================================
+   v2.10 — 5 sekmeli menü: Bugün · Dersler · Asistan · Dönem · Seçmeli
+   ========================================================== */
+.tab-ic { display: grid; place-items: center; }
+/* Asistan ortada, daire içinde vurgu renginde */
+.tab-accent .tab-ic {
+  width: 40px; height: 40px; margin-top: -14px; border-radius: 50%;
+  background: var(--gradient); color: #0E1320;
+  box-shadow: 0 6px 18px rgba(124, 140, 248, 0.35);
+}
+.tab-accent .tab-ic svg { width: 21px; height: 21px; stroke-width: 2.1; }
+.tab-accent[aria-current="page"] .tab-ic { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent); }
+
+/* Bugün: [Bugün | Hafta] anahtarı */
+.today-seg { margin-top: -8px; }
+.week-view .chips { margin-bottom: 16px; }
+.week-more { margin: 18px 0 0; text-align: center; }
+
+/* Dönem: yapışkan bölüm şeridi (üst menünün hemen altında) */
+.sec-nav {
+  position: sticky; top: calc(61px + var(--safe-t)); z-index: 5;
+  display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+  margin: -6px -16px 18px; padding: 8px 16px;
+  background: rgba(20, 26, 40, 0.92);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.sec-nav::-webkit-scrollbar { display: none; }
+.sec-nav button {
+  flex: none; padding: 7px 14px; border-radius: 999px; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
+  font-weight: 600; font-size: 0.82rem;
+}
+.sec-nav button:hover { color: var(--text); border-color: var(--text-muted); }
+button.stat { text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.target-row small { display: block; font-weight: 400; font-size: 0.76rem; color: var(--text-muted); margin-top: 2px; }
+
+/* Dönem → Ortalama: alt bloklar */
+.gpa-kv { margin-bottom: 18px; }
+.sub-block { margin-top: 18px; }
+.sub-title { margin: 0; font: 600 0.98rem var(--font-display); color: var(--text); }
+.fold { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.fold summary {
+  list-style: none; cursor: pointer; display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 13px 16px;
+}
+.fold summary::-webkit-details-marker { display: none; }
+.fold summary::after { content: "▾"; color: var(--text-muted); margin-left: 8px; transition: transform 0.15s; }
+.fold[open] summary::after { transform: rotate(180deg); }
+.fold summary small { margin-left: auto; color: var(--text-muted); font-size: 0.8rem; }
+.fold-body { padding: 0 14px 14px; }
+
+/* Asistan (iskelet) */
+.ask-box {
+  position: relative; display: flex; gap: 8px; align-items: center;
+  padding: 10px; margin-bottom: 26px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.ask-field { flex: 1; min-width: 0; }
+.ask-field input { width: 100%; min-width: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 11px 12px; color: var(--text); font: inherit; }
+.soon-tag {
+  position: absolute; top: -9px; right: 14px; padding: 1px 9px; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--accent); color: var(--accent);
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.ask-example {
+  width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer;
+  padding: 12px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); color: var(--text);
+}
+.ask-example svg { width: 18px; height: 18px; color: var(--accent); }
+.ask-example:hover { border-color: var(--accent); }
+
+/* Seçmeli (iskelet) */
+.secmeli-empty { margin-bottom: 28px; }
+.empty-icon { display: inline-grid; place-items: center; width: 48px; height: 48px; margin-bottom: 10px; border-radius: 50%; background: var(--surface-2); color: var(--cyan); }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.steps li { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+.steps strong { display: block; font-size: 0.92rem; }
+.steps p { margin: 2px 0 0; color: var(--text-muted); font-size: 0.84rem; }
+.step-n { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--gradient); color: #0E1320; font: 700 0.85rem var(--font-display); }

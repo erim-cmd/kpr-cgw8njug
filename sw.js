@@ -11,7 +11,7 @@
  * Uygulamada "Yeni sürüm hazır → Yenile" uyarısı çıkar (bkz. js/app.js).
  */
 
-const VERSION = "2.9.5";
+const VERSION = "2.10.1";
 const SHELL_CACHE = `kpr-shell-${VERSION}`;
 const FONT_CACHE = "kpr-fonts";
 
@@ -42,6 +42,8 @@ const SHELL = [
   "./gpa.js",
   "./gpa-view.js",
   "./term.js", "./density.js", "./doc-text.js", "./syllabus-local.js",
+  "./asistan.js",
+  "./secmeli.js",
   "./attendance.js",
   "./alerts.js",
   "./notify.js",

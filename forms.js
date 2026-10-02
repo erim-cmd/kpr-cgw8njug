@@ -408,7 +408,13 @@ export function openCourseDetail(courseId) {
       const apply = e.target.closest("[data-apply-letter]");
       if (apply) {
         store.saveCourse({ ...course, letter: apply.dataset.applyLetter });
-        toast(`${course.code || course.name}: ${apply.dataset.applyLetter} olarak Ortalama'ya aktarıldı`);
+        toast(`${course.code || course.name}: ${apply.dataset.applyLetter} olarak Ortalama'ya aktarıldı`, {
+          label: "Tabloda gör",
+          onClick: () => {
+            closeSheet();
+            location.hash = "#/donem?bolum=ortalama";
+          },
+        });
         refreshLetter(false);
       }
       if (e.target.closest("[data-new-task]")) openTaskForm(null, { courseId });
