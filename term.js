@@ -19,11 +19,12 @@ import { readTarget, saveTarget, targetText, openBaseForm, section as gpaSection
 import { emptyState } from "./components.js";
 import { openNumberSheet } from "./grade-sheet.js";
 import { density } from "./density.js";
-import { fmtShort, parseISO, toISO } from "./dates.js";
+import { fmtShort, parseISO, toISO, todayISO } from "./dates.js";
+import { isLight } from "./store.js";
+import { labelOf } from "./weights.js";
 import { openAbsences } from "./ders.js";
 import { TASK_TYPES } from "./store.js";
 
-let selWeek = null; // grafikte seçilen hafta (index); null → bu hafta
 
 const SEVERITY = { over: 4, last: 3, warn: 2, ok: 1, none: 0 };
 
@@ -109,80 +110,88 @@ function absenceCard(c, weeks) {
 /* Akış: haftalık not ağırlığı grafiği                                 */
 /* ------------------------------------------------------------------ */
 
+const MONTH = (iso) => parseISO(iso).toLocaleDateString("tr-TR", { month: "long" });
+/** Haftanın iş günleri: "10–14 Kasım" (ay değişiyorsa "28 Eki – 1 Kas"). */
 const range = (w) => {
-  const end = parseISO(w.start);
-  end.setDate(end.getDate() + 6);
-  return `${fmtShort(w.start)} – ${fmtShort(toISO(end))}`;
+  const a = parseISO(w.start);
+  const b = parseISO(w.start);
+  b.setDate(b.getDate() + 4);
+  return a.getMonth() === b.getMonth() ? `${a.getDate()}–${b.getDate()} ${MONTH(w.start)}` : `${fmtShort(w.start)} – ${fmtShort(toISO(b))}`;
 };
+const ahead = (k) => (k === 0 ? "bu hafta" : k === 1 ? "gelecek hafta" : `${k} hafta sonra`);
 
-/** Üstteki tek cümle: bugünden itibaren en ağır hafta. */
-function flowSummary(d) {
-  if (!d.termTotal) return "Derslerinin not dağılımı girilince her haftanın dönem notundaki payını gösteririm.";
-  const h = d.heaviest;
-  if (!h || h.share <= 0) return "Önümüzdeki haftalarda ağırlığı bilinen bir değerlendirme yok.";
-  const when = d.heaviestIn === 0 ? "bu hafta" : d.heaviestIn === 1 ? "1 hafta kaldı" : `${d.heaviestIn} hafta kaldı`;
-  return d.heaviestIn === 0
-    ? `Bu hafta (${h.n}. hafta) dönem notunun ${pct(h.share)}'i belirleniyor.`
-    : `${h.n}. hafta dönem notunun ${pct(h.share)}'i belirleniyor, ${when}.`;
+/** Bir hafta "önemli": içinde ağırlığı olan ya da sınav/teslim türünde (okuma/kişisel değil) bir iş var. */
+const important = (w) => w.items.some((t) => !isLight(t));
+
+/** Kartın maddesi: "MCH 2016 · Ara sınav · %40" (o dersin içindeki ağırlık; bilinmiyorsa %?). */
+function itemLine(t, byId) {
+  const c = byId.get(t.courseId);
+  const kind = labelOf(t) || TASK_TYPES[t.type];
+  const w = t.weight !== null && t.weight !== undefined ? pct(t.weight) : "%?";
+  return `<li><button type="button" class="fw-item" ${c ? `data-action="course-detail" data-id="${esc(c.id)}"` : `data-action="edit-task" data-id="${esc(t.id)}"`}>
+      <span>${c ? `<b>${esc(c.code || c.name)}</b> · ` : ""}${esc(kind)}${t.done ? " ✓" : ""}<small>${esc(t.title)} · ${fmtShort(t.due)}</small></span>
+      <em>${w}</em></button></li>`;
 }
 
-/** Inline SVG sütun grafiği: yükseklik = o hafta belirlenen not payı. */
-function flowChart(d, idx) {
-  const n = d.weeks.length;
-  const W = 340, H = 150, padL = 26, padR = 6, padT = 18, padB = 20;
-  const cw = (W - padL - padR) / n;
-  const maxShare = Math.max(5, ...d.weeks.map((w) => w.share));
-  const top = Math.ceil(maxShare / 5) * 5; // eksen tepe değeri: 5'in katı
-  const y = (v) => padT + (H - padT - padB) * (1 - v / top);
-  const bars = d.weeks.map((w, i) => {
-    const x = padL + i * cw;
-    const h = Math.max(w.share > 0 ? 2 : 0, y(0) - y(w.share));
-    const cls = ["fl-bar", w.final ? "fin" : w.vize ? "viz" : "", w.past ? "past" : "", i === idx ? "sel" : ""].filter(Boolean).join(" ");
-    const tag = w.final ? "F" : w.vize ? "V" : "";
-    const showN = n <= 16 || i % 2 === 0;
-    return `<g class="fl-col" data-action="pick-week" data-i="${i}" role="button" tabindex="0"
-        aria-label="${w.n}. hafta, dönem notunun ${pct(w.share)}'i${w.label ? `, ${w.label}` : ""}, ${w.items.length} teslim">
-      <rect class="fl-hit" x="${x}" y="${padT - 14}" width="${cw}" height="${H - padT + 14}"/>
-      <rect class="${cls}" x="${x + cw * 0.15}" y="${y(0) - h}" width="${cw * 0.7}" height="${h}" rx="2"/>
-      ${tag ? `<text class="fl-tag ${w.final ? "fin" : "viz"}" x="${x + cw / 2}" y="${y(0) - h - 4}" text-anchor="middle">${tag}</text>` : ""}
-      ${showN ? `<text class="fl-n" x="${x + cw / 2}" y="${H - 6}" text-anchor="middle">${w.n}</text>` : ""}
-    </g>`;
-  }).join("");
-  const grid = [0, top / 2, top].map((v) => `<line class="fl-grid" x1="${padL}" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}"/>
-    <text class="fl-ax" x="${padL - 4}" y="${y(v) + 3}" text-anchor="end">%${Math.round(v)}</text>`).join("");
-  // Bugün çizgisi: haftanın içindeki güne göre
-  let today = "";
-  if (d.current !== null) {
-    const dayFrac = ((new Date().getDay() + 6) % 7) / 7;
-    const tx = padL + (d.current + dayFrac) * cw;
-    today = `<line class="fl-today" x1="${tx}" x2="${tx}" y1="${padT - 10}" y2="${y(0)}"/><text class="fl-today-t" x="${tx}" y="${padT - 12}" text-anchor="middle">bugün</text>`;
-  }
-  return `<svg class="flow-chart" viewBox="0 0 ${W} ${H}" role="group" aria-label="Haftalara göre dönem notunun payı">${grid}${today}${bars}</svg>`;
+function weekCard(w, cur, byId, hot) {
+  const tag = w.final ? " · Final" : w.vize ? " · Vize" : "";
+  const share = w.share > 0 ? `notunun ${pct(w.share)}'i` : "notunun %?'i";
+  const k = cur === null ? null : w.n - 1 - cur;
+  return `<li class="fw-card ${hot ? "hot" : ""}">
+    <div class="fw-head">
+      <div><b>${w.n}. hafta${tag}</b><small>${range(w)}${k !== null && k >= 0 ? ` · ${ahead(k)}` : ""}</small></div>
+      <span class="fw-badge">${share}</span>
+    </div>
+    <ul class="fw-items">${[...w.items].filter((t) => !isLight(t)).sort((a, b) => a.due.localeCompare(b.due)).map((t) => itemLine(t, byId)).join("")}</ul>
+  </li>`;
 }
 
+let pastOpen = false; // "Geçen haftalar" varsayılan kapalı
+
+/**
+ * Dönem akışı: 6. hafta / 14 → "Notunun %18'i belli oldu" + ince çubuk → "%82'si önünde · sonraki 2 hafta sakin"
+ * → önündeki önemli haftalar (sadece değerlendirme olan; payı en büyük olan vurgulu) → geçen haftalar (kapalı).
+ * Pay: weights.taskWeight / tüm derslerin toplamı (density.js). Ağırlığı bilinmeyen "%?" ve paya katılmaz.
+ */
 function flowBlock(state) {
   const d = density(state.tasks, state.settings, state.courses);
   const byId = new Map(state.courses.map((c) => [c.id, c]));
-  const idx = Math.min(selWeek ?? d.current ?? 0, d.weeks.length - 1);
-  const w = d.weeks[idx];
-  const list = w.items.length
-    ? `<ul class="kv">${[...w.items].sort((a, b) => a.due.localeCompare(b.due)).map((t) => {
-        const c = byId.get(t.courseId);
-        const wt = t.weight !== null && t.weight !== undefined ? ` · ${pct(t.weight)}` : TASK_TYPES[t.type] && t.type !== "okuma" && t.type !== "kisisel" ? " · ağırlık ?" : "";
-        return `<li><b>${esc(t.title)}${t.done ? " ✓" : ""}</b><span>${c ? esc(c.code || c.name) + " · " : ""}${fmtShort(t.due)}${wt}</span></li>`;
-      }).join("")}</ul>`
-    : '<p class="calc-note">Bu hafta teslim yok.</p>';
-  return `<section class="section" id="akis">
-    <div class="section-head"><h2>Dönem akışı</h2>${d.current !== null ? `<span class="u-term">${d.current + 1}. hafta / ${d.weeks.length}</span>` : ""}</div>
-    <p class="flow-hint">${esc(flowSummary(d))}</p>
-    ${flowChart(d, idx)}
-    <p class="fine flow-legend-1">Sütun: o hafta belirlenen not payı (tüm derslerin toplamında) · V vize, F final · kesikli çizgi bugün. Ağırlığı bilinmeyen teslim 0 sayılır.</p>
-    <div class="flow-week">
-      <p class="mini-title">${w.n}. hafta · ${range(w)}${w.share ? ` · ${pct(w.share)}` : ""}${w.label ? ` · ${w.label}` : ""}</p>
-      ${list}
-    </div>
-    <label class="flow-start">Dönem başlangıcı${d.guessed ? ' <small>(tahmini, ilk teslimden)</small>' : ""}
-      <input type="date" value="${d.guessed ? "" : state.settings.termStart}" data-change="term-start" aria-label="Dönem başlangıç tarihi"></label>
+  const cur = d.current;
+  const today = todayISO();
+  const head = `<div class="section-head"><h2>Dönem akışı</h2>${cur !== null ? `<span class="u-term">${cur + 1}. hafta / ${d.weeks.length}</span>` : ""}</div>`;
+  const start = `<label class="flow-start">Dönem başlangıcı${d.guessed ? ' <small>(tahmini, ilk teslimden)</small>' : ""}
+      <input type="date" value="${d.guessed ? "" : state.settings.termStart}" data-change="term-start" aria-label="Dönem başlangıç tarihi"></label>`;
+  const withItems = d.weeks.filter(important);
+  if (!withItems.length) {
+    return `<section class="section" id="akis">${head}
+      <p class="calc-note">Henüz değerlendirme tarihi yok. Syllabus yükleyince haftaların burada sıralanır.</p>${start}</section>`;
+  }
+  // Belli olan: tarihi geçmiş değerlendirmelerin payı
+  const doneShare = d.termTotal
+    ? (d.weeks.flatMap((w) => w.items).filter((t) => t.due < today && t.weight !== null).reduce((s, t) => s + t.weight, 0) / d.termTotal) * 100
+    : 0;
+  const nowIdx = cur ?? -1;
+  const upcoming = withItems.filter((w) => w.n - 1 >= Math.max(0, nowIdx) && w.items.some((t) => t.due >= today && !isLight(t)));
+  const past = withItems.filter((w) => !upcoming.includes(w));
+  const hot = upcoming.reduce((m, w) => (w.share > (m?.share ?? 0) ? w : m), null);
+  // Bir sonraki önemli haftaya kadar kaç sakin hafta var
+  const next = upcoming[0];
+  const calm = next && cur !== null ? Math.max(0, next.n - 1 - cur - 1) : null;
+  const calmText = !next ? "önünde değerlendirme kalmadı"
+    : cur === null ? `ilk değerlendirme ${next.n}. hafta`
+    : next.n - 1 === cur ? "bu hafta değerlendirme var"
+    : calm === 0 ? "gelecek hafta değerlendirme var"
+    : `sonraki ${calm} hafta sakin`;
+  return `<section class="section" id="akis">${head}
+    <p class="fw-title">Notunun <b>${pct(doneShare)}</b>'i belli oldu</p>
+    <div class="fw-bar" role="img" aria-label="Dönem notunun yüzde ${Math.round(doneShare)}'i belli oldu"><i style="width:${Math.min(100, doneShare)}%"></i></div>
+    <p class="fw-sub">${pct(Math.max(0, 100 - doneShare))}'si önünde · ${calmText}</p>
+    ${upcoming.length ? `<h3 class="mini-title fw-h">Önündeki önemli haftalar</h3>
+      <ul class="fw-list">${upcoming.map((w) => weekCard(w, cur, byId, w === hot && w.share > 0)).join("")}</ul>` : ""}
+    ${past.length ? `<button type="button" class="fw-past-btn" data-action="toggle-past" aria-expanded="${pastOpen}">Geçen haftalar (${past.length}) ${pastOpen ? "▴" : "▾"}</button>
+      ${pastOpen ? `<ul class="fw-list past">${[...past].reverse().map((w) => weekCard(w, null, byId, false)).join("")}</ul>` : ""}` : ""}
+    <p class="fine">Pay: o haftadaki değerlendirmelerin ağırlığı ÷ tüm derslerin toplamı. Ağırlığı bilinmeyen teslim "%?" ile görünür, paya katılmaz.</p>
+    ${start}
   </section>`;
 }
 
@@ -275,8 +284,8 @@ export const actions = {
   "scroll-to"(el) {
     scrollToSection(el.dataset.to);
   },
-  "pick-week"(el, { render }) {
-    selWeek = Number(el.dataset.i);
+  "toggle-past"(_el, { render }) {
+    pastOpen = !pastOpen;
     render();
   },
   absences(el) {
@@ -319,7 +328,6 @@ export const changes = {
   ...gpaChanges,
   "term-start"(el, { render }) {
     store.setSettings({ termStart: el.value });
-    selWeek = null;
     render();
   },
   target(el, { render }) {

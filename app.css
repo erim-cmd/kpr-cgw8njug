@@ -609,10 +609,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 .badges .badge { white-space: nowrap; }
 
 /* Dönem akışı: özet cümlesi ve seçili hafta */
-.flow-hint { margin: 0; padding: 10px 12px; border-radius: 12px; background: rgba(242, 181, 68, 0.12); font-size: 0.86rem; }
-.flow-hint.calm { background: var(--bg); color: var(--text-muted); }
-.flow-week { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: var(--bg); }
-.flow-week .mini-title { margin: 0 0 6px; }
 .flow-start { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; font-size: 0.84rem; color: var(--text-muted); }
 .flow-start small { font-size: 0.74rem; }
 .flow-start input { max-width: 160px; }
@@ -834,26 +830,6 @@ button.week-line[aria-expanded="true"] { margin-bottom: 8px; border-color: var(-
 .gno-foot { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
 .gno-foot:empty { display: none; }
 
-/* Dönem akışı: not ağırlığı grafiği (SVG; renkler tokens.css) */
-.flow-chart { display: block; width: 100%; height: auto; margin-top: 10px; overflow: visible; }
-/* tokens.css "svg { stroke: currentColor }" simgeler için; grafikte sadece çizgiler kendi rengini alır */
-.flow-chart, .flow-chart * { stroke: none; }
-.fl-hit { fill: transparent; cursor: pointer; }
-.fl-bar { fill: var(--accent); }
-.fl-bar.viz { fill: var(--warn); }
-.fl-bar.fin { fill: var(--danger); }
-.fl-bar.past { opacity: 0.4; }
-.fl-bar.sel { stroke: var(--text); stroke-width: 1.5; }
-.fl-col:focus-visible { outline: none; }
-.fl-col:focus-visible .fl-hit { fill: rgba(76, 201, 240, 0.12); }
-.fl-grid { stroke: var(--border); stroke-width: 1; }
-.fl-ax, .fl-n, .fl-today-t { fill: var(--text-muted); font-size: 9px; font-family: var(--font-body); }
-.fl-tag { font-size: 9px; font-weight: 700; font-family: var(--font-body); }
-.fl-tag.viz { fill: var(--warn); }
-.fl-tag.fin { fill: var(--danger); }
-.fl-today { stroke: var(--cyan); stroke-width: 1.2; stroke-dasharray: 3 3; }
-.fl-today-t { fill: var(--cyan); }
-.flow-legend-1 { margin-top: 6px; }
 
 /* Asistan sohbeti (oturumluk; düz metin) */
 .chat { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -947,3 +923,26 @@ button.tl-row { width: 100%; padding: 10px 14px; border-radius: 12px; background
 .att-opt { width: 100%; display: flex; flex-direction: column; gap: 2px; text-align: left; cursor: pointer; padding: 14px 16px; border-radius: 14px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font: inherit; }
 .att-opt:hover { border-color: var(--cyan); }
 .att-opt small { color: var(--text-muted); }
+
+/* Dönem akışı (v2.12): belli olan pay + önemli haftalar */
+.fw-title { margin: 0; font: 600 1.25rem var(--font-display); }
+.fw-title b { color: var(--cyan); }
+.fw-bar { height: 6px; margin-top: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.fw-bar i { display: block; height: 100%; border-radius: 999px; background: var(--gradient); }
+.fw-sub { margin: 6px 0 0; font-size: 0.84rem; color: var(--text-muted); }
+.fw-h { margin: 18px 0 8px; }
+.fw-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.fw-card { padding: 12px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); }
+.fw-card.hot { border-color: var(--warn); box-shadow: 0 0 0 1px var(--warn) inset; }
+.fw-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.fw-head b { display: block; font: 600 1rem var(--font-display); }
+.fw-head small { color: var(--text-muted); font-size: 0.78rem; }
+.fw-badge { flex: none; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); font-weight: 700; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.fw-card.hot .fw-badge { background: rgba(245, 184, 76, 0.16); color: var(--warn); }
+.fw-items { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.fw-item { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; cursor: pointer; padding: 7px 10px; border-radius: 10px; background: var(--bg); border: 0; color: var(--text); font: inherit; font-size: 0.86rem; }
+.fw-item span { min-width: 0; }
+.fw-item small { display: block; color: var(--text-muted); font-size: 0.74rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fw-item em { flex: none; font-style: normal; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fw-past-btn { margin-top: 12px; width: 100%; padding: 10px 14px; border-radius: 12px; background: none; border: 1px dashed var(--border); color: var(--text-muted); cursor: pointer; font: inherit; font-size: 0.86rem; }
+.fw-list.past { margin-top: 8px; opacity: 0.8; }
