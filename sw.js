@@ -43,6 +43,8 @@ const SHELL = [
   "./gpa-view.js",
   "./term.js", "./density.js", "./doc-text.js", "./syllabus-local.js",
   "./asistan.js",
+  "./ders.js",
+  "./weights.js",
   "./secmeli.js",
   "./attendance.js",
   "./alerts.js",

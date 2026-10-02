@@ -121,6 +121,8 @@ function normCourse(c) {
     sessions: arr(c.sessions).map(normSession).filter(Boolean),
     grading: arr(c.grading).map(normGrade).filter(Boolean).slice(0, 12),
     target: num(c.target, 0, 100) ?? 50,
+    // Hedef harf (ders ekranı): hocanın tablosundaki bir harf; seçilince eşiği target olur
+    targetLetter: /^[A-F][+-]?$/.test(c.targetLetter) ? c.targetLetter : "",
     // GNO: ulusal (yerel) kredi, beklenen harf notu, tekrar alınıyorsa önceki not
     credit: num(c.credit, 0, 30),
     ects: num(c.ects, 0, 60),
@@ -262,7 +264,13 @@ export const store = {
     const course = normCourse(courseInput);
     if (!course) return null;
     const ids = new Set([...state.courses.map((c) => c.id), course.id]);
-    const tasks = taskInputs.map((t) => normTask({ ...t, courseId: course.id }, ids)).filter(Boolean);
+    // Aynı syllabus'u tekrar yüklemek aynı tarihleri ikinci kez eklemesin (ders + başlık + tarih aynıysa atla)
+    const key = (t) => `${t.courseId}|${t.title.toLocaleLowerCase("tr-TR")}|${t.due}`;
+    const have = new Set(state.tasks.map(key));
+    const tasks = taskInputs
+      .map((t) => normTask({ ...t, courseId: course.id }, ids))
+      .filter(Boolean)
+      .filter((t) => !have.has(key(t)) && have.add(key(t)));
     commit({ ...state, courses: upsert(state.courses, course), tasks: [...state.tasks, ...tasks] });
     return { course, count: tasks.length };
   },
