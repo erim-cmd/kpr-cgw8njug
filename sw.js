@@ -5,15 +5,14 @@
  *   - Tanıtım sitesi, uygulama (/app/) ve gizlilik sayfası kurulumda önbelleğe alınır;
  *     hepsi internetsiz açılır. HTML/CSS/JS hep aynı sürümden gelir.
  *   - /api/ istekleri (syllabus okuma) asla önbelleğe alınmaz.
- *   - Google Fonts ayrı önbellekte, "önce önbellek, arkada tazele".
+ *   - Yazı tipleri (fonts/*.woff2) kabukta; dışarıdan yazı tipi yüklenmez.
  *
  * YAYIN KURALI: Herhangi bir dosyayı değiştirip yayınladığında VERSION'ı artır.
  * Uygulamada "Yeni sürüm hazır → Yenile" uyarısı çıkar (bkz. js/app.js).
  */
 
-const VERSION = "2.14.0";
+const VERSION = "2.14.1";
 const SHELL_CACHE = `kpr-shell-${VERSION}`;
-const FONT_CACHE = "kpr-fonts";
 
 const SHELL = [
   "./",
@@ -22,6 +21,10 @@ const SHELL = [
   "./manifest.webmanifest",
   "./logo-mark.svg",
   "./tokens.css",
+  "./fonts/inter-latin.woff2",
+  "./fonts/inter-latin-ext.woff2",
+  "./fonts/space-grotesk-latin.woff2",
+  "./fonts/space-grotesk-latin-ext.woff2",
   "./site.css",
   "./app.css",
   "./site.js",
@@ -91,7 +94,8 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k.startsWith("kpr-shell-") && k !== SHELL_CACHE).map((k) => caches.delete(k))))
+      // Eski kabuk sürümleri ve v2.14.1 öncesinin Google Fonts önbelleği ("kpr-fonts") silinir
+      .then((keys) => Promise.all(keys.filter((k) => (k.startsWith("kpr-shell-") && k !== SHELL_CACHE) || k === "kpr-fonts").map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -122,21 +126,6 @@ self.addEventListener("fetch", (event) => {
 
     event.respondWith(caches.match(request, { ignoreSearch: true }).then((cached) => cached || fetch(request)));
     return;
-  }
-
-  if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") {
-    event.respondWith(
-      caches.open(FONT_CACHE).then(async (cache) => {
-        const cached = await cache.match(request);
-        const network = fetch(request)
-          .then((res) => {
-            if (res.ok || res.type === "opaque") cache.put(request, res.clone());
-            return res;
-          })
-          .catch(() => cached);
-        return cached || network;
-      })
-    );
   }
 });
 

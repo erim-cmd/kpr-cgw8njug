@@ -46,7 +46,7 @@ export const fmtLong = (d) => d.toLocaleDateString("tr-TR", { weekday: "long", d
 export const fmtShort = (iso) => parseISO(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
 
 /**
- * Göreli gün adı: "Bugün", "Yarın", bu hafta içindeyse gün adı ("Cuma"), daha ileriyse "12 Kas".
+ * Göreli gün adı: "Bugün", "Yarın", bu hafta içindeyse gün adı ("Cuma"), daha ileriyse "12 Kasım".
  * Geçmişte kalmışsa relLabel ("Dün", "3 gün gecikti").
  */
 export function dayLabel(iso) {
