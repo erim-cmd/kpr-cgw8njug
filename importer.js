@@ -13,6 +13,7 @@ import { esc, openSheet, closeSheet, toast } from "./ui.js";
 import { icon } from "./icons.js";
 import { flagItem, sortFlags } from "./components.js";
 import { sessionRow, gradeRow, swatches, bindRows, readSessions, readGrading, openCourseForm } from "./forms.js";
+import { mergeIntoCourse } from "./course-merge.js";
 import { extractText, DocError } from "./doc-text.js";
 import { parseSyllabus } from "./syllabus-local.js";
 
@@ -97,7 +98,12 @@ const head = (title) => `<header class="sheet-head">
 /* 1) Dosya seçme ekranı                                               */
 /* ------------------------------------------------------------------ */
 
-export function openImport() {
+// Ders ekranındaki "Syllabus yükle" (boş haftalık plan): okunan syllabus bu derse BİRLEŞTİRİLİR
+let target = null;
+
+/** into: var olan dersin id'si → okununca tam kontrol ekranı yerine sadece eksikleri ekleyen onay. */
+export function openImport({ into = null } = {}) {
+  target = into;
   openSheet(
     `<form class="sheet-form" data-step="pick">
       ${head("Syllabus'tan ekle")}
@@ -216,7 +222,8 @@ async function run(file, { ai = false } = {}) {
       const r = await readWithAI(file);
       if (r.result) {
         stop();
-        openReview(r.result, { reader: "ai" });
+        if (target) openMerge(r.result);
+        else openReview(r.result, { reader: "ai" });
         return;
       }
       aiError = r.error;
@@ -227,7 +234,8 @@ async function run(file, { ai = false } = {}) {
     // İlerleme ekranı bir an görünsün (çok hızlı biter)
     await new Promise((r) => setTimeout(r, 400));
     stop();
-    openReview(result, { reader: "local", aiError });
+    if (target) openMerge(result);
+    else openReview(result, { reader: "local", aiError });
   } catch (err) {
     stop();
     showError(err instanceof DocError ? err.message : "Dosya okunamadı. Başka bir dosya dene ya da dersi elle ekle.");
@@ -291,6 +299,37 @@ function readWeeks(form) {
       note: row.dataset.note || null,
     }))
     .filter((w) => w.topic);
+}
+
+/** Var olan derse ekleme: neyin ekleneceğini göster, öğrencinin girdileri ezilmez (course-merge.js). */
+function openMerge(r) {
+  const course = store.get().courses.find((c) => c.id === target);
+  if (!course) return openReview(r, {});
+  const { course: merged, added } = mergeIntoCourse(course, r);
+  const weeks = r.weeks || [];
+  openSheet(
+    `<div class="sheet-form">
+      ${head(`${esc(course.code || course.name)} · syllabus`)}
+      <div class="sheet-body">
+        ${added.length
+          ? `<p class="lead-text">Bu derse eklenecekler:</p><ul class="kv">${added.map((a) => `<li><b>${esc(a)}</b><span>eklenecek</span></li>`).join("")}</ul>`
+          : `<p class="lead-text">Bu syllabus'ta derste eksik olan bir şey bulamadım.</p>`}
+        ${!weeks.length ? `<p class="calc-note">Haftalık plan bu dosyada okunamadı (tablo PDF'te dağılmış olabilir). Word (.docx) sürümü varsa onu dene.</p>` : ""}
+        <p class="fine">Notların, devamsızlıkların ve düzelttiğin bilgiler değişmez; sadece boş olanlar dolar.</p>
+      </div>
+      <footer class="sheet-foot">
+        <button type="button" class="btn btn-ghost" data-close>Vazgeç</button>
+        ${added.length ? '<button type="button" class="btn btn-primary" data-merge>Ekle</button>' : ""}
+      </footer>
+    </div>`,
+    (d) => {
+      d.querySelector("[data-merge]")?.addEventListener("click", () => {
+        store.saveCourse(merged);
+        closeSheet();
+        toast(`${course.code || course.name}: ${added[0]}${added.length > 1 ? ` ve ${added.length - 1} alan daha` : ""} eklendi`);
+      });
+    }
+  );
 }
 
 function openReview(r, { reader = "local", aiError = "" } = {}) {

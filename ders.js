@@ -1,13 +1,12 @@
 /**
- * KPR — Ders ekranı (sayfa olarak açılan sheet). Yukarıdan aşağıya:
- *   1. Başlık: kod, ad, hoca
+ * KPR — Ders ekranı (sheet). Yukarıdan aşağıya; 1–5 kaydırmadan görünür:
+ *   1. Başlık: ad, kod · hoca
  *   2. Sıradaki değerlendirme: tür · kalan gün · ağırlık %
  *   3. Bilgi kartı (2 sütun): saat + derslik, kredi/AKTS, e-posta, ofis + ofis saati
- *   ── "Daha fazla" (ilk görünümde sadece 1–3 var) ──
- *   4. Dikkat edilecekler: en fazla 3 kural (kritik önce), "Tümü (N)"
- *   5. Değerlendirme: tek yatay yüzde çubuğu + not girişi + takvim
- *   6. Haftalık plan: kapalıyken "Bu hafta: H5 · konu"
- *   7. Hedef harf: "Hedef harfin → kalanlardan en az X"
+ *   4. Dikkat edilecekler: en kritik 2 kural (kaynak cümlesi dokununca), "Tümü (N)"
+ *   5. "Bu hafta: H5 · konu" satırı → dokununca tüm haftalık plan; plan yoksa yeniden yükleme çağrısı
+ *   6. Değerlendirme: bileşen satırları (ad · ağırlık rozeti · not), dokununca not girişi
+ *   7. Hedef harf
  * Altta: "Bilgiler syllabus'tan alındı · Düzenle".
  *
  * Hesap yok: notlar ve hedef harf ders-calc.js, harf listesi gpa.neededByLetter, ağırlık weights.taskWeight.
@@ -18,7 +17,9 @@ import { esc, openSheet, closeSheet, toast } from "./ui.js";
 import { DAYS_SHORT, todayISO, toMin, daysUntil, fmtShort, relLabel, byDue } from "./dates.js";
 import { icon } from "./icons.js";
 import { attendance, attendanceText } from "./attendance.js";
-import { flagItem, sortFlags } from "./components.js";
+import { sortFlags, SEV_LABEL } from "./components.js";
+import { POLICY_KINDS } from "./store.js";
+import { openImport } from "./importer.js";
 import { SAMPLE_SCALE, neededByLetter } from "./gpa.js";
 import { openCourseForm, openTaskForm } from "./forms.js";
 import { calcGrades, targetResult, currentWeekOf, fmtNum } from "./ders-calc.js";
@@ -28,7 +29,7 @@ const ONLINE = /teams|zoom|online|cevrimici|çevrimiçi|uzaktan|meet\b/i;
 
 // Oturum boyunca hatırlanan açık/kapalı durumları (ders başına)
 const ui = new Map();
-const uiOf = (id) => ui.get(id) || ui.set(id, { more: false, allFlags: false, plan: false, allLetters: false }).get(id);
+const uiOf = (id) => ui.get(id) || ui.set(id, { allFlags: false, plan: false, allLetters: false }).get(id);
 
 /* ------------------------------------------------------------------ */
 /* 2. Sıradaki değerlendirme                                           */
@@ -74,11 +75,18 @@ function flagsBlock(c, st) {
   if (!c.policies.length) return "";
   const shown = sortFlags(c.policies.filter((p) => !p.hidden));
   const hidden = c.policies.length - shown.length;
-  const list = st.allFlags ? shown : shown.slice(0, 3);
+  const list = st.allFlags ? shown : shown.slice(0, 2);
+  const item = (p) => `<li class="flag ${p.severity}">
+      <span class="flag-tag">${SEV_LABEL[p.severity]} · ${POLICY_KINDS[p.kind]}</span>
+      <p class="flag-rule">${esc(p.rule)}</p>
+      ${p.consequence ? `<p class="flag-cons">→ ${esc(p.consequence)}</p>` : ""}
+      ${p.source ? `<details class="flag-src"><summary>Syllabus'ta ne yazıyor?</summary><small class="irow-src">“${esc(p.source)}”</small></details>` : ""}
+      <button type="button" class="link flag-hide" data-hide-policy="${esc(p.id)}">Gizle</button>
+    </li>`;
   return `<section class="cd-sec"><h3 class="mini-title">Dikkat edilecekler</h3>
-    ${list.length ? `<ul class="flags">${list.map((p) => flagItem(p, true)).join("")}</ul>` : ""}
-    ${shown.length > 3 ? `<button type="button" class="link gap-t" data-toggle="allFlags">${st.allFlags ? "Daha az" : `Tümü (${shown.length})`}</button>` : ""}
-    ${hidden ? `<button type="button" class="link gap-t" data-show-policies>Gizlenen ${hidden} kuralı göster</button>` : ""}
+    ${list.length ? `<ul class="flags">${list.map(item).join("")}</ul>` : ""}
+    ${shown.length > 2 ? `<button type="button" class="link" data-toggle="allFlags">${st.allFlags ? "Daha az" : `Tümü (${shown.length})`}</button>` : ""}
+    ${hidden ? `<button type="button" class="link" data-show-policies>Gizlenen ${hidden} kuralı göster</button>` : ""}
   </section>`;
 }
 
@@ -118,15 +126,23 @@ function gradingBlock(c, tasks) {
 const EXAM_RE = /sinav|sınav|exam|midterm|vize|final|quiz/i;
 
 function planBlock(c, st, state) {
-  if (!c.weeks.length) return "";
+  // Plan yoksa bölüm gizlenmez: yeniden yükleme çağrısı (sadece eksikler eklenir, girdiler ezilmez)
+  if (!c.weeks.length) {
+    return `<section class="cd-sec cd-noplan">
+      <p class="calc-note">Haftalık plan yok. Syllabus'u yeniden yükle, her haftanın konusu eklensin.</p>
+      <button type="button" class="btn btn-ghost btn-sm" data-reimport>${icon.upload}Syllabus yükle</button>
+    </section>`;
+  }
   const cur = currentWeekOf(c, state);
   const now = c.weeks.find((w) => w.n === cur);
-  const summary = now ? `Bu hafta: H${now.n} · ${esc(now.topic)}` : `${c.weeks.length} haftalık plan`;
+  const summary = now ? `<b>Bu hafta:</b> H${now.n} · ${esc(now.topic)}` : cur && cur > c.weeks[c.weeks.length - 1].n ? "Haftalık plan bitti" : `<b>Haftalık plan</b> · ${c.weeks.length} hafta`;
   const rows = c.weeks.map((w) => {
     const exam = EXAM_RE.test(w.topic) || EXAM_RE.test(w.note || "");
-    return `<li class="${w.n === cur ? "now" : ""}"><b>H${w.n}</b><span>${esc(w.topic)}${w.note ? ` <small>${esc(w.note)}</small>` : ""}</span>${exam ? '<em class="tag-exam">Sınav</em>' : ""}</li>`;
+    return `<li class="${w.n === cur ? "now" : ""}"><b>H${w.n}</b>
+      <span>${esc(w.topic)}${w.date || w.note ? `<small>${[w.date && fmtShort(w.date), w.note && esc(w.note)].filter(Boolean).join(" · ")}</small>` : ""}</span>
+      ${exam ? '<em class="tag-exam">Sınav</em>' : ""}</li>`;
   }).join("");
-  return `<section class="cd-sec"><h3 class="mini-title">Haftalık plan</h3>
+  return `<section class="cd-sec">
     <button type="button" class="cd-plan-sum" data-toggle="plan" aria-expanded="${st.plan}"><span>${summary}</span>${st.plan ? "▴" : "▾"}</button>
     ${st.plan ? `<ul class="cd-plan">${rows}</ul>` : ""}
   </section>`;
@@ -179,12 +195,6 @@ function targetBlock(c, st) {
 /* Ekran                                                               */
 /* ------------------------------------------------------------------ */
 
-function moreLabel(c) {
-  const crit = c.policies.filter((p) => p.severity === "kritik" && !p.hidden).length;
-  const parts = [crit ? `${crit} kritik kural` : c.policies.length ? "Dikkat edilecekler" : "", "Değerlendirme", c.weeks.length ? "Haftalık plan" : "", "Hedef harf"].filter(Boolean);
-  return parts.join(" · ");
-}
-
 function inner(c, state) {
   const st = uiOf(c.id);
   const sub = [c.code, c.instructor].filter(Boolean).map(esc).join(" · ");
@@ -195,9 +205,10 @@ function inner(c, state) {
     <div class="sheet-body">
       ${nextBlock(c, state.tasks)}
       ${infoBlock(c)}
-      <button type="button" class="cd-more" data-toggle="more" aria-expanded="${st.more}">
-        <span>${st.more ? "Daha az" : esc(moreLabel(c))}</span>${st.more ? "▴" : "▾"}</button>
-      ${st.more ? `${flagsBlock(c, st)}${gradingBlock(c, state.tasks)}${planBlock(c, st, state)}${targetBlock(c, st)}` : ""}
+      ${flagsBlock(c, st)}
+      ${planBlock(c, st, state)}
+      ${gradingBlock(c, state.tasks)}
+      ${targetBlock(c, st)}
       <p class="fine cd-src">Bilgiler syllabus'tan alındı · <button type="button" class="link" data-edit>Düzenle</button></p>
     </div>
     <footer class="sheet-foot">
@@ -234,6 +245,7 @@ export function openCourseDetail(courseId) {
       }
       if (e.target.closest("[data-edit]")) return openCourseForm(course);
       if (e.target.closest("[data-new-task]")) return openTaskForm(null, { courseId });
+      if (e.target.closest("[data-reimport]")) return openImport({ into: courseId });
       const hide = e.target.closest("[data-hide-policy]");
       if (hide || e.target.closest("[data-show-policies]")) {
         const policies = course.policies.map((p) => (hide ? (p.id === hide.dataset.hidePolicy ? { ...p, hidden: true } : p) : { ...p, hidden: false }));

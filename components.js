@@ -96,7 +96,7 @@ export function installCard() {
 }
 
 const SEV_ORDER = { kritik: 0, dikkat: 1, bilgi: 2 };
-const SEV_LABEL = { kritik: "Kritik", dikkat: "Dikkat", bilgi: "İpucu" };
+export const SEV_LABEL = { kritik: "Kritik", dikkat: "Dikkat", bilgi: "İpucu" };
 export const sortFlags = (list) => [...list].sort((a, b) => SEV_ORDER[a.severity] - SEV_ORDER[b.severity]);
 
 /** Bir syllabus kuralı (kırmızı bayrak). withHide: ders sayfasında "Gizle" bağlantısı. */

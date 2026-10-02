@@ -49,6 +49,7 @@ const SHELL = [
   "./ders-calc.js",
   "./asistan-core.js",
   "./grade-sheet.js",
+  "./course-merge.js",
   "./secmeli.js",
   "./attendance.js",
   "./alerts.js",

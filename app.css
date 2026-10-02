@@ -915,3 +915,15 @@ dialog.gsheet[open] .gs-panel { animation: sheet-up 0.22s ease-out; }
 .hero.urgent .hero-day b { color: #F0616D; }
 .hero.calm { background: var(--surface); }
 .hero-count small { display: block; }
+
+/* Ders ekranı (v2.12): kural kaynağı dokununca, plan satırı, boş plan çağrısı */
+.flag { position: relative; }
+.flag-src { margin-top: 6px; }
+.flag-src summary { cursor: pointer; list-style: none; font-size: 0.78rem; color: var(--cyan); }
+.flag-src summary::-webkit-details-marker { display: none; }
+.flag-src small { display: block; margin-top: 4px; }
+.flag-hide { position: absolute; top: 9px; right: 12px; font-size: 0.74rem; color: var(--text-muted); }
+.cd-plan li span small { display: block; color: var(--text-muted); font-size: 0.76rem; }
+.cd-plan-sum b { color: var(--text); }
+.cd-noplan { padding: 12px 14px; border-radius: 12px; background: var(--bg); border: 1px dashed var(--border); }
+.cd-noplan .btn { align-self: flex-start; }
