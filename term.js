@@ -1,9 +1,12 @@
 /**
- * KPR — "Dönem" paneli: tek bakışta GNO, dönem ortalaması, devamsızlıkta en riskli ders,
- * hedef GNO ve derslerin devamsızlık durumu.
+ * KPR — "Dönem" ekranı. Bölümler (üstte yapışkan gezinme şeridi):
+ *   Özet        — GNO, YNO, devamsızlıkta en riskli ders, Hedef GNO (tek kart)
+ *   Ortalama    — UMIS tablosu, harf seçimi, HESAPLA, geçmiş dönemler (gpa-view.js → section())
+ *   Devamsızlık — derslerin devam durumu
+ *   Akış        — dönem haftaları, vize/final/yoğun haftalar
  *
  * Kendi hesabı yok: GNO/YNO ve hedef gpa.js → projection() / needed(),
- * devamsızlık attendance.js → attendance(). Harf seçimi ve UMIS tablosu "Ortalama" ekranında.
+ * devamsızlık attendance.js → attendance(), akış density.js.
  */
 
 import { store } from "./store.js";
@@ -11,7 +14,7 @@ import { esc } from "./ui.js";
 import { todayIdx, todayISO } from "./dates.js";
 import { projection, standing, fmtGpa } from "./gpa.js";
 import { attendance, attendanceText } from "./attendance.js";
-import { readTarget, saveTarget, targetText } from "./gpa-view.js";
+import { readTarget, saveTarget, targetText, section as gpaSection, actions as gpaActions, changes as gpaChanges } from "./gpa-view.js";
 import { emptyState } from "./components.js";
 import { density } from "./density.js";
 import { fmtShort, parseISO, toISO } from "./dates.js";
@@ -40,27 +43,27 @@ function summary(state, p) {
   if (p.missingCredit) hints.push(`${p.missingCredit} dersin kredisi girilmemiş`);
   if (p.source === "none") hints.push("geçmiş dönemlerin girilmemiş");
   return `<div class="stats term-stats">
-    <a class="stat stat-main" href="#/ortalama">
+    <button type="button" class="stat stat-main" data-action="scroll-to" data-to="ortalama">
       <b>${fmtGpa(gno)}</b><span>genel ortalama (GNO)</span>
       ${st ? `<em class="standing ${st.level}">${st.label}</em>` : ""}
-    </a>
-    <a class="stat" href="#/ortalama"><b>${p.term.graded ? fmtGpa(p.term.avg) : "—"}</b><span>bu dönem ortalaması (YNO)</span></a>
+    </button>
+    <button type="button" class="stat" data-action="scroll-to" data-to="ortalama"><b>${p.term.graded ? fmtGpa(p.term.avg) : "—"}</b><span>bu dönem ortalaması (YNO)</span></button>
     <button type="button" class="stat stat-risk ${risk ? `lv-${risk.a.level}` : ""}" data-action="scroll-absence">
       <b>${risk ? esc(risk.c.code || risk.c.name) : "—"}</b>
       <span>${risk ? riskShort(risk.a) : "devamsızlıkta risk yok"}</span>
     </button>
   </div>
-  ${hints.length ? `<p class="term-hint">${hints.join(", ")}. <a class="link" href="#/ortalama">Ortalama'da tamamla</a></p>` : ""}`;
+  ${hints.length ? `<p class="term-hint">${hints.join(", ")}. <button type="button" class="link" data-action="scroll-to" data-to="ortalama">Ortalama'da tamamla</button></p>` : ""}`;
 }
 
 function targetBlock(p) {
   if (!p.term.total) {
-    return `<p class="calc-note">Hedef hesabı için bu dönemin derslerine kredi gir. <a class="link" href="#/ortalama">Ortalama'ya git</a></p>`;
+    return `<p class="calc-note">Hedef hesabı için bu dönemin derslerine kredi gir. <button type="button" class="link" data-action="scroll-to" data-to="ortalama">Ortalama'ya git</button></p>`;
   }
   const target = readTarget();
   const text = targetText(p, target);
   return `<div class="card-box">
-    <label class="target-row"><span>Hedef GNO</span>
+    <label class="target-row"><span>Hedef GNO<small>Dönem sonunda ulaşmak istediğin ortalama</small></span>
       <input type="number" min="0" max="4" step="0.01" inputmode="decimal" value="${target.toFixed(2)}" data-change="target" aria-label="Hedef GNO" class="num-in">
     </label>
     ${text ? `<p class="target-res">${text}</p>` : ""}
@@ -126,7 +129,7 @@ function flowBlock(state) {
       }).join("")}</ul>`
     : '<p class="calc-note">Bu hafta teslim yok.</p>';
 
-  return `<section class="section">
+  return `<section class="section" id="akis">
     <div class="section-head"><h2>Dönem akışı</h2>${d.current !== null ? `<span class="u-term">${d.current + 1}. hafta / ${d.weeks.length}</span>` : ""}</div>
     ${hint}
     <div class="flow" style="--n:${d.weeks.length}">${cols}</div>
@@ -140,43 +143,66 @@ function flowBlock(state) {
   </section>`;
 }
 
+const NAV = [
+  ["ozet", "Özet"],
+  ["ortalama", "Ortalama"],
+  ["devamsizlik", "Devamsızlık"],
+  ["akis", "Akış"],
+];
+
 export function view() {
   const state = store.get();
+  const p = projection(state);
   const head = `<header class="page-head">
     <h1 class="page-title">Dönem</h1>
-    <p class="page-sub">Dönemin akışı, ortalaman ve devamsızlığın</p>
+    <p class="page-sub">Ortalaman, devamsızlığın ve dönemin akışı</p>
   </header>`;
+  // Dersi olmayan öğrenci de geçmiş dönemlerini/UMIS özetini girebilsin: Ortalama bölümü her zaman var
   if (!state.courses.length) {
-    return head + emptyState("Önce derslerini ekle", "Dönem ortalaması ve devamsızlık takibi derslerine göre hesaplanır.", "import-syllabus", "Syllabus yükle", ["new-course", "Elle ekle"]);
+    return head + emptyState("Önce derslerini ekle", "Dönem ortalaması ve devamsızlık takibi derslerine göre hesaplanır.", "import-syllabus", "Syllabus yükle", ["new-course", "Elle ekle"]) + gpaSection(state, p);
   }
-  const p = projection(state);
   const weeks = state.settings.termWeeks;
   return `${head}
-    ${summary(state, p)}
-    ${flowBlock(state)}
-    <section class="section">
-      <div class="section-head"><h2>Hedef</h2><a class="link" href="#/ortalama">Harfleri seç</a></div>
+    <nav class="sec-nav" aria-label="Dönem bölümleri">${NAV.map(([id, label]) => `<button type="button" data-action="scroll-to" data-to="${id}">${label}</button>`).join("")}</nav>
+    <section class="section" id="ozet">
+      ${summary(state, p)}
+      <div class="section-head gap-t"><h2>Hedef</h2>${p.term.total ? `<button type="button" class="link" data-action="scroll-to" data-to="ortalama">Harfleri seç</button>` : ""}</div>
       ${targetBlock(p)}
     </section>
+    ${gpaSection(state, p)}
     <section class="section" id="devamsizlik">
       <div class="section-head"><h2>Devamsızlık</h2></div>
       <ul class="list">${state.courses.map((c) => absenceCard(c, weeks)).join("")}</ul>
       <p class="term-note">Devam şartını sağlamayan öğrenci NA alır ve finale giremez (BAU Yönetmeliği Md. 19). Hak, syllabus'taki devam oranından ya da elle girdiğin sayıdan hesaplanır.</p>
-    </section>`;
+    </section>
+    ${flowBlock(state)}`;
+}
+
+/** Yapışkan şeridin ve üst menünün altında kalmadan bölüme kaydır. */
+export function scrollToSection(id, smooth = true) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const offset = (document.querySelector(".topbar")?.offsetHeight || 0) + (document.querySelector(".sec-nav")?.offsetHeight || 0) + 8;
+  window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - offset, behavior: smooth ? "smooth" : "auto" });
 }
 
 export const actions = {
+  ...gpaActions,
+  "scroll-to"(el) {
+    scrollToSection(el.dataset.to);
+  },
   "pick-week"(el, { render }) {
     selWeek = Number(el.dataset.i);
     render();
   },
   // Adres çubuğundaki # sayfa geçişi için kullanıldığından bağlantı yerine kaydırma
   "scroll-absence"() {
-    document.getElementById("devamsizlik")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollToSection("devamsizlik");
   },
 };
 
 export const changes = {
+  ...gpaChanges,
   "term-start"(el, { render }) {
     store.setSettings({ termStart: el.value });
     selWeek = null;

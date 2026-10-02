@@ -7,6 +7,7 @@ import { density } from "./density.js";
 import { sessionsOn, sessionItem, taskItem, emptyState, installCard } from "./components.js";
 import { buildAlerts } from "./alerts.js";
 import { permissionState } from "./notify.js";
+import { weekView, resetDay, actions as weekActions } from "./schedule.js";
 
 const DISMISS_KEY = "kpr:dismissed";
 const SHOW = 3; // aynı anda en fazla bu kadar uyarı; gerisi katlanır
@@ -118,14 +119,32 @@ export function view() {
   const heroTask = open.filter((t) => daysUntil(t.due) >= 0).sort(byDue)[0];
   const alerts = buildAlerts(state).filter((a) => !hidden[a.id] && a.taskId !== heroTask?.id);
 
-  let todayBlock;
-  if (!courses.length) {
-    todayBlock = emptyState(
+  const mode = state.settings.todayView;
+  const seg = `<div class="seg today-seg" role="group" aria-label="Görünüm">
+      <button type="button" data-action="today-view" data-view="bugun" aria-pressed="${mode === "bugun"}">Bugün</button>
+      <button type="button" data-action="today-view" data-view="hafta" aria-pressed="${mode === "hafta"}">Hafta</button>
+    </div>`;
+  const startEmpty = () => emptyState(
       "Dönemine başla",
       "Bir dersin syllabus'unu yükle; ders saatleri, sınav tarihleri ve not dağılımı otomatik gelsin.",
       "import-syllabus", "Syllabus yükle",
       ["new-course", "Elle ekle"]
     );
+  const head = `<header class="page-head">
+      <p class="eyebrow">${fmtLong(new Date())}</p>
+      <h1 class="page-title">${greeting()}, ${esc(profile.name)}</h1>
+    </header>`;
+
+  // Hafta: eski "Program" sekmesi (gün çipleri + seçilen günün dersleri). Programı boşsa tek boş durum.
+  if (mode === "hafta") {
+    return `${head}${seg}
+      ${courses.length ? `<section class="section week-view">${weekView()}</section>` : startEmpty()}
+      <p class="week-more"><a class="link" href="#/gorevler">Tüm görevleri gör</a></p>`;
+  }
+
+  let todayBlock;
+  if (!courses.length) {
+    todayBlock = startEmpty();
   } else if (!sessions.length) {
     todayBlock = '<p class="muted-note">Bugün dersin yok. Keyfini çıkar ✨</p>';
   } else {
@@ -133,10 +152,8 @@ export function view() {
   }
 
   return `
-    <header class="page-head">
-      <p class="eyebrow">${fmtLong(new Date())}</p>
-      <h1 class="page-title">${greeting()}, ${esc(profile.name)}</h1>
-    </header>
+    ${head}
+    ${seg}
 
     ${installCard()}
     ${notifyCard(state)}
@@ -151,7 +168,7 @@ export function view() {
     </section>` : ""}
 
     <section class="section">
-      <div class="section-head"><h2>Bugünkü dersler</h2><a class="link" href="#/program">Haftalık program</a></div>
+      <div class="section-head"><h2>Bugünkü dersler</h2><button type="button" class="link" data-action="today-view" data-view="hafta">Haftalık program</button></div>
       ${todayBlock}
     </section>
 
@@ -165,6 +182,12 @@ export function view() {
 }
 
 export const actions = {
+  ...weekActions,
+  "today-view"(el) {
+    if (el.dataset.view === "hafta") resetDay();
+    store.setSettings({ todayView: el.dataset.view });
+    window.scrollTo(0, 0);
+  },
   "toggle-alerts"(_el, { render }) {
     expanded = !expanded;
     render();
