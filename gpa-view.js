@@ -6,9 +6,10 @@
  */
 
 import { store } from "./store.js";
-import { esc, openSheet, closeSheet, toast, armDelete } from "./ui.js";
+import { esc, toast } from "./ui.js";
+import { openNumberSheet, openLetterSheet } from "./grade-sheet.js";
 import { icon } from "./icons.js";
-import { COEF, UMIS_GRADES, UNVERIFIED, gradeLabel, fmtGpa, nearestLetter, currentTerm } from "./gpa.js";
+import { COEF, UMIS_GRADES, UNVERIFIED, fmtGpa, nearestLetter, currentTerm } from "./gpa.js";
 
 // Hedef GNO: hesap projection().needed() ile; kart Dönem → Özet'te
 const TARGET_KEY = "kpr:target-gno";
@@ -36,11 +37,6 @@ export function targetText(p, target) {
   return `GNO'n <b>${target.toFixed(2)}</b> olsun istiyorsan bu dönem en az <b class="need">${need.toFixed(2)}</b> ortalama gerekiyor (yaklaşık ${nearestLetter(need)} ortalaması).`;
 }
 
-/** UMIS'teki harf listesi. short: sadece harf (tablo hücresi için), değilse katsayısıyla. */
-const gradeOptions = (selected, { blank = "", short = false, only = null } = {}) =>
-  `<option value="">${blank}</option>` +
-  (only || UMIS_GRADES).map((g) => `<option value="${g}" ${g === selected ? "selected" : ""}>${short ? g : gradeLabel(g)}</option>`).join("");
-
 let showRetake = false; // "tekrar aldığım ders var" açılınca önceki not seçimi görünür
 let showResult = false; // UMIS'teki gibi: HESAPLA'ya basınca sonuç kutusu açılır
 
@@ -67,10 +63,10 @@ function currentBlock(state, p) {
       <td class="u-name">${esc(c.name)}</td>
       <td class="u-num"><input type="number" min="0" max="30" step="0.5" inputmode="decimal" value="${c.credit ?? ""}" placeholder="—" data-change="credit" data-id="${esc(c.id)}" aria-label="${esc(c.name)} kredi"></td>
       <td class="u-num"><input type="number" min="0" max="60" step="0.5" inputmode="decimal" value="${c.ects ?? ""}" placeholder="—" data-change="ects" data-id="${esc(c.id)}" aria-label="${esc(c.name)} AKTS"></td>
-      <td class="u-grade"><select data-change="letter" data-id="${esc(c.id)}" aria-label="${esc(c.name)} harf notu">${gradeOptions(c.letter, { short: true })}</select></td>
+      <td class="u-grade"><button type="button" class="u-pick" data-action="pick-letter" data-id="${esc(c.id)}" aria-label="${esc(c.name)} harf notu: ${esc(c.letter || "seçilmedi")}">${esc(c.letter || "—")}</button></td>
     </tr>
     ${retake ? `<tr class="u-sub"><td colspan="5"><label>Tekrar alıyorsan önceki notun
-      <select data-change="prev" data-id="${esc(c.id)}" aria-label="${esc(c.name)} önceki not">${gradeOptions(c.prevGrade, { blank: "İlk kez alıyorum", only: Object.keys(COEF) })}</select></label></td></tr>` : ""}`).join("");
+      <button type="button" class="u-pick" data-action="pick-prev" data-id="${esc(c.id)}" aria-label="${esc(c.name)} önceki not">${esc(c.prevGrade || "İlk kez alıyorum")}</button></label></td></tr>` : ""}`).join("");
 
   const result = showResult
     ? `<div class="calc-result u-result" aria-live="polite">
@@ -115,40 +111,40 @@ export function section(state, p) {
 const head = (title) => `<header class="sheet-head"><h2>${title}</h2>
   <button type="button" class="icon-btn sm" data-close aria-label="Kapat">${icon.close}</button></header>`;
 
+/**
+ * Geçmiş GNO iki sayıdan (UMIS transkriptinin en altında yazar): önce GNO, sonra tamamlanan kredi.
+ * Ortak not girişi penceresi; "GNO'yu temizle" gpaBase'i siler.
+ */
 export function openBaseForm() {
-  const b = store.get().gpaBase || { credits: "", gno: "" };
-  openSheet(
-    `<form class="sheet-form">
-      ${head("UMIS özeti")}
-      <div class="sheet-body">
-        <p class="lead-text">UMIS'teki transkriptinde en alttaki <b>toplam kredi</b> ve <b>genel not ortalaması</b> değerlerini gir.</p>
-        <div class="row2">
-          <label class="field"><span>Toplam kredi</span><input name="credits" type="number" min="1" max="1000" step="0.5" inputmode="decimal" value="${b.credits}" required autofocus></label>
-          <label class="field"><span>GNO</span><input name="gno" type="number" min="0" max="4" step="0.01" inputmode="decimal" value="${b.gno}" required></label>
-        </div>
-        <p class="fine">Bu dönem tekrar aldığın bir ders varsa "Bu dönem" listesinde o dersin önceki notunu seç; eski not ortalamadan düşülür.</p>
-      </div>
-      <footer class="sheet-foot">
-        ${store.get().gpaBase ? '<button type="button" class="btn btn-danger" data-delete>Sil</button>' : ""}
-        <button type="submit" class="btn btn-primary">Kaydet</button>
-      </footer>
-    </form>`,
-    (d) => {
-      const form = d.querySelector("form");
-      form.addEventListener("submit", (ev) => {
-        ev.preventDefault();
-        const fd = new FormData(form);
-        store.setBase({ credits: Number(fd.get("credits")), gno: Number(fd.get("gno")) });
-        closeSheet();
-        toast("Kaydedildi");
-      });
-      armDelete(form.querySelector("[data-delete]"), () => {
+  const b = store.get().gpaBase;
+  openNumberSheet({
+    context: "Şu anki GNO'n (UMIS transkripti)",
+    value: b?.gno ?? null,
+    max: 4,
+    decimals: 2,
+    unit: "/ 4,00",
+    clearLabel: b ? "GNO'yu temizle" : "",
+    saveLabel: "Devam",
+    onSave: (gno) => {
+      if (gno === null) {
         store.setBase(null);
-        closeSheet();
-        toast("Özet silindi");
+        return toast("GNO silindi");
+      }
+      openNumberSheet({
+        context: "Tamamladığın kredi (ulusal kredi toplamı)",
+        value: b?.credits ?? null,
+        min: 1,
+        max: 400,
+        decimals: 0,
+        unit: "kredi",
+        clearLabel: "",
+        onSave: (credits) => {
+          store.setBase({ credits, gno });
+          toast("Kaydedildi");
+        },
       });
-    }
-  );
+    },
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -156,8 +152,33 @@ export function openBaseForm() {
 /* ------------------------------------------------------------------ */
 
 const course = (id) => store.get().courses.find((c) => c.id === id);
+const LETTERS_UMIS = UMIS_GRADES;
 
 export const actions = {
+  // UMIS tablosunda harf: ızgaradan tek dokunuş
+  "pick-letter"(el) {
+    const c = course(el.dataset.id);
+    if (!c) return;
+    openLetterSheet({
+      context: `${c.code || c.name} · Harf notu`,
+      letters: LETTERS_UMIS,
+      value: c.letter,
+      impact: (l) => (l in UNVERIFIED ? `${l}: katsayısı doğrulanmadı, hesaba katılmaz` : l in COEF ? `${l} = ${COEF[l].toFixed(2)}` : "ortalamaya girmez"),
+      clearLabel: "Harfi temizle",
+      onSave: (l) => store.saveCourse({ ...course(c.id), letter: l }),
+    });
+  },
+  "pick-prev"(el) {
+    const c = course(el.dataset.id);
+    if (!c) return;
+    openLetterSheet({
+      context: `${c.code || c.name} · Önceki notun (tekrar alıyorsan)`,
+      letters: Object.keys(COEF),
+      value: c.prevGrade,
+      clearLabel: "İlk kez alıyorum",
+      onSave: (l) => store.saveCourse({ ...course(c.id), prevGrade: l }),
+    });
+  },
   "edit-base": () => openBaseForm(),
   "show-retake"(_el, { render }) {
     showRetake = true;
@@ -181,14 +202,6 @@ export const changes = {
     const c = course(el.dataset.id);
     if (!c) return;
     store.saveCourse({ ...c, ects: el.value === "" ? null : Number(el.value) });
-  },
-  letter(el) {
-    const c = course(el.dataset.id);
-    if (c) store.saveCourse({ ...c, letter: el.value });
-  },
-  prev(el) {
-    const c = course(el.dataset.id);
-    if (c) store.saveCourse({ ...c, prevGrade: el.value });
   },
   target(el, { render }) {
     saveTarget(el.value);

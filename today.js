@@ -1,7 +1,7 @@
 import { store } from "./store.js";
 import { esc } from "./ui.js";
 import { icon } from "./icons.js";
-import { todayIdx, todayISO, toISO, toMin, nowMin, daysUntil, fmtLong, fmtShort, greeting, byDue, relLabel } from "./dates.js";
+import { todayIdx, todayISO, toISO, toMin, nowMin, daysUntil, fmtLong, fmtShort, greeting, byDue, relLabel, dayLabel } from "./dates.js";
 import { TASK_TYPES, isExam } from "./store.js";
 import { density } from "./density.js";
 import { sessionsOn, sessionItem, taskItem, emptyState, installCard } from "./components.js";
@@ -64,14 +64,6 @@ function notifyCard(state) {
   return "";
 }
 
-/** Geri sayım metni: "Bugün 23:59", "Yarın", "5 gün". */
-function countdown(t) {
-  const n = daysUntil(t.due);
-  if (n === 0) return t.time ? `Bugün ${t.time}` : "Bugün";
-  if (n === 1) return t.time ? `Yarın ${t.time}` : "Yarın";
-  return `${n} gün`;
-}
-
 /** Ekranın üstü: sıradaki teslim büyük kartta; ayrı bir sınav yaklaşıyorsa altında geri sayımı. */
 function heroBlock(open, courses) {
   const next = open.filter((t) => daysUntil(t.due) >= 0).sort(byDue)[0];
@@ -79,12 +71,15 @@ function heroBlock(open, courses) {
   const c = courses.find((x) => x.id === next.courseId);
   const exam = open.filter((t) => isExam(t) && t.id !== next.id && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 30).sort(byDue)[0];
   const ec = exam && courses.find((x) => x.id === exam.courseId);
-  const urgent = daysUntil(next.due) <= 1;
-  return `<section class="hero ${urgent ? "urgent" : ""}" style="--c:${c?.color || "var(--cyan)"}">
-    <p class="hero-eyebrow">Sıradaki · ${TASK_TYPES[next.type]}${c ? ` · ${esc(c.code || c.name)}` : ""}</p>
+  // Gün en başta ve büyük ("Yarın · Quiz · MCH 2016"): bugüne ait olmayan iş bugünmüş gibi görünmesin.
+  // Bugün/yarın vurgulu; daha ilerisi nötr kart.
+  const n = daysUntil(next.due);
+  const urgent = n <= 1;
+  return `<section class="hero ${urgent ? "urgent" : "calm"}" style="--c:${c?.color || "var(--cyan)"}">
+    <p class="hero-day"><b>${esc(dayLabel(next.due))}</b> · ${TASK_TYPES[next.type]}${c ? ` · ${esc(c.code || c.name)}` : ""}</p>
     <div class="hero-main">
       <button type="button" class="hero-title" data-action="edit-task" data-id="${esc(next.id)}">${esc(next.title)}</button>
-      <div class="hero-count"><b>${countdown(next)}</b><small>${fmtShort(next.due)}</small></div>
+      <div class="hero-count"><b>${n === 0 && next.time ? esc(next.time) : esc(fmtShort(next.due))}</b><small>${n === 0 ? (next.time ? "bugün" : "gün içinde") : n === 1 ? (next.time ? `yarın ${esc(next.time)}` : "yarın") : `${n} gün sonra`}</small></div>
     </div>
     <button type="button" class="btn btn-ghost hero-done" data-action="toggle-task" data-id="${esc(next.id)}">${icon.check}Bitti</button>
     ${exam ? `<button type="button" class="hero-exam" data-action="edit-task" data-id="${esc(exam.id)}">
