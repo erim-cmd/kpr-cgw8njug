@@ -30,6 +30,7 @@
   --violet-text: #B39BFA;   /* mor zemin üstünde açık yazı (proje, sunum etiketi) */
   --on-violet: #FFFFFF;     /* mor (Asistan) düğme üstündeki simge */
   --switch-knob: #FFFFFF;   /* açık anahtarın topuzu */
+  --scrim: #080B14;         /* pencere arkası karartma (yarı saydam kullanılır) */
   /* Köşe: 3 değer + hap */
   --r-sm: 8px;
   --r-md: 12px;
