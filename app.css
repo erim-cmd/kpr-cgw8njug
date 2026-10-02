@@ -763,10 +763,6 @@ button.stat { text-align: left; color: inherit; font: inherit; cursor: pointer; 
 .cd-plan-sum { background: var(--bg); font-weight: 500; }
 .cd-sec { display: flex; flex-direction: column; gap: 8px; }
 .cd-sec .mini-title { margin: 0; }
-.grade-bar { display: flex; gap: 3px; height: 26px; border-radius: 9px; overflow: hidden; }
-.grade-bar i { min-width: 0; display: grid; place-items: center; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; font-style: normal; }
-.grade-bar i.done { background: var(--gradient); border-color: transparent; color: #0E1320; }
-.grade-bar span { font-size: 0.68rem; font-weight: 700; overflow: hidden; white-space: nowrap; }
 .cd-plan { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .cd-plan li { display: flex; gap: 10px; align-items: baseline; padding: 7px 10px; border-radius: 10px; font-size: 0.86rem; }
 .cd-plan li b { flex: none; width: 30px; color: var(--text-muted); font-size: 0.78rem; }
@@ -927,3 +923,24 @@ dialog.gsheet[open] .gs-panel { animation: sheet-up 0.22s ease-out; }
 .cd-plan-sum b { color: var(--text); }
 .cd-noplan { padding: 12px 14px; border-radius: 12px; background: var(--bg); border: 1px dashed var(--border); }
 .cd-noplan .btn { align-self: flex-start; }
+
+/* Ders ekranı: değerlendirme satırları (dokununca ortak not girişi) */
+.grade-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.grade-row {
+  width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; cursor: pointer;
+  padding: 12px 14px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font: inherit;
+}
+.grade-row:hover { border-color: var(--text-muted); }
+.gr-n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.92rem; }
+.gr-add { color: var(--cyan); font-size: 0.8rem; font-weight: 600; }
+.gr-score { font: 700 1.1rem var(--font-display); font-variant-numeric: tabular-nums; }
+.gr-w { flex: none; min-width: 52px; text-align: center; padding: 4px 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); font: 700 0.95rem var(--font-display); font-variant-numeric: tabular-nums; }
+.grade-row.has .gr-w { background: rgba(76, 201, 240, 0.14); color: var(--cyan); }
+button.tl-row { width: 100%; padding: 10px 14px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text); cursor: pointer; font: inherit; }
+.tl-letter { font: 700 1.2rem var(--font-display); color: var(--cyan); }
+.scale-cell { display: grid; gap: 2px; padding: 8px 10px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); color: var(--text); cursor: pointer; text-align: left; font: inherit; }
+.scale-cell span { font-size: 0.74rem; color: var(--text-muted); font-weight: 600; }
+.scale-cell b { font: 700 1rem var(--font-display); font-variant-numeric: tabular-nums; }
+.u-pick { min-width: 56px; padding: 7px 10px; border-radius: 9px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font: 700 0.92rem var(--font-display); cursor: pointer; }
+.u-pick:hover { border-color: var(--cyan); }
+.tgt-pick { font-size: 1.05rem; color: var(--cyan); }

@@ -16,6 +16,7 @@ import { projection, standing, fmtGpa } from "./gpa.js";
 import { attendance, attendanceText } from "./attendance.js";
 import { readTarget, saveTarget, targetText, openBaseForm, section as gpaSection, actions as gpaActions, changes as gpaChanges } from "./gpa-view.js";
 import { emptyState } from "./components.js";
+import { openNumberSheet } from "./grade-sheet.js";
 import { density } from "./density.js";
 import { fmtShort, parseISO, toISO } from "./dates.js";
 import { openAbsences } from "./ders.js";
@@ -65,7 +66,7 @@ function gnoCard(state, p) {
     const t = readTarget();
     const text = targetText(p, t);
     target = `<label class="target-row gno-target"><span>Hedef GNO</span>
-        <input type="number" min="0" max="4" step="0.01" inputmode="decimal" value="${t.toFixed(2)}" data-change="target" aria-label="Hedef GNO" class="num-in"></label>
+        <button type="button" class="u-pick tgt-pick" data-action="pick-target" aria-label="Hedef GNO ${t.toFixed(2)}">${t.toFixed(2).replace(".", ",")}</button></label>
       ${text ? `<p class="target-res">${text.replace("ortalama gerekiyor", "YNO gerekiyor")}</p>` : ""}`;
   }
   const foot = base
@@ -244,6 +245,28 @@ export const actions = {
     openAbsences(el.dataset.id);
   },
   "edit-base": () => openBaseForm(),
+  "pick-target"() {
+    const p = projection(store.get());
+    openNumberSheet({
+      context: "Hedef GNO (dönem sonunda)",
+      value: readTarget(),
+      max: 4,
+      decimals: 2,
+      unit: "/ 4,00",
+      clearLabel: "",
+      impact: (v) => {
+        const need = p.needed(v);
+        if (need === null) return "";
+        if (need > 4) return "Bu dönem hepsi A olsa da yetmiyor";
+        if (need <= 0) return "Bu dönem ne alırsan al tutuyor";
+        return `Bu dönem en az ${need.toFixed(2).replace(".", ",")} YNO gerekiyor`;
+      },
+      onSave: (v) => {
+        saveTarget(v);
+        store.setSettings({}); // yeniden çiz
+      },
+    });
+  },
   "skip-gno"() {
     store.setSettings({ gnoSkip: true });
   },

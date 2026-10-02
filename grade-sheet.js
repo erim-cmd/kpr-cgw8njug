@@ -107,7 +107,7 @@ const KEY_LABEL = { ",": "Virgül", del: "Sil" };
  * Sayı girişi. unit: "/ 100", "/ 4,00", "kredi"… impact(v) → kısa canlı etki metni ya da "".
  * onSave(v): v sayı ya da (Notu temizle ile) null.
  */
-export function openNumberSheet({ context, value = null, min = 0, max = 100, decimals = 1, unit = "/ 100", quick = [], impact = null, clearLabel = "Notu temizle", onSave }) {
+export function openNumberSheet({ context, value = null, min = 0, max = 100, decimals = 1, unit = "/ 100", quick = [], impact = null, clearLabel = "Notu temizle", saveLabel = "Kaydet", onSave }) {
   let buf = value === null || value === undefined ? "" : formatValue(value, decimals);
   const opts = { max, decimals };
   return open(
@@ -118,7 +118,7 @@ export function openNumberSheet({ context, value = null, min = 0, max = 100, dec
     <div class="gs-keys" role="group" aria-label="Sayı tuşları">
       ${KEYS.map((k) => `<button type="button" data-key="${k}" aria-label="${KEY_LABEL[k] || k}" ${k === "," && !decimals ? "disabled" : ""}>${k === "del" ? "⌫" : k}</button>`).join("")}
     </div>
-    <button type="button" class="btn btn-primary gs-save" data-save data-autofocus>Kaydet</button>
+    <button type="button" class="btn btn-primary gs-save" data-save data-autofocus>${esc(saveLabel)}</button>
     ${clearLabel && value !== null && value !== undefined ? `<button type="button" class="link gs-clear" data-clear>${esc(clearLabel)}</button>` : ""}`,
     (d) => {
       const show = () => {
@@ -136,9 +136,10 @@ export function openNumberSheet({ context, value = null, min = 0, max = 100, dec
         show();
       };
       d.querySelectorAll("[data-key]").forEach((b) => b.addEventListener("click", () => key(b.dataset.key)));
+      // Hızlı çip tek dokunuşta kaydeder (not girişi: kurs → satır → çip = 3 dokunuş)
       d.querySelectorAll("[data-quick]").forEach((b) => b.addEventListener("click", () => {
-        buf = formatValue(Number(b.dataset.quick), decimals);
-        show();
+        d.close();
+        onSave(Number(b.dataset.quick));
       }));
       d.querySelector("[data-save]").addEventListener("click", () => {
         const v = parseBuffer(buf);
