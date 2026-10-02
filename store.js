@@ -24,7 +24,8 @@ const arr = (v) => (Array.isArray(v) ? v : []);
 export const uid = () =>
   crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
 
-const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false });
+// todayView: Bugün ekranındaki [Bugün | Hafta] anahtarının son konumu (arayüz tercihi)
+const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false, todayView: "bugun" });
 const empty = () => ({ version: 1, profile: { name: "" }, courses: [], tasks: [], transcript: [], gpaBase: null, settings: defaultSettings() });
 
 function normSession(s) {
@@ -145,6 +146,7 @@ function normSettings(s) {
     termWeeks: Number.isInteger(s.termWeeks) && s.termWeeks >= 1 && s.termWeeks <= 30 ? s.termWeeks : d.termWeeks,
     notify: s.notify === true,
     notifyClasses: s.notifyClasses === true,
+    todayView: s.todayView === "hafta" ? "hafta" : "bugun",
   };
 }
 
