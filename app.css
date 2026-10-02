@@ -724,6 +724,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 .cd-plan-sum { background: var(--bg); font-weight: 500; }
 .cd-sec { display: flex; flex-direction: column; gap: 8px; }
 .cd-sec .mini-title { margin: 0; }
+/* Bölümler arası boşluk diğer ekranlardaki .section ile aynı: 12px (gövde aralığı) + 16px = 28px */
+.cd .sheet-body > .cd-info, .cd .sheet-body > .cd-sec { margin-top: 16px; }
+.cd-note { margin: 0; font-size: var(--fs-xs); color: var(--text-muted); line-height: 1.45; }
 .cd-plan { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .cd-plan li { display: flex; gap: 10px; align-items: baseline; padding: 7px 10px; border-radius: var(--r-md); font-size: var(--fs-sm); }
 .cd-plan li b { flex: none; width: 30px; color: var(--text-muted); font-size: var(--fs-xs); }
