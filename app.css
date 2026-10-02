@@ -593,17 +593,17 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 /* Kırmızı bayraklar */
 .flags { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .flag { padding: 10px 12px; border-radius: var(--r-md); background: var(--bg); border-left: 3px solid var(--text-muted); }
-.flag.kritik { border-left-color: var(--critical); }
-.flag.dikkat { border-left-color: var(--caution); }
+.flag.kritik { border-left-color: var(--danger); }
+.flag.dikkat { border-left-color: var(--warn); }
 .flag.bilgi { border-left-color: var(--cyan); }
 .flag-tag { font-size: var(--fs-2xs); font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-muted); }
-.flag.kritik .flag-tag { color: var(--critical); }
-.flag.dikkat .flag-tag { color: var(--caution); }
+.flag.kritik .flag-tag { color: var(--danger); }
+.flag.dikkat .flag-tag { color: var(--warn); }
 .flag-rule { margin: 4px 0 0; font-size: var(--fs-sm); font-weight: 500; }
 .flag-cons { margin: 2px 0 0; font-size: var(--fs-sm); color: var(--text-muted); }
 .flag-foot { margin: 6px 0 0; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
 .flag-foot .link { flex: none; }
-.flag-badge { background: color-mix(in srgb, var(--critical) 15%, transparent); color: var(--critical); }
+.flag-badge { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
 .badges { display: grid; gap: 4px; justify-items: end; flex: none; }
 .badges .badge { white-space: nowrap; }
 
@@ -614,13 +614,13 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 
 /* Bugün: sıradaki teslim */
 .hero { position: relative; margin-bottom: 12px; padding: 16px; border-radius: var(--r-lg); background: linear-gradient(135deg, color-mix(in srgb, var(--c) 26%, var(--surface)), var(--surface)); border: 1px solid var(--border); display: grid; gap: 10px; }
-.hero.urgent { border-color: color-mix(in srgb, var(--critical) 55%, var(--border)); }
+.hero.urgent { border-color: color-mix(in srgb, var(--danger) 55%, var(--border)); }
 .hero-eyebrow { margin: 0; font-size: var(--fs-2xs); font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-muted); }
 .hero-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .hero-title { all: unset; cursor: pointer; font: 700 var(--fs-xl)/1.2 var(--font-display); overflow-wrap: anywhere; }
 .hero-count { text-align: right; flex: none; }
 .hero-count b { display: block; font: 700 var(--fs-xl)/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
-.hero.urgent .hero-count b { color: var(--critical); }
+.hero.urgent .hero-count b { color: var(--danger); }
 .hero-count small { font-size: var(--fs-xs); color: var(--text-muted); }
 .hero-done { justify-self: start; }
 .hero-exam { all: unset; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: var(--fs-sm); }
@@ -883,7 +883,7 @@ dialog.gsheet[open] .gs-panel { animation: sheet-up 0.22s ease-out; }
 /* Bugün: sıradaki kartı — gün en başta; bugün/yarın değilse nötr */
 .hero-day { margin: 0; font-size: var(--fs-sm); color: var(--text-muted); }
 .hero-day b { font: 700 var(--fs-lg) var(--font-display); color: var(--text); }
-.hero.urgent .hero-day b { color: var(--critical); }
+.hero.urgent .hero-day b { color: var(--danger); }
 .hero.calm { background: var(--surface); }
 .hero-count small { display: block; }
 

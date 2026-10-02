@@ -23,8 +23,6 @@
   --gradient: var(--cyan);
   --on-accent: #0E1320;
   /* Bileşen tonları (app.css'teki sabit renkler buraya taşındı; değerler aynı) */
-  --critical: #F0616D;      /* kritik kural kartı, acil "Sıradaki" kartı */
-  --caution: #F2B544;       /* dikkat kuralı kartı */
   --danger-text: #F58BA0;   /* kırmızı zemin üstünde açık yazı (sınav etiketi, risk) */
   --warn-soft-text: #F7D08F; /* uyarı kutusu yazısı */
   --violet-text: #B39BFA;   /* mor zemin üstünde açık yazı (proje, sunum etiketi) */
