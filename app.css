@@ -142,9 +142,8 @@ body.onboarding #view { padding-bottom: 32px; }
 .task.soon .task-when b { color: var(--warn); }
 
 .tag { flex: none; font-size: var(--fs-2xs); font-weight: 600; padding: 1px 7px; border-radius: var(--r-sm); background: var(--surface-2); color: var(--text-muted); }
+/* Görev türü etiketleri nötr (.tag); sadece sınav kırmızı tonlu. Aciliyet sağdaki tarih renginden okunur. */
 .tag-sinav { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger-text); }
-.tag-odev { background: color-mix(in srgb, var(--cyan) 14%, transparent); color: var(--cyan); }
-.tag-proje { background: color-mix(in srgb, var(--violet) 20%, transparent); color: var(--violet-text); }
 .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
 
 /* ---- Ders kartı ---- */
@@ -715,7 +714,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 .cd-cell .muted { color: var(--text-muted); font-size: var(--fs-xs); }
 .tag-online, .tag-exam { font-style: normal; font-size: var(--fs-2xs); font-weight: 700; padding: 1px 7px; border-radius: var(--r-pill); }
 .tag-online { color: var(--cyan); background: color-mix(in srgb, var(--cyan) 12%, transparent); }
-.tag-exam { flex: none; color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+.tag-exam { flex: none; color: var(--danger-text); background: color-mix(in srgb, var(--danger) 15%, transparent); }
 .cd-more, .cd-plan-sum {
   width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; cursor: pointer;
   padding: 11px 14px; border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--border); color: var(--text); font-weight: 600; font-size: var(--fs-sm);
@@ -767,13 +766,6 @@ textarea.grow { resize: none; overflow: hidden; min-height: 44px; }
 .fixed-type small { color: var(--text-muted); }
 .task-form .sheet-foot { position: sticky; bottom: 0; background: var(--surface); }
 
-/* Görev türü etiketleri (tokens.css renkleri) */
-.tag-quiz { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
-.tag-okuma { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
-.tag-lab { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); }
-.tag-sunum { background: color-mix(in srgb, var(--violet) 20%, transparent); color: var(--violet-text); }
-.tag-kisisel { background: var(--surface-2); color: var(--text-muted); }
-.tag-diger { background: var(--surface-2); color: var(--text-muted); }
 
 
 /* Dönem → GNO kartı */
