@@ -944,3 +944,6 @@ button.tl-row { width: 100%; padding: 10px 14px; border-radius: 12px; background
 .u-pick { min-width: 56px; padding: 7px 10px; border-radius: 9px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font: 700 0.92rem var(--font-display); cursor: pointer; }
 .u-pick:hover { border-color: var(--cyan); }
 .tgt-pick { font-size: 1.05rem; color: var(--cyan); }
+.att-opt { width: 100%; display: flex; flex-direction: column; gap: 2px; text-align: left; cursor: pointer; padding: 14px 16px; border-radius: 14px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font: inherit; }
+.att-opt:hover { border-color: var(--cyan); }
+.att-opt small { color: var(--text-muted); }

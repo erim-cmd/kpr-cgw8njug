@@ -11,7 +11,8 @@
  */
 
 import { store } from "./store.js";
-import { esc } from "./ui.js";
+import { esc, openSheet, closeSheet, toast } from "./ui.js";
+import { icon } from "./icons.js";
 import { projection, standing, fmtGpa } from "./gpa.js";
 import { attendance, attendanceText } from "./attendance.js";
 import { readTarget, saveTarget, targetText, openBaseForm, section as gpaSection, actions as gpaActions, changes as gpaChanges } from "./gpa-view.js";
@@ -98,7 +99,7 @@ function absenceCard(c, weeks) {
     ${a.limit !== null ? `<div class="bar ${a.level}" role="img" aria-label="${a.used} / ${a.limit} devamsızlık"><i style="width:${fill}%"></i></div>
     <p class="abs-meta">${esc(attendanceText(a))}${basis ? ` · ${basis}` : ""}</p>` : `<p class="abs-meta">${a.used ? `${a.used} devamsızlık kaydı var. ` : ""}Kalan hakkını hesaplamam için devam şartını gir.</p>`}
     <div class="abs-actions">
-      ${a.limit === null ? `<button type="button" class="btn btn-ghost btn-sm" data-action="edit-course" data-id="${esc(c.id)}">Devam şartını gir</button>` : ""}
+      ${a.limit === null ? `<button type="button" class="btn btn-ghost btn-sm" data-action="attend-rule" data-id="${esc(c.id)}">Devam şartını gir</button>` : ""}
       <button type="button" class="btn btn-ghost btn-sm" data-action="absences" data-id="${esc(c.id)}">${c.absences.length ? `Kayıtlar (${c.absences.length})` : "Geçmiş gün ekle"}</button>
     </div>
   </li>`;
@@ -224,6 +225,43 @@ export function view() {
     ${flowBlock(state)}`;
 }
 
+/**
+ * Devam şartı: "Derslerin %X'ine katılım zorunlu" ya da "En fazla N devamsızlık hakkı".
+ * Seçilen alan kaydedilir, diğeri boşaltılır (attendance.js elle girilen hakkı önceler).
+ */
+function openAttendRule(c) {
+  const name = esc(c.code || c.name);
+  openSheet(`<div class="sheet-form">
+      <header class="sheet-head"><h2>${name} için devam şartı</h2>
+        <button type="button" class="icon-btn sm" data-close aria-label="Kapat">${icon.close}</button></header>
+      <div class="sheet-body">
+        <p class="fine">Syllabus'ta yazmıyorsa hocana sor; BAU'da sağlamayan öğrenci NA alır.</p>
+        <button type="button" class="att-opt" data-att="pct"><b>Derslerin %X'ine katılım zorunlu</b><small>ör. %70</small></button>
+        <button type="button" class="att-opt" data-att="max"><b>En fazla N devamsızlık hakkı</b><small>ör. 4 ders</small></button>
+      </div>
+    </div>`, (d) => {
+    d.querySelectorAll("[data-att]").forEach((b) => b.addEventListener("click", () => {
+      const pct = b.dataset.att === "pct";
+      closeSheet();
+      openNumberSheet({
+        context: pct ? `${c.code || c.name} · Katılım zorunluluğu` : `${c.code || c.name} · En fazla devamsızlık`,
+        value: pct ? c.attendPct : c.absLimit,
+        min: pct ? 1 : 0,
+        max: pct ? 100 : 60,
+        decimals: 0,
+        unit: pct ? "%" : "ders",
+        quick: pct ? [60, 70, 80] : [],
+        clearLabel: "",
+        onSave: (v) => {
+          const now = store.get().courses.find((x) => x.id === c.id);
+          store.saveCourse(pct ? { ...now, attendPct: v, absLimit: null } : { ...now, absLimit: v });
+          toast("Devam şartı kaydedildi");
+        },
+      });
+    }));
+  });
+}
+
 /** Yapışkan şeridin ve üst menünün altında kalmadan bölüme kaydır. */
 export function scrollToSection(id, smooth = true) {
   const el = document.getElementById(id);
@@ -245,6 +283,11 @@ export const actions = {
     openAbsences(el.dataset.id);
   },
   "edit-base": () => openBaseForm(),
+  // Sadece devam şartını soran küçük pencere (ders düzenleme formu açılmaz)
+  "attend-rule"(el) {
+    const c = store.get().courses.find((x) => x.id === el.dataset.id);
+    if (c) openAttendRule(c);
+  },
   "pick-target"() {
     const p = projection(store.get());
     openNumberSheet({
