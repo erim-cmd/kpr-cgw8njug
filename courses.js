@@ -36,7 +36,7 @@ export function view() {
       ${courses.length ? "" : '<p class="page-sub">Bu dönemki derslerin</p>'}
     </header>
     ${courses.length
-      ? `${importCard()}<ul class="list">${courses.map((c) => courseCard(c, tasks)).join("")}</ul>`
+      ? `${importCard(true)}<ul class="list">${courses.map((c) => courseCard(c, tasks)).join("")}</ul>`
       : emptyState(
           "Dönemine başla",
           "Her dersin syllabus'unu yükle ya da dersleri elle ekle. Programın ve görevlerin bunlara bağlanır.",

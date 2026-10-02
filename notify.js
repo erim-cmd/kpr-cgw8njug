@@ -79,7 +79,7 @@ export function disableNotifications() {
 }
 
 export async function testNotification() {
-  await show("Deneme bildirimi", { body: "KPR bildirimleri çalışıyor.", tag: "kpr-test", data: { url: "#/ayarlar" } });
+  await show("Deneme bildirimi", { body: "Köprü bildirimleri çalışıyor.", tag: "kpr-test", data: { url: "#/ayarlar" } });
 }
 
 /** Zamanı gelmiş hatırlatmaları gösterir. Açılışta, görünürlük değişince ve dakikada bir çağrılır. */

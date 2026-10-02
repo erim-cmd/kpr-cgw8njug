@@ -94,7 +94,7 @@ function classEvents(course, weeks, now) {
 
 export function buildICS(state, { classes = false } = {}) {
   const now = new Date();
-  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//KPR//Ogrenci Asistani//TR", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:KPR"];
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//KPR//Ogrenci Asistani//TR", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:Köprü"];
   const today = todayISO();
   for (const t of state.tasks.filter((x) => !x.done && x.due >= today)) {
     lines.push(...taskEvent(t, state.courses.find((c) => c.id === t.courseId), now));
@@ -111,7 +111,7 @@ export async function deliverICS(text, filename = "kpr-takvim.ics") {
   const file = new File([text], filename, { type: "text/calendar" });
   if (navigator.canShare?.({ files: [file] })) {
     try {
-      await navigator.share({ files: [file], title: "KPR takvimi" });
+      await navigator.share({ files: [file], title: "Köprü takvimi" });
       return "shared";
     } catch (err) {
       if (err.name === "AbortError") return "cancelled";

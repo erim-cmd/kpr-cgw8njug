@@ -33,7 +33,7 @@ export const UNVERIFIED = { "D-": "katsayısı doğrulanmadı", E: "katsayısı 
 export const UMIS_GRADES = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "E", "F", "NA", "S", "U", "EX", "W", "I", "R"];
 
 export function gradeLabel(g) {
-  if (g in COEF) return `${g} · ${COEF[g].toFixed(2)}`;
+  if (g in COEF) return `${g} · ${fmtGpa(COEF[g])}`;
   if (g in UNVERIFIED) return `${g} · ${UNVERIFIED[g]}`;
   if (g in OTHER) return `${g} · ${OTHER[g]}`;
   return g;
@@ -51,7 +51,8 @@ export function passStatus(g) {
 
 /** İki hane, yarım yukarı. Kayan nokta hatasına karşı küçük tolerans. */
 export const round2 = (x) => Math.round((x + 1e-9) * 100) / 100;
-export const fmtGpa = (x) => (x === null || x === undefined ? "—" : x.toFixed(2));
+// Türkçe ondalık ayırıcı: 3,12
+export const fmtGpa = (x) => (x === null || x === undefined ? "—" : x.toFixed(2).replace(".", ","));
 
 const SEASON_ORDER = Object.keys(SEASONS);
 export const termKey = (e) => e.year * 3 + SEASON_ORDER.indexOf(e.season);

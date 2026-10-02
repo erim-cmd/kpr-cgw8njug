@@ -231,3 +231,28 @@ h3 { font-size: 1.12rem; line-height: 1.3; }
 .legal th, .legal td { text-align: left; vertical-align: top; padding: 10px 12px; border: 1px solid var(--border); color: var(--text-muted); }
 .legal th { color: var(--text); background: var(--surface); font-weight: 600; }
 .table-wrap { overflow-x: auto; }
+
+/* ---- v2.13: telefon görseli uygulamadaki yeni Bugün ekranının kopyası ---- */
+.m-sub { margin: -6px 0 12px; color: var(--text-muted); font-size: 11px; }
+.m-wk { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 9px 6px 7px; margin-bottom: 10px; }
+.m-wk-head { display: flex; justify-content: space-between; padding: 0 5px 7px; font-size: 10px; color: var(--text-muted); }
+.m-wk-head b { color: var(--text); font-weight: 600; }
+.m-wk-head .m-red { color: var(--danger); }
+.m-wk-days { display: grid; grid-template-columns: repeat(7, 1fr); }
+.m-wk-days span { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.m-wk-days small { font-size: 9px; color: var(--text-muted); }
+.m-wk-days b { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; font: 600 12px var(--font-display); }
+.m-wk-days .on b { background: var(--cyan); color: #0E1320; }
+.m-wk-days .on small { color: var(--cyan); }
+.m-wk-days i { width: 4px; height: 4px; border-radius: 50%; }
+.m-wk-days i.ex { background: var(--danger); }
+.m-wk-days i.due { background: var(--warn); }
+.m-focus { background: var(--surface); border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--border)); border-radius: 14px; padding: 11px; margin-bottom: 4px; display: grid; gap: 8px; }
+.m-focus-top { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); }
+.m-focus-top span:first-child { font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.m-focus-top i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--c); margin-right: 5px; }
+.m-focus-main { display: flex; justify-content: space-between; align-items: flex-start; }
+.m-focus-main b { display: block; font: 700 15px var(--font-display); }
+.m-focus-main small { color: var(--text-muted); font-size: 10px; }
+.m-focus-main strong { font: 700 15px var(--font-display); color: var(--danger); }
+.m-done { justify-self: start; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); font-size: 10px; font-weight: 600; }

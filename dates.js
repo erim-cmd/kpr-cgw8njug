@@ -42,7 +42,8 @@ export function relLabel(n) {
 }
 
 export const fmtLong = (d) => d.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long" });
-export const fmtShort = (iso) => parseISO(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
+// "3 Ekim": Türkçede "3 Eki" kısaltması ek gibi okunuyor, ay adı tam yazılır
+export const fmtShort = (iso) => parseISO(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
 
 /**
  * Göreli gün adı: "Bugün", "Yarın", bu hafta içindeyse gün adı ("Cuma"), daha ileriyse "12 Kas".

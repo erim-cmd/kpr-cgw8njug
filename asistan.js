@@ -30,6 +30,19 @@ function bubble(m) {
     </li>`;
 }
 
+/** Sohbet boşken ilk örnek sorunun öğrencinin kendi verisinden cevabı: ne yaptığı tek bakışta görünsün. */
+function sample() {
+  const state = store.get();
+  if (!state.courses.length) return "";
+  const q = EXAMPLES[0];
+  const m = answer(q, state, {});
+  if (!m || m.chips || !m.text) return "";
+  return `<section class="section ask-sample" aria-label="Örnek cevap">
+    <div class="section-head"><h2>Örnek</h2></div>
+    <ul class="chat">${bubble({ q, ...m, chips: null })}</ul>
+  </section>`;
+}
+
 export function view() {
   return `
     <header class="page-head">
@@ -46,6 +59,8 @@ export function view() {
       </label>
       <button type="submit" class="btn btn-primary" aria-label="Sor">${icon.chat}Sor</button>
     </form>
+
+    ${chat.length ? "" : sample()}
 
     ${chat.length ? "" : `<section class="section">
       <div class="section-head"><h2>Örnek sorular</h2></div>

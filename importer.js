@@ -108,7 +108,7 @@ export function openImport({ into = null } = {}) {
     `<form class="sheet-form" data-step="pick">
       ${head("Syllabus'tan ekle")}
       <div class="sheet-body">
-        <p class="lead-text">Dersin syllabus'unu (izlence) yükle. KPR ders bilgilerini, ders saatlerini, vize-final ve ödev tarihlerini, not dağılımını, devam şartını ve dikkat edilecek kuralları bulsun. Kaydetmeden önce her şeyi kontrol edebilirsin.</p>
+        <p class="lead-text">Dersin syllabus'unu (izlence) yükle. Köprü ders bilgilerini, ders saatlerini, vize-final ve ödev tarihlerini, not dağılımını, devam şartını ve dikkat edilecek kuralları bulsun. Kaydetmeden önce her şeyi kontrol edebilirsin.</p>
         <label class="drop" data-drop>
           <input type="file" name="file" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.txt,text/plain" required class="visually-hidden">
           <span class="drop-icon">${icon.upload}</span>
@@ -175,7 +175,7 @@ function showProgress(ai = false) {
     <header class="sheet-head"><h2>Syllabus okunuyor</h2></header>
     <div class="sheet-body">
       <div class="reading" role="status" aria-live="polite">
-        <div class="reading-orb"><span class="brand-mark">K</span></div>
+        <div class="reading-orb"><img class="brand-mark" src="logo-mark.svg" alt="" width="32" height="32"></div>
         <ol class="steps">${STEPS.map((s, i) => `<li data-s="${i}">${s}</li>`).join("")}</ol>
         <p class="fine">${ai ? "Yapay zekâ ile okuma genelde 10–40 saniye sürer. Pencereyi kapatma." : "Birkaç saniye sürer."}</p>
       </div>
@@ -351,7 +351,7 @@ function openReview(r, { reader = "local", aiError = "" } = {}) {
     `<form class="sheet-form" novalidate>
       ${head("Kontrol et ve kaydet")}
       <div class="sheet-body">
-        <p class="lead-text">KPR ${found ? `<b>${found}</b> buldu` : "bu dosyada tarih veya saat bulamadı"}. Yanlış bir şey varsa düzelt, sonra kaydet.</p>
+        <p class="lead-text">Köprü ${found ? `<b>${found}</b> buldu` : "bu dosyada tarih veya saat bulamadı"}. Yanlış bir şey varsa düzelt, sonra kaydet.</p>
         <p class="fine reader-note" data-reader="${reader}">${reader === "ai" ? "Yapay zekâ ile okundu." : aiError ? `Yapay zekâ ile okunamadı (${esc(aiError)}); dosya cihazında okundu.` : "Cihazında okundu."}</p>
         ${existing ? `<p class="info-box">${esc(existing.name)} dersin zaten kayıtlı. Kaydedince bu dersin bilgileri güncellenir, yeni tarihler eklenir.</p>` : ""}
         ${r.warnings.length ? `<ul class="warn-box">${r.warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}

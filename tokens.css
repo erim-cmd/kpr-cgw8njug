@@ -18,10 +18,27 @@
   --danger: #F0607A;
   --warn: #F5B84C;
   --ok: #4ADE80;
-  --gradient: linear-gradient(120deg, var(--cyan), var(--violet));
+  /* Tek vurgu: düz camgöbeği. Gradyan sadece marka anı için (tanıtım başlığı, karşılama sözü) */
+  --gradient-brand: linear-gradient(120deg, var(--cyan), var(--violet));
+  --gradient: var(--cyan);
+  --on-accent: #0E1320;
+  /* Köşe: 3 değer + hap */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-pill: 999px;
+  /* Yazı ölçeği (8 basamak) */
+  --fs-2xs: 0.7rem;
+  --fs-xs: 0.78rem;
+  --fs-sm: 0.86rem;
+  --fs-md: 0.95rem;
+  --fs-lg: 1.1rem;
+  --fs-xl: 1.35rem;
+  --fs-2xl: 1.7rem;
+  --fs-3xl: 2.4rem;
   --font-display: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
   --font-body: 'Inter', 'Segoe UI', system-ui, sans-serif;
-  --radius: 16px;
+  --radius: var(--r-lg);
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
 }
@@ -45,7 +62,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 .brand-mark {
-  width: 32px; height: 32px; border-radius: 10px;
+  width: 32px; height: 32px; border-radius: var(--r-sm);
   background: var(--gradient); color: #0E1320;
   display: grid; place-items: center;
   font: 700 1rem var(--font-display);
@@ -53,7 +70,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 11px 18px; border-radius: 12px; border: 1px solid transparent;
+  padding: 11px 18px; border-radius: var(--r-md); border: 1px solid transparent;
   font-weight: 600; font-size: 0.92rem; cursor: pointer; text-decoration: none; white-space: nowrap;
 }
 .btn svg { width: 18px; height: 18px; }
@@ -64,7 +81,10 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .btn-block { width: 100%; }
 .btn:disabled { opacity: 0.5; cursor: default; }
 
-.grad { background: var(--gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
+/* Logo işareti (logo-mark.svg): K + köprü kemeri. Eski "K" harfli kare yerine */
+img.brand-mark { background: none; border-radius: 0; object-fit: contain; display: block; }
+
+.grad { background: var(--gradient-brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
