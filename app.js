@@ -5,6 +5,7 @@
  */
 
 import { store } from "./store.js";
+import { runMigrations } from "./migrate.js";
 import { toast } from "./ui.js";
 import { icon } from "./icons.js";
 import { openCourseForm, openTaskForm, openCourseDetail } from "./forms.js";
@@ -22,6 +23,9 @@ import { attendance } from "./attendance.js";
 import { dismiss } from "./today.js";
 import { todayISO } from "./dates.js";
 import { enableNotifications, checkReminders, sync, permissionState } from "./notify.js";
+
+// Kayıtlı veri eski biçimdeyse ekran çizilmeden önce yeni biçime geçir (bir kez; migrate.js)
+runMigrations();
 
 const ROUTES = {
   bugun: { mod: today, title: "Bugün", icon: "home", fab: "new-task" },

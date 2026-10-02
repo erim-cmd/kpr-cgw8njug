@@ -47,7 +47,9 @@ export const uid = () =>
 // todayView: Bugün ekranındaki [Bugün | Hafta] anahtarının son konumu (arayüz tercihi)
 // interests: Seçmeli Keşfi'nde seçilen ilgi alanları (INTERESTS anahtarları)
 const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false, todayView: "bugun", interests: [] });
-const empty = () => ({ version: 1, profile: { name: "" }, courses: [], tasks: [], transcript: [], gpaBase: null, settings: defaultSettings() });
+// version: veri şeması sürümü (göçler migrate.js'te; v2 = geçmiş dönemler gpaBase'e çevrildi)
+// archive: göçte arayüzden kaldırılan ama silinmeyen veri (geri dönüş için)
+const empty = () => ({ version: 1, profile: { name: "" }, courses: [], tasks: [], transcript: [], gpaBase: null, settings: defaultSettings(), archive: { transcript: [] } });
 
 function normSession(s) {
   if (!s || !Number.isInteger(s.day) || s.day < 0 || s.day > 6) return null;
@@ -186,6 +188,8 @@ function normSettings(s) {
     notify: s.notify === true,
     notifyClasses: s.notifyClasses === true,
     todayView: s.todayView === "hafta" ? "hafta" : "bugun",
+    // Dönem → GNO kartındaki bir kerelik "Şu anki GNO'n?" sorusu atlandı mı
+    gnoSkip: s.gnoSkip === true,
     interests: Array.isArray(s.interests) ? [...new Set(s.interests.filter((k) => typeof k === "string" && Object.hasOwn(INTERESTS, k)))] : [],
   };
 }
@@ -206,6 +210,8 @@ export function normalize(data) {
   out.transcript = arr(data.transcript).map(normEntry).filter(Boolean).slice(0, 400);
   out.gpaBase = normBase(data.gpaBase);
   out.settings = normSettings(data.settings);
+  out.version = Number.isInteger(data.version) && data.version >= 1 && data.version <= 99 ? data.version : 1;
+  out.archive = { transcript: arr(data.archive?.transcript).map(normEntry).filter(Boolean).slice(0, 400) };
   return out;
 }
 

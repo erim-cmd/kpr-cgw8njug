@@ -1,13 +1,14 @@
 /**
- * KPR — Ortalama: BAU kurallarıyla YNO/GNO, UMIS tablosu (harf, kredi, AKTS, HESAPLA), geçmiş dönemler.
- * v2.10'dan beri ayrı sekme değil, Dönem ekranının "Ortalama" bölümü (term.js → section()).
- * Hedef GNO kartı Dönem'in Özet bölümünde tek kart (readTarget/saveTarget/targetText buradan).
+ * KPR — Ortalama: BAU kurallarıyla bu dönemin UMIS tablosu (harf, kredi, AKTS, HESAPLA).
+ * Dönem ekranının "Ortalama" bölümü (term.js → section()). GNO kartı Dönem → Özet'te.
+ * Geçmiş GNO iki sayıdan: gpaBase = { credits, gno } (openBaseForm). v2.11'den beri ders ders
+ * geçmiş dönem girişi arayüzde yok; eski kayıtlar migrate.js ile gpaBase'e çevrildi.
  */
 
-import { store, SEASONS } from "./store.js";
+import { store } from "./store.js";
 import { esc, openSheet, closeSheet, toast, armDelete } from "./ui.js";
 import { icon } from "./icons.js";
-import { COEF, UMIS_GRADES, UNVERIFIED, gradeLabel, projection, terms, standing, fmtGpa, nearestLetter, passStatus, termKey, currentTerm } from "./gpa.js";
+import { COEF, UMIS_GRADES, UNVERIFIED, gradeLabel, fmtGpa, nearestLetter, currentTerm } from "./gpa.js";
 
 // Hedef GNO: hesap projection().needed() ile; kart Dönem → Özet'te
 const TARGET_KEY = "kpr:target-gno";
@@ -42,26 +43,8 @@ const gradeOptions = (selected, { blank = "", short = false, only = null } = {})
 
 let showRetake = false; // "tekrar aldığım ders var" açılınca önceki not seçimi görünür
 let showResult = false; // UMIS'teki gibi: HESAPLA'ya basınca sonuç kutusu açılır
-let historyOpen = false; // Geçmiş dönemler katlanır (varsayılan kapalı); durum yeniden çizimde korunur
 
 const fmt1 = (n) => (n === null || n === undefined ? "" : Number(n).toLocaleString("tr-TR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
-
-const gradeTag = (g) => {
-  const st = passStatus(g);
-  return `<span class="gtag ${st || ""}">${esc(g)}</span>`;
-};
-
-/** Ortalamanın ayrıntısı (büyük GNO rakamı Dönem → Özet'te). */
-function details(p) {
-  const lines = [];
-  if (p.prev.avg !== null) lines.push(`<li><b>Geçmiş GNO</b><span>${fmtGpa(p.prev.avg)} · ${p.prev.credits.toLocaleString("tr-TR")} kredi</span></li>`);
-  if (p.term.total) {
-    lines.push(`<li><b>Bu dönem (YNO)</b><span>${p.term.graded ? fmtGpa(p.term.avg) : "—"} · ${p.term.graded}/${p.term.total} derste harf seçildi</span></li>`);
-    if (p.after !== null) lines.push(`<li><b>Dönem sonu GNO</b><span>${fmtGpa(p.after)}</span></li>`);
-  }
-  return `${p.unverified ? `<p class="warn-text fine">${p.unverified} geçmiş derste katsayısı doğrulanmamış not (D-, E, R) var; hesaba katılmadı.</p>` : ""}
-    ${lines.length ? `<ul class="kv gpa-kv">${lines.join("")}</ul>` : '<p class="calc-note">Geçmiş notlarını ve bu dönemin kredilerini gir; ortalaman burada hesaplanır.</p>'}`;
-}
 
 function currentBlock(state, p) {
   const { courses } = state;
@@ -94,7 +77,7 @@ function currentBlock(state, p) {
         ${p.term.graded ? `<p>Dönem ortalaması (YNO): <b class="need">${fmtGpa(p.term.avg)}</b> · ${fmt1(p.term.credits)} kredi</p>` : "<p>Önce derslere harf notu seç.</p>"}
         ${p.after !== null && p.term.graded ? `<p>Genel not ortalaması (GNO): <b class="need">${fmtGpa(p.after)}</b></p>` : ""}
         ${p.term.graded && p.term.graded < p.term.total ? `<p class="warn-text">${p.term.total - p.term.graded} ders hesaba katılmadı: harfi seçilmedi ya da seçilen not ortalamaya girmiyor.</p>` : ""}
-        ${p.source === "none" ? '<p class="fine">Geçmiş dönemlerini aşağıdan eklersen GNO da hesaplanır.</p>' : ""}
+        ${p.source === "none" ? `<p class="fine">Özet'teki GNO kartına şu anki GNO'nu ve kredini girersen genel ortalama da hesaplanır.</p>` : ""}
       </div>`
     : "";
 
@@ -116,48 +99,11 @@ function currentBlock(state, p) {
   </div>`;
 }
 
-function historyBlock(state, p) {
-  const groups = terms(state.transcript);
-  let body = "";
-  if (!groups.length && !state.gpaBase) {
-    body = `<div class="empty">
-      <strong>Geçmiş notların</strong>
-      <p>En hızlısı: UMIS'teki toplam krediyi ve GNO'yu gir. Tekrar edilen dersleri de hesaplamak istersen dersleri tek tek ekle.</p>
-      <div class="empty-actions">
-        <button class="btn btn-primary" type="button" data-action="edit-base">UMIS özetini gir</button>
-        <button class="btn btn-ghost" type="button" data-action="new-entry">${icon.plus}Ders ekle</button>
-      </div>
-    </div>`;
-  } else if (!groups.length) {
-    body = `<div class="group">
-      <div class="group-row"><div><strong>UMIS özeti</strong><p>${state.gpaBase.credits.toLocaleString("tr-TR")} kredi · GNO ${fmtGpa(state.gpaBase.gno)}</p></div>
-        <button class="btn btn-ghost" type="button" data-action="edit-base">Düzenle</button></div>
-    </div>
-    <p class="fine gap-t">Dersleri tek tek eklersen özet yerine onlar kullanılır ve tekrar edilen dersler otomatik hesaplanır.</p>
-    <button class="btn btn-ghost gap-t" type="button" data-action="new-entry">${icon.plus}Ders ekle</button>`;
-  } else {
-    body = groups.map((g) => `<div class="term">
-        <div class="term-head"><strong>${esc(g.label)}</strong><span>YNO ${fmtGpa(g.yno)}</span></div>
-        <ul class="term-list">${g.entries.map((e) => `<li><button type="button" data-action="edit-entry" data-id="${esc(e.id)}">
-          <span class="term-name"><b>${esc(e.code || e.name)}</b>${e.code && e.name ? `<small>${esc(e.name)}</small>` : ""}</span>
-          <span class="term-cr">${e.credit.toLocaleString("tr-TR")} kr${e.ects !== null ? ` · ${e.ects.toLocaleString("tr-TR")} AKTS` : ""}</span>${gradeTag(e.grade)}
-        </button></li>`).join("")}</ul>
-      </div>`).join("") + `<button class="btn btn-ghost gap-t" type="button" data-action="new-entry">${icon.plus}Ders ekle</button>`;
-  }
-  const count = groups.length ? `${groups.length} dönem` : state.gpaBase ? "UMIS özeti" : "boş";
-  return `<details class="sub-block fold" ${historyOpen ? "open" : ""}>
-    <summary data-action="toggle-history"><span class="sub-title">Geçmiş dönemler</span><small>${count}</small></summary>
-    <div class="fold-body">${body}</div>
-  </details>`;
-}
-
 /** Dönem ekranının "Ortalama" bölümü. */
 export function section(state, p) {
   return `<section class="section" id="ortalama">
     <div class="section-head"><h2>Ortalama</h2><span class="u-term">BAU · A–F, 4.00 üzerinden</span></div>
-    ${details(p)}
     ${currentBlock(state, p)}
-    ${historyBlock(state, p)}
     <p class="footnote">Hesap BAU Eğitim-Öğretim ve Sınav Yönetmeliği'ne göre (Md. 26, 28): ders puanı = ulusal kredi × katsayı, tekrar edilen derste son not geçerli, sonuç iki haneye yuvarlanır. NA ve F ortalamaya 0.00 girer; S, U, EX, W ortalamaya girmez. BAU bağıl değerlendirme kullandığı için harfi sen seçersin. Sonucu UMIS'teki ile karşılaştır.</p>
   </section>`;
 }
@@ -169,86 +115,7 @@ export function section(state, p) {
 const head = (title) => `<header class="sheet-head"><h2>${title}</h2>
   <button type="button" class="icon-btn sm" data-close aria-label="Kapat">${icon.close}</button></header>`;
 
-function defaultTerm() {
-  const last = [...store.get().transcript].sort((a, b) => termKey(b) - termKey(a))[0];
-  if (last) return { year: last.year, season: last.season };
-  // Son biten dönem: Eylül–Ocak arasıysak geçen yılın Baharı, Şubat–Ağustos arasıysak bu yılın Güzü
-  const d = new Date();
-  const m = d.getMonth();
-  const start = m >= 8 ? d.getFullYear() : d.getFullYear() - 1;
-  return m >= 8 || m === 0 ? { year: start - 1, season: "bahar" } : { year: start, season: "guz" };
-}
-
-function openEntryForm(entry = null, term = null) {
-  const e = entry || { ...(term || defaultTerm()), code: "", name: "", credit: "", ects: null, grade: "" };
-  const thisYear = new Date().getFullYear();
-  const years = [];
-  for (let y = thisYear; y >= thisYear - 8; y--) years.push(y);
-  openSheet(
-    `<form class="sheet-form">
-      ${head(entry ? "Dersi düzenle" : "Geçmiş ders ekle")}
-      <div class="sheet-body">
-        <div class="row2">
-          <label class="field"><span>Akademik yıl</span>
-            <select name="year">${years.map((y) => `<option value="${y}" ${y === e.year ? "selected" : ""}>${y}–${y + 1}</option>`).join("")}</select>
-          </label>
-          <label class="field"><span>Dönem</span>
-            <select name="season">${Object.entries(SEASONS).map(([k, v]) => `<option value="${k}" ${k === e.season ? "selected" : ""}>${v}</option>`).join("")}</select>
-          </label>
-        </div>
-        <div class="row2">
-          <label class="field"><span>Ders kodu</span><input name="code" value="${esc(e.code)}" maxlength="20" placeholder="MCH 2016" ${entry ? "" : "autofocus"}></label>
-          <label class="field"><span>Kredi <span class="hint">(ulusal)</span></span><input name="credit" type="number" min="0" max="30" step="0.5" inputmode="decimal" value="${e.credit}" required></label>
-        </div>
-        <label class="field"><span>Ders adı <span class="hint">(isteğe bağlı)</span></span><input name="name" value="${esc(e.name)}" maxlength="80"></label>
-        <div class="row2">
-          <label class="field"><span>AKTS <span class="hint">(isteğe bağlı)</span></span><input name="ects" type="number" min="0" max="60" step="0.5" inputmode="decimal" value="${e.ects ?? ""}"></label>
-          <label class="field"><span>Harf notu</span><select name="grade" required>${gradeOptions(e.grade, { blank: "Seç" })}</select></label>
-        </div>
-        <p class="fine">Aynı dersi birden fazla kez aldıysan her denemeyi kendi dönemine ekle; ortalamaya son not girer.</p>
-      </div>
-      <footer class="sheet-foot">
-        ${entry ? '<button type="button" class="btn btn-danger" data-delete>Sil</button>' : ""}
-        ${entry ? "" : '<button type="submit" class="btn btn-ghost" name="more" value="1">Kaydet, yenisini ekle</button>'}
-        <button type="submit" class="btn btn-primary">Kaydet</button>
-      </footer>
-    </form>`,
-    (d) => {
-      const form = d.querySelector("form");
-      form.addEventListener("submit", (ev) => {
-        ev.preventDefault();
-        const fd = new FormData(form);
-        if (!fd.get("code").trim() && !fd.get("name").trim()) {
-          form.elements.code.setCustomValidity("Ders kodu ya da adı gerekli.");
-          form.elements.code.reportValidity();
-          return;
-        }
-        const saved = store.saveEntry({
-          ...entry,
-          year: Number(fd.get("year")),
-          season: fd.get("season"),
-          code: fd.get("code"),
-          name: fd.get("name"),
-          credit: Number(fd.get("credit")),
-          ects: fd.get("ects") === "" ? null : Number(fd.get("ects")),
-          grade: fd.get("grade"),
-        });
-        if (!saved) return toast("Kayıt eksik: kredi ve harf notu gerekli");
-        toast(entry ? "Ders güncellendi" : "Ders eklendi");
-        closeSheet();
-        if (ev.submitter?.name === "more") openEntryForm(null, { year: saved.year, season: saved.season });
-      });
-      form.elements.code.addEventListener("input", () => form.elements.code.setCustomValidity(""));
-      armDelete(form.querySelector("[data-delete]"), () => {
-        store.deleteEntry(entry.id);
-        closeSheet();
-        toast("Ders silindi");
-      });
-    }
-  );
-}
-
-function openBaseForm() {
+export function openBaseForm() {
   const b = store.get().gpaBase || { credits: "", gno: "" };
   openSheet(
     `<form class="sheet-form">
@@ -291,18 +158,10 @@ function openBaseForm() {
 const course = (id) => store.get().courses.find((c) => c.id === id);
 
 export const actions = {
-  "new-entry": () => openEntryForm(),
-  "edit-entry": (el) => openEntryForm(store.get().transcript.find((e) => e.id === el.dataset.id)),
   "edit-base": () => openBaseForm(),
   "show-retake"(_el, { render }) {
     showRetake = true;
     render();
-  },
-  // Olay dağıtıcı varsayılan davranışı engellediği için <details> burada açılıp kapanır; durum yeniden çizimde korunur
-  "toggle-history"(el) {
-    const d = el.closest("details");
-    d.open = !d.open;
-    historyOpen = d.open;
   },
   calc(_el, { render }) {
     showResult = true;
