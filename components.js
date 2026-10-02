@@ -15,7 +15,8 @@ export function sessionsOn(courses, day) {
 
 /**
  * now: dakika cinsinden şu an (sadece bugünün listesi için), yoksa null
- * absentDate: verilirse başlamış/bitmiş derslerde "Gelmedim" düğmesi çıkar (devamsızlık)
+ * absentDate: verilirse BİTMİŞ derste "Gitmedim" düğmesi çıkar (devamsızlık; varsayılan: derse gittin).
+ * Düğme ders bitiminden 24 saat sonrasına kadar durur; dünkü dersler için çağıran now=1440 verir.
  */
 export function sessionItem(s, now = null, absentDate = null) {
   let state = "";
@@ -24,8 +25,8 @@ export function sessionItem(s, now = null, absentDate = null) {
     else if (now >= toMin(s.start)) state = "now";
   }
   const absent = absentDate && s.course.absences.some((a) => a.date === absentDate && a.start === s.start);
-  const absBtn = absentDate && (state || absent)
-    ? `<button type="button" class="abs-btn ${absent ? "on" : ""}" data-action="mark-absent" data-id="${esc(s.course.id)}" data-start="${esc(s.start)}" aria-pressed="${!!absent}">${absent ? "Gelmedim ✓" : "Gelmedim"}</button>`
+  const absBtn = absentDate && (state === "past" || absent)
+    ? `<button type="button" class="abs-btn ${absent ? "on" : ""}" data-action="mark-absent" data-id="${esc(s.course.id)}" data-start="${esc(s.start)}" data-date="${esc(absentDate)}" aria-pressed="${!!absent}">${absent ? "Gitmedim ✓" : "Gitmedim"}</button>`
     : "";
   const meta = [s.course.code, s.room].filter(Boolean).map(esc).join(" · ");
   return `<li class="${absBtn ? "session-wrap" : ""}">

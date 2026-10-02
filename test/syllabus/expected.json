@@ -63,6 +63,48 @@
       "gec_teslim",
       "telafi",
       "durustluk"
+    ],
+    "weeks": [
+      [
+        1,
+        "2026-09-28",
+        "Temel kavramlar"
+      ],
+      [
+        2,
+        "2026-10-05",
+        "Kirchhoff yasaları"
+      ],
+      [
+        3,
+        "2026-10-12",
+        "Düğüm analizi"
+      ],
+      [
+        5,
+        "2026-10-26",
+        "Thevenin ve Norton"
+      ],
+      [
+        8,
+        "2026-11-16",
+        "Ara Sınav"
+      ],
+      [
+        10,
+        "2026-11-30",
+        "Kapasitör ve bobin"
+      ],
+      [
+        12,
+        "2026-12-14",
+        "RLC devreleri"
+      ],
+      [
+        15,
+        "2027-01-05",
+        "Final"
+      ]
     ]
   },
   "en_paragraf": {
@@ -113,7 +155,8 @@
       "gec_teslim",
       "not_kurali",
       "durustluk"
-    ]
+    ],
+    "weeks": []
   },
   "tr_hafta": {
     "code": "EEE 2101",
@@ -166,7 +209,8 @@
     "policies": [
       "devam",
       "butunleme"
-    ]
+    ],
+    "weeks": []
   },
   "en_bologna": {
     "code": "ME 3201",
@@ -229,6 +273,33 @@
       "baraj",
       "devam",
       "telafi"
+    ],
+    "weeks": [
+      [
+        1,
+        null,
+        "Introduction, fluid properties"
+      ],
+      [
+        4,
+        null,
+        "Bernoulli equation"
+      ],
+      [
+        7,
+        null,
+        "Momentum analysis"
+      ],
+      [
+        9,
+        null,
+        "Dimensional analysis"
+      ],
+      [
+        14,
+        null,
+        "Review"
+      ]
     ]
   },
   "tr_ikivize": {
@@ -274,7 +345,8 @@
       "devam",
       "not_kurali",
       "telafi"
-    ]
+    ],
+    "weeks": []
   },
   "tr_bologna": {
     "code": "MAT 1001",
@@ -333,6 +405,33 @@
     ],
     "policies": [
       "devam"
+    ],
+    "weeks": [
+      [
+        1,
+        null,
+        "Fonksiyonlar"
+      ],
+      [
+        5,
+        null,
+        "Kısa Sınav 1"
+      ],
+      [
+        8,
+        null,
+        "Ara Sınav"
+      ],
+      [
+        11,
+        null,
+        "Kısa Sınav 2"
+      ],
+      [
+        14,
+        null,
+        "Genel tekrar"
+      ]
     ]
   },
   "en_bau_real1": {
@@ -425,7 +524,8 @@
       "durustluk",
       "not_kurali",
       "telafi"
-    ]
+    ],
+    "weeks": []
   },
   "tr_bau_real2": {
     "code": "GEP 1020",
@@ -475,7 +575,8 @@
       "devam",
       "durustluk",
       "telafi"
-    ]
+    ],
+    "weeks": []
   },
   "en_bau_real3": {
     "code": "ENM 4116",
@@ -559,6 +660,68 @@
     "policies": [
       "devam",
       "durustluk"
+    ],
+    "weeks": [
+      [
+        1,
+        "2026-09-23",
+        "Introduction to Syllabus and NPSD"
+      ],
+      [
+        2,
+        "2026-09-30",
+        "Introduction to Innovation and Creativity Relevant to NPSD"
+      ],
+      [
+        3,
+        "2026-10-07",
+        "Investigation of Term Project Samples for R&D Brokerage Events"
+      ],
+      [
+        4,
+        "2026-10-14",
+        "Stages in NPSD"
+      ],
+      [
+        5,
+        "2026-10-21",
+        "Concepts in the Context of Monopolistic Competition"
+      ],
+      [
+        6,
+        "2026-11-04",
+        "Fundamentals of Product and Price Differentiation Term Project Student Presentations"
+      ],
+      [
+        7,
+        "2026-11-11",
+        "Midterm Exam (Tentative)"
+      ],
+      [
+        8,
+        "2026-11-14",
+        "Differentiation in Action and Term Project Student Presentations"
+      ],
+      [
+        9,
+        "2026-11-18",
+        "Strategic Planning and Ten–Ten Planning EcoWear Case Study – Innovating for a Sustainable Future"
+      ],
+      [
+        10,
+        "2026-11-25",
+        "Term Project Student Presentations"
+      ],
+      [
+        11,
+        "2026-12-02",
+        "Term Project Student Presentations"
+      ],
+      [
+        12,
+        "2026-12-09",
+        "Term Project Student Presentations and Semester Overview"
+      ]
     ]
   },
   "en_sube_tba": {
@@ -610,7 +773,8 @@
     ],
     "warnings_exclude": [
       "Final tarihi bulunamadı"
-    ]
+    ],
+    "weeks": []
   },
   "en_ofis_ekseni": {
     "code": "FIN 4100",
@@ -687,6 +851,28 @@
     "warnings_exclude": [
       "Devam şartı bulunamadı",
       "Birden fazla şube"
+    ],
+    "weeks": [
+      [
+        1,
+        null,
+        "Introduction"
+      ],
+      [
+        4,
+        null,
+        "Forward pricing"
+      ],
+      [
+        11,
+        null,
+        "Project"
+      ],
+      [
+        12,
+        null,
+        "Project finalization"
+      ]
     ]
   },
   "tr_olcme_sutunu": {
@@ -734,6 +920,48 @@
     ],
     "warnings_exclude": [
       "Sınav/ödevler sadece hafta"
+    ],
+    "weeks": [
+      [
+        1,
+        null,
+        "Giriş"
+      ],
+      [
+        2,
+        null,
+        "Temel kavramlar"
+      ],
+      [
+        3,
+        null,
+        "Algılama"
+      ],
+      [
+        4,
+        null,
+        "Kuramlar"
+      ],
+      [
+        5,
+        null,
+        "Stratejiler"
+      ],
+      [
+        6,
+        null,
+        "Alanlar"
+      ],
+      [
+        7,
+        null,
+        "Medya"
+      ],
+      [
+        8,
+        null,
+        "Propaganda"
+      ]
     ]
   }
 }

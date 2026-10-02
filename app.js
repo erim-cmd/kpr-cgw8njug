@@ -5,6 +5,7 @@
  */
 
 import { store } from "./store.js";
+import { runMigrations } from "./migrate.js";
 import { toast } from "./ui.js";
 import { icon } from "./icons.js";
 import { openCourseForm, openTaskForm, openCourseDetail } from "./forms.js";
@@ -22,6 +23,9 @@ import { attendance } from "./attendance.js";
 import { dismiss } from "./today.js";
 import { todayISO } from "./dates.js";
 import { enableNotifications, checkReminders, sync, permissionState } from "./notify.js";
+
+// Kayıtlı veri eski biçimdeyse ekran çizilmeden önce yeni biçime geçir (bir kez; migrate.js)
+runMigrations();
 
 const ROUTES = {
   bugun: { mod: today, title: "Bugün", icon: "home", fab: "new-task" },
@@ -158,11 +162,12 @@ const globalActions = {
     render();
   },
 
-  // Devamsızlık: bugünkü derste "Gelmedim"
+  // Devamsızlık: biten derste "Gitmedim" (Geri al bildirimi 5 sn)
   "mark-absent": (el) => {
     const c = find(store.get().courses, el.dataset.id);
     if (!c) return;
-    const date = todayISO();
+    // Bugün listesinde dünkü (son 24 saatte biten) dersler de olabilir: tarih düğmeden gelir
+    const date = el.dataset.date || todayISO();
     const existing = c.absences.find((a) => a.date === date && a.start === el.dataset.start);
     if (existing) {
       store.removeAbsence(c.id, existing.id);

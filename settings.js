@@ -1,4 +1,5 @@
 import { store } from "./store.js";
+import { runMigrations } from "./migrate.js";
 import { esc, toast } from "./ui.js";
 import { icon } from "./icons.js";
 import { todayISO } from "./dates.js";
@@ -6,7 +7,7 @@ import { installMode, isStandalone, promptInstall } from "./install.js";
 import { permissionState, enableNotifications, disableNotifications, testNotification } from "./notify.js";
 import { buildICS, deliverICS, countExportable } from "./ics.js";
 
-export const APP_VERSION = "2.10.2";
+export const APP_VERSION = "2.11.0";
 
 let icsClasses = true;
 
@@ -205,6 +206,7 @@ export const changes = {
       if (!Array.isArray(data?.courses) || !Array.isArray(data?.tasks)) throw new Error("biçim");
       const keepName = store.get().profile.name;
       store.replace(data);
+      runMigrations(); // eski sürümün yedeği de yeni biçime geçsin
       if (!store.get().profile.name) store.setName(keepName);
       toast("Yedek yüklendi");
     } catch {

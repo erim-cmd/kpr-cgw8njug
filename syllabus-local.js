@@ -3,7 +3,7 @@
  *
  * Girdi: doc-text.js'in düz metni (tablo hücreleri "\t" ile ayrık).
  * Çıktı: functions/api/syllabus.js sanitize() ile aynı şekil, böylece kontrol ekranı iki yolda da aynı:
- *   { course, sessions, items, grading, attendance, final_min, policies, warnings }
+ *   { course, sessions, items, weeks, grading, attendance, final_min, policies, warnings }
  *
  * Türkçe ve İngilizce izlenceler; Bologna tablo biçimi, "Etiket: değer" satırları ve düz paragraflar.
  * Emin olunamayan her şey warnings'e yazılır; öğrenci kaydetmeden önce kontrol ekranında düzeltir.
@@ -1141,6 +1141,87 @@ function detectTerm(text, now) {
 /* Giriş noktası                                                          */
 /* ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------ */
+/* Haftalık konular                                                      */
+/* ------------------------------------------------------------------ */
+
+const WEEK_HEAD = /^(hafta|week|wk|hf)\b/;
+const TOPIC_HEAD = /^(konu|konular|topic|topics|subject|subjects|icerik|content|contents)\b/;
+const NOTE_HEAD = /^(not|notlar|notes?|aciklama|aciklamalar|remarks)$/;
+const BARE_WEEK = /^\s*(\d{1,2})\s*[-–—]?\s*$/;
+
+/**
+ * Haftalık plan tablosundan { n, date, topic, note }.
+ * Sadece düzgün tablo okunur: satırın hücre sayısı başlıkla uyuşmalı. PDF'te satırları birden çok
+ * fiziksel satıra dağılmış tablolar (sütunlar kayar) okunmaz: yanlış konu göstermektense boş kalır.
+ * Word'de hafta hücresi "1\n23.09.2026" gibi iki satır olabilir: tablo satırından önceki yalın hafta
+ * numarası / tarih satırları o satıra aittir.
+ */
+function parseWeeks(lines, flines, termYear) {
+  const weeks = [];
+  for (let h = 0; h < lines.length; h++) {
+    const head = flines[h].split("\t").map((c) => c.trim());
+    if (head.length < 2) continue;
+    const wc = head.findIndex((c) => WEEK_HEAD.test(c));
+    const tc = head.findIndex((c) => TOPIC_HEAD.test(c));
+    if (wc < 0 || tc < 0 || tc === wc) continue;
+    const dc = head.findIndex((c) => /^(tarih|date|tarihler|dates)\b/.test(c));
+    const nc = head.findIndex((c) => NOTE_HEAD.test(c));
+    let pendWeek = null;
+    let pendDate = null;
+    for (let i = h + 1; i < lines.length; i++) {
+      const raw = lines[i];
+      const f = flines[i];
+      if (!raw.trim()) {
+        if (weeks.length) break; // tablo bitti (Word'de satırlar arası boşluk yok)
+        continue;
+      }
+      if (!raw.includes("\t")) {
+        // Yalın hafta numarası ya da tarih (Word hücresi içinde satır sonu); başka metin tabloyu bitirir
+        const bw = BARE_WEEK.exec(raw);
+        if (bw && +bw[1] > 0 && +bw[1] <= 30) {
+          pendWeek = +bw[1];
+          continue;
+        }
+        const bd = findDates(f, termYear);
+        if (bd.length && f.replace(/[\d./\-\s]/g, "").length <= 3) {
+          pendDate = bd[0];
+          continue;
+        }
+        break;
+      }
+      const cells = raw.split("\t");
+      const fcells = f.split("\t");
+      if (cells.length > head.length || cells.length <= tc) {
+        pendWeek = pendDate = null;
+        continue;
+      }
+      const wm = BARE_WEEK.exec(cells[wc] || "");
+      const n = wm ? +wm[1] : pendWeek;
+      if (!n || n > 30) {
+        pendWeek = pendDate = null;
+        continue;
+      }
+      const topic = clean(cells[tc] || "");
+      // Ders çıktısı kodu ("1, 3", "CLO2", "DK1") ya da tek kelimelik sütun kayması konu değildir
+      const okTopic = topic.length >= 3 && /[A-Za-zÇĞİÖŞÜçğıöşü]{3}/.test(topic) && !/^(clo|dk|ok)\s*[\d,–\-\s]*$/i.test(topic);
+      let date = null;
+      const dsrc = dc >= 0 ? fcells[dc] || "" : wm ? "" : fcells[wc] || "";
+      // Hücre içi satır sonundan gelen tarih önce ("8 / 14.11.2026 / Make-up for 28.10": tarih 14.11)
+      const dd = findDates(dsrc, termYear);
+      if (pendDate) date = pendDate.iso;
+      else if (dd.length) date = dd[0].iso;
+      const note = nc >= 0 && nc !== tc ? clean(cells[nc] || "") : "";
+      if (okTopic && !weeks.some((w) => w.n === n)) {
+        weeks.push({ n, date, topic: cut(topic, 200), note: note ? cut(note, 200) : null });
+      }
+      pendWeek = pendDate = null;
+    }
+    if (weeks.length) break;
+  }
+  return weeks.sort((a, b) => a.n - b.n).slice(0, 20);
+}
+
 export function parseSyllabus(text, now = new Date()) {
   const norm = text.normalize("NFC").replace(/\r/g, "").replace(/[   ]/g, " ").replace(/[‐‑‒]/g, "-");
   const lines = norm.split("\n").map((l) => l.replace(/[ ]+/g, " ").trimEnd());
@@ -1173,6 +1254,7 @@ export function parseSyllabus(text, now = new Date()) {
   const course = parseCourse(lines, flines, pairsBy, norm);
   const sessions = parseSessions(norm, flines, lines, pairsBy);
   const items = parseItems(lines, flines, term, warnings);
+  const weeks = parseWeeks(lines, flines, term);
   const grading = parseGrading(lines, flines);
   // Not tablosunda olan ama takvimde hiç geçmeyen vize/final: tarihsiz sınav olarak ekle (öğrenci tarihini girer,
   // geri sayım ve GNO simülasyonu o sınavı bilir). Uydurma tarih yok.
@@ -1222,6 +1304,7 @@ export function parseSyllabus(text, now = new Date()) {
     course,
     sessions,
     items: items.slice(0, 60),
+    weeks,
     grading: grading.map(({ name, weight }) => ({ name, weight })).slice(0, 12),
     attendance: { percent: att.percent, max_absences: att.max_absences, source: att.source },
     final_min: finalMin ? finalMin.value : null,

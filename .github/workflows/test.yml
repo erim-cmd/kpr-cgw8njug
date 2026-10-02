@@ -35,3 +35,9 @@ jobs:
 
       - name: Syllabus okuyucu testleri
         run: node test/check.mjs
+
+      - name: Veri göçü (eski kayıtlar yeni biçime)
+        run: node test/migrate.mjs
+
+      - name: Asistan (internetsiz cevaplar)
+        run: node test/asistan.mjs
