@@ -1,13 +1,13 @@
 import { store } from "./store.js";
 import { esc } from "./ui.js";
 import { icon } from "./icons.js";
-import { todayIdx, todayISO, toISO, toMin, nowMin, daysUntil, fmtLong, fmtShort, greeting, byDue, relLabel, dayLabel } from "./dates.js";
-import { TASK_TYPES, isExam } from "./store.js";
+import { todayIdx, todayISO, toISO, toMin, nowMin, daysUntil, fmtLong, fmtShort, greeting, byDue, relLabel, parseISO, DAYS, DAYS_SHORT } from "./dates.js";
+import { TASK_TYPES, isExam, isLight } from "./store.js";
 import { density } from "./density.js";
 import { sessionsOn, sessionItem, taskItem, emptyState, installCard } from "./components.js";
 import { buildAlerts } from "./alerts.js";
 import { permissionState } from "./notify.js";
-import { weekView, resetDay, actions as weekActions } from "./schedule.js";
+import { weekView, resetDay, setDay, actions as weekActions } from "./schedule.js";
 
 const DISMISS_KEY = "kpr:dismissed";
 const SHOW = 3; // aynı anda en fazla bu kadar uyarı; gerisi katlanır
@@ -57,54 +57,103 @@ function notifyCard(state) {
   if (perm === "ios-install") {
     return `<div class="install-card notify-card">
       <span class="alert-icon ok">${icon.bell}</span>
-      <div><strong>iPhone'da bildirim için</strong><p>Önce KPR'yi ana ekrana ekle (Paylaş → Ana Ekrana Ekle), sonra oradan aç.</p></div>
+      <div><strong>iPhone'da bildirim için</strong><p>Önce Köprü'yü ana ekrana ekle (Paylaş → Ana Ekrana Ekle), sonra oradan aç.</p></div>
       <button class="icon-btn sm" type="button" data-action="dismiss-alert" data-id="notify-card" aria-label="Kapat">${icon.close}</button>
     </div>`;
   }
   return "";
 }
 
-/** Ekranın üstü: sıradaki teslim büyük kartta; ayrı bir sınav yaklaşıyorsa altında geri sayımı. */
+/** Sıradaki işin rengi: kırmızı sadece yakın sınavda, sarı yakın teslimde; gerisi nötr. */
+function toneOf(t, n) {
+  if (isExam(t)) return n <= 2 ? "danger" : n <= 7 ? "warn" : "";
+  return n <= 1 ? "warn" : "";
+}
+
+/** Ekranın odağı: sıradaki iş tek kartta, gün bilgisi bir kez. Ayrı bir sınav yaklaşıyorsa kartın altında. */
 function heroBlock(open, courses) {
   const next = open.filter((t) => daysUntil(t.due) >= 0).sort(byDue)[0];
   if (!next) return "";
   const c = courses.find((x) => x.id === next.courseId);
   const exam = open.filter((t) => isExam(t) && t.id !== next.id && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 30).sort(byDue)[0];
   const ec = exam && courses.find((x) => x.id === exam.courseId);
-  // Gün en başta ve büyük ("Yarın · Quiz · MCH 2016"): bugüne ait olmayan iş bugünmüş gibi görünmesin.
-  // Bugün/yarın vurgulu; daha ilerisi nötr kart.
   const n = daysUntil(next.due);
-  const urgent = n <= 1;
-  return `<section class="hero ${urgent ? "urgent" : "calm"}" style="--c:${c?.color || "var(--cyan)"}">
-    <p class="hero-day"><b>${esc(dayLabel(next.due))}</b> · ${TASK_TYPES[next.type]}${c ? ` · ${esc(c.code || c.name)}` : ""}</p>
-    <div class="hero-main">
-      <button type="button" class="hero-title" data-action="edit-task" data-id="${esc(next.id)}">${esc(next.title)}</button>
-      <div class="hero-count"><b>${n === 0 && next.time ? esc(next.time) : esc(fmtShort(next.due))}</b><small>${n === 0 ? (next.time ? "bugün" : "gün içinde") : n === 1 ? (next.time ? `yarın ${esc(next.time)}` : "yarın") : `${n} gün sonra`}</small></div>
+  const when = n === 0 ? "Bugün" : n === 1 ? "Yarın" : n <= 6 ? `${n} gün` : esc(fmtShort(next.due));
+  const sub = n <= 6 ? `${esc(n <= 1 ? DAYS[(parseISO(next.due).getDay() + 6) % 7] : fmtShort(next.due))}${next.time ? ` · ${esc(next.time)}` : ""}` : esc(next.time || "");
+  return `<section class="focus ${toneOf(next, n)}" style="--c:${c?.color || "var(--cyan)"}">
+    <div class="focus-top">
+      <span class="focus-label">${isExam(next) ? "Sıradaki sınav" : "Sıradaki teslim"}</span>
+      ${c ? `<span class="focus-course"><i></i>${esc(c.code || c.name)}</span>` : ""}
     </div>
-    <button type="button" class="btn btn-ghost hero-done" data-action="toggle-task" data-id="${esc(next.id)}">${icon.check}Bitti</button>
-    ${exam ? `<button type="button" class="hero-exam" data-action="edit-task" data-id="${esc(exam.id)}">
-      <span>Sıradaki sınav: <b>${esc(exam.title)}</b>${ec ? ` · ${esc(ec.code || ec.name)}` : ""}</span><b class="need">${relLabel(daysUntil(exam.due))}</b></button>` : ""}
+    <div class="focus-main">
+      <button type="button" class="focus-title" data-action="edit-task" data-id="${esc(next.id)}">${esc(next.title)}<small>${TASK_TYPES[next.type]}${c && c.code ? ` · ${esc(c.name)}` : ""}</small></button>
+      <div class="focus-when"><b>${when}</b>${sub ? `<small>${sub}</small>` : ""}</div>
+    </div>
+    <button type="button" class="focus-done" data-action="toggle-task" data-id="${esc(next.id)}">${icon.check}Bitti</button>
+    ${exam ? `<button type="button" class="focus-exam" data-action="edit-task" data-id="${esc(exam.id)}">
+      <span>Sonraki sınav</span><span><b>${esc(exam.title)}</b>${ec ? ` · ${esc(ec.code || ec.name)}` : ""}</span><b class="${daysUntil(exam.due) <= 2 ? "danger-text" : ""}">${relLabel(daysUntil(exam.due))}</b></button>` : ""}
   </section>`;
 }
 
-let weekOpen = false; // hafta satırının altındaki liste açık mı
-
 /**
- * Bu hafta ve gelecek hafta tek satırda (Dönem akışıyla aynı hesap).
- * Haftada teslim varsa dokununca o haftanın teslimleri satırın altında açılır; sakin hafta düz metin.
+ * Hafta şeridi: bu takvim haftasının 7 günü; her günün altında sınav / teslim noktası.
+ * Dönem başlangıcı girildiyse üstünde "3. hafta / 14 · Gelecek hafta: vize haftası" (Dönem akışıyla aynı hesap).
+ * Güne dokununca Hafta görünümü o günle açılır.
  */
-function weekLine(state, open) {
+function weekStrip(state, open) {
   const d = density(open, state.settings);
-  if (d.current === null) return "";
-  const cur = d.weeks[d.current];
-  const nxt = d.weeks[d.current + 1];
+  const ti = todayIdx();
+  const monday = new Date();
+  monday.setDate(monday.getDate() - ti);
   const tag = (w) => (w.final ? "final haftası" : w.vize ? "vize haftası" : w.busy ? "yoğun" : "sakin");
-  const text = `<span><b>${d.current + 1}. hafta</b> · ${cur.items.length ? `${cur.items.length} teslim` : "sakin"}</span>
-    ${nxt ? `<span>Gelecek hafta: <b class="${nxt.busy || nxt.vize || nxt.final ? "warn-text" : ""}">${tag(nxt)}</b></span>` : ""}`;
-  if (!cur.items.length) return `<div class="week-line calm">${text}</div>`;
-  const list = [...cur.items].sort(byDue).map((t) => taskItem(t, state.courses)).join("");
-  return `<button type="button" class="week-line" data-action="toggle-week" aria-expanded="${weekOpen}">${text}<span class="chev" aria-hidden="true">${weekOpen ? "▴" : "▾"}</span></button>
-    ${weekOpen ? `<ul class="list week-list">${list}</ul>` : ""}`;
+  const cur = d.current !== null ? d.weeks[d.current] : null;
+  const nxt = cur ? d.weeks[d.current + 1] : null;
+  const days = DAYS_SHORT.map((label, i) => {
+    const day = new Date(monday);
+    day.setDate(monday.getDate() + i);
+    const iso = toISO(day);
+    const due = open.filter((t) => t.due === iso && !isLight(t));
+    const exam = due.some(isExam);
+    const task = due.some((t) => !isExam(t));
+    const what = [exam && "sınav", task && "teslim"].filter(Boolean).join(", ");
+    return `<button type="button" class="wk-day${i === ti ? " is-today" : ""}${i < ti ? " is-past" : ""}" data-action="strip-day" data-day="${i}"
+      aria-label="${DAYS[i]} ${day.getDate()}${what ? `: ${what}` : ""}">
+      <span class="wk-dn">${label}</span><span class="wk-num">${day.getDate()}</span>
+      <span class="wk-dots">${exam ? '<i class="ex"></i>' : ""}${task ? '<i class="due"></i>' : ""}</span>
+    </button>`;
+  }).join("");
+  return `<section class="wk" aria-label="Bu hafta">
+    <div class="wk-head">
+      <span>${cur ? `<b>${d.current + 1}. hafta</b> / ${d.weeks.length}` : `<b>Bu hafta</b>`}</span>
+      ${nxt ? `<span>Gelecek hafta: <b class="${nxt.final || nxt.vize ? "danger-text" : nxt.busy ? "warn-text" : ""}">${tag(nxt)}</b></span>` : ""}
+    </div>
+    <div class="wk-days">${days}</div>
+    <div class="wk-legend" aria-hidden="true"><span><i class="ex"></i>Sınav</span><span><i class="due"></i>Teslim</span></div>
+  </section>`;
+}
+
+/** Selamın altındaki tek cümle: bugünün ve haftanın özeti. */
+function summary(state, open, sessions, now) {
+  if (!state.courses.length) return "";
+  const left = sessions.filter((s) => now < toMin(s.end)).length;
+  const week = open.filter((t) => !isLight(t) && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 6 - todayIdx()).length;
+  const a = !sessions.length ? "Bugün dersin yok" : left ? `Bugün ${left} dersin var` : "Bugünkü derslerin bitti";
+  const b = week ? `bu hafta ${week} teslimin var` : "bu hafta başka teslimin yok";
+  return `<p class="page-sub">${a}, ${b}.</p>`;
+}
+
+/** Dersin olmayan gün: boş kutu yerine sıradaki dersi söyle. */
+function nextClassNote(courses) {
+  const ti = todayIdx();
+  for (let k = 1; k <= 7; k++) {
+    const day = (ti + k) % 7;
+    const s = sessionsOn(courses, day)[0];
+    if (s) {
+      const when = k === 1 ? "Yarın" : DAYS[day];
+      return `<p class="muted-note">Bugün dersin yok. Sıradaki: <b>${when} ${esc(s.start)}</b> · ${esc(s.course.name)}</p>`;
+    }
+  }
+  return '<p class="muted-note">Bugün dersin yok.</p>';
 }
 
 /** Dünkü dersler: bitişinin üstünden 24 saat geçmediyse "Gitmedim" için listede kalır. */
@@ -123,16 +172,20 @@ export function view() {
   const { profile, courses, tasks } = state;
   const sessions = sessionsOn(courses, todayIdx());
   const open = tasks.filter((t) => !t.done);
+  const now = nowMin();
+  const mode = state.settings.todayView;
   // Sıradaki teslim üstteki kartta; liste ondan sonrakileri 7 gün boyunca gösterir
   const heroId = open.filter((t) => daysUntil(t.due) >= 0).sort(byDue)[0]?.id;
   const upcoming = open.filter((t) => t.id !== heroId && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 7).sort(byDue);
-  const now = nowMin();
   const hidden = dismissed();
   // Üstteki kartın gösterdiği görev için uyarıyı tekrarlama
   const heroTask = open.filter((t) => daysUntil(t.due) >= 0).sort(byDue)[0];
-  const alerts = buildAlerts(state).filter((a) => !hidden[a.id] && a.taskId !== heroTask?.id);
+  // Kartta görünen sınav da uyarı listesinde tekrar etmesin
+  const heroExam = open.filter((t) => isExam(t) && t.id !== heroTask?.id && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 30).sort(byDue)[0];
+  const shown = new Set([heroTask?.id, heroExam?.id].filter(Boolean));
+  // Yaklaşan ders uyarısı Bugün'de gereksiz: aynı bilgi ders satırında ("30 dk sonra") duruyor
+  const alerts = buildAlerts(state).filter((a) => !hidden[a.id] && !shown.has(a.taskId) && !a.id.startsWith("class:"));
 
-  const mode = state.settings.todayView;
   const seg = `<div class="seg today-seg" role="group" aria-label="Görünüm">
       <button type="button" data-action="today-view" data-view="bugun" aria-pressed="${mode === "bugun"}">Bugün</button>
       <button type="button" data-action="today-view" data-view="hafta" aria-pressed="${mode === "hafta"}">Hafta</button>
@@ -146,6 +199,7 @@ export function view() {
   const head = `<header class="page-head">
       <p class="eyebrow">${fmtLong(new Date())}</p>
       <h1 class="page-title">${greeting()}, ${esc(profile.name)}</h1>
+      ${mode === "bugun" ? summary(state, open, sessions, now) : ""}
     </header>`;
 
   // Hafta: eski "Program" sekmesi (gün çipleri + seçilen günün dersleri). Programı boşsa tek boş durum.
@@ -159,7 +213,7 @@ export function view() {
   if (!courses.length) {
     todayBlock = startEmpty();
   } else if (!sessions.length) {
-    todayBlock = '<p class="muted-note">Bugün dersin yok. Keyfini çıkar ✨</p>';
+    todayBlock = nextClassNote(courses);
   } else {
     todayBlock = `<ul class="list">${sessions.map((s) => sessionItem(s, now, todayISO())).join("")}</ul>`;
   }
@@ -171,8 +225,8 @@ export function view() {
     ${installCard()}
     ${notifyCard(state)}
 
+    ${courses.length || tasks.length ? weekStrip(state, open) : ""}
     ${heroBlock(open, courses)}
-    ${weekLine(state, open)}
 
     ${alerts.length ? `<section class="section">
       <div class="section-head"><h2>Dikkat</h2></div>
@@ -191,7 +245,7 @@ export function view() {
       ${upcoming.length
         ? `<ul class="list">${upcoming.map((t) => taskItem(t, courses)).join("")}</ul>`
         : heroId ? '<p class="muted-note">Bu hafta başka teslim yok.</p>'
-        : emptyState("Yaklaşan bir şey yok", "Sınav ve ödevlerini ekle, geri sayımı KPR tutsun.", "new-task", "Görev ekle")}
+        : emptyState("Yaklaşan bir şey yok", "Sınav ve ödevlerini ekle, geri sayımı Köprü tutsun.", "new-task", "Görev ekle")}
     </section>`;
 }
 
@@ -202,9 +256,10 @@ export const actions = {
     store.setSettings({ todayView: el.dataset.view });
     window.scrollTo(0, 0);
   },
-  "toggle-week"(_el, { render }) {
-    weekOpen = !weekOpen;
-    render();
+  "strip-day"(el) {
+    setDay(Number(el.dataset.day));
+    store.setSettings({ todayView: "hafta" });
+    window.scrollTo(0, 0);
   },
   "toggle-alerts"(_el, { render }) {
     expanded = !expanded;

@@ -16,7 +16,7 @@ import { icon } from "./icons.js";
 import { projection, standing, fmtGpa } from "./gpa.js";
 import { attendance, attendanceText } from "./attendance.js";
 import { readTarget, saveTarget, targetText, openBaseForm, section as gpaSection, actions as gpaActions, changes as gpaChanges } from "./gpa-view.js";
-import { emptyState } from "./components.js";
+import { emptyState, infoNote } from "./components.js";
 import { openNumberSheet } from "./grade-sheet.js";
 import { density } from "./density.js";
 import { fmtShort, parseISO, toISO, todayISO } from "./dates.js";
@@ -183,7 +183,7 @@ function flowBlock(state) {
     : calm === 0 ? "gelecek hafta değerlendirme var"
     : `sonraki ${calm} hafta sakin`;
   return `<section class="section" id="akis">${head}
-    <p class="fw-title">Notunun <b>${pct(doneShare)}</b>'i belli oldu</p>
+    <p class="fw-title">${doneShare < 0.5 ? "Notunun henüz hiçbir kısmı belli değil" : `Notunun <b>${pct(doneShare)}</b>'i belli oldu`}</p>
     <div class="fw-bar" role="img" aria-label="Dönem notunun yüzde ${Math.round(doneShare)}'i belli oldu"><i style="width:${Math.min(100, doneShare)}%"></i></div>
     <p class="fw-sub">${pct(Math.max(0, 100 - doneShare))}'si önünde · ${calmText}</p>
     ${upcoming.length ? `<h3 class="mini-title fw-h">Önündeki önemli haftalar</h3>
@@ -199,6 +199,8 @@ function flowBlock(state) {
 /* Ekran                                                               */
 /* ------------------------------------------------------------------ */
 
+// Dönem bölümleri gerçek sekme: aynı anda tek bölüm görünür (telefonda 3,5 ekran boyu yerine 1)
+let tab = "ozet";
 const NAV = [
   ["ozet", "Özet"],
   ["ortalama", "Ortalama"],
@@ -220,18 +222,28 @@ export function view() {
   const weeks = state.settings.termWeeks;
   const risk = riskiest(state.courses, weeks);
   return `${head}
-    <nav class="sec-nav" aria-label="Dönem bölümleri">${NAV.map(([id, label]) => `<button type="button" data-action="scroll-to" data-to="${id}">${label}</button>`).join("")}</nav>
-    <section class="section" id="ozet">
-      <div class="section-head"><h2>Genel ortalama</h2></div>
+    <nav class="seg sec-tabs" role="tablist" aria-label="Dönem bölümleri">${NAV.map(([id, label]) => `<button type="button" role="tab" data-action="scroll-to" data-to="${id}" aria-pressed="${id === tab}" aria-selected="${id === tab}">${label}</button>`).join("")}</nav>
+    ${tab === "ozet" ? `<section class="section" id="ozet">
       ${gnoCard(state, p)}
-    </section>
-    ${gpaSection(state, p)}
-    <section class="section" id="devamsizlik">
+    </section>` : ""}
+    ${tab === "ortalama" ? gpaSection(state, p) : ""}
+    ${tab === "devamsizlik" ? devamBlock(state, weeks, risk) : ""}
+    ${tab === "akis" ? flowBlock(state) : ""}`;
+}
+
+/** Devamsızlık: şartı girilmemiş dersler tek tek boş kart değil, tek satırda toplanır. */
+function devamBlock(state, weeks, risk) {
+  const set = state.courses.filter((c) => attendance(c, weeks).limit !== null || c.absences.length);
+  const unset = state.courses.filter((c) => !set.includes(c));
+  return `<section class="section" id="devamsizlik">
       <div class="section-head"><h2>Devamsızlık</h2>${risk && risk.a.level !== "ok" ? `<span class="u-term warn-text">${esc(risk.c.code || risk.c.name)}: ${riskShort(risk.a)}</span>` : ""}</div>
-      <ul class="list">${state.courses.map((c) => absenceCard(c, weeks)).join("")}</ul>
-      <p class="term-note">Derse gittiğin varsayılır; gitmediğin dersi Bugün'de ders bitince "Gitmedim" ile işaretle. Devam şartını sağlamayan öğrenci NA alır ve finale giremez (BAU Yönetmeliği Md. 19).</p>
-    </section>
-    ${flowBlock(state)}`;
+      ${set.length ? `<ul class="list">${set.map((c) => absenceCard(c, weeks)).join("")}</ul>` : ""}
+      ${unset.length ? `<div class="att-unset">
+        <p><b>Devam şartı girilmemiş</b><small>Kalan hakkını hesaplamak için şartı gir.</small></p>
+        <div class="att-unset-list">${unset.map((c) => `<button type="button" class="chip-btn" data-action="attend-rule" data-id="${esc(c.id)}"><i style="--c:${c.color}"></i>${esc(c.code || c.name)}</button>`).join("")}</div>
+      </div>` : ""}
+      ${infoNote("Devamsızlık nasıl sayılır?", "Derse gittiğin varsayılır; gitmediğin dersi Bugün'de ders bitince \"Gitmedim\" ile işaretle. Devam şartını sağlamayan öğrenci NA alır ve finale giremez (BAU Yönetmeliği Md. 19).")}
+    </section>`;
 }
 
 /**
@@ -271,12 +283,12 @@ function openAttendRule(c) {
   });
 }
 
-/** Yapışkan şeridin ve üst menünün altında kalmadan bölüme kaydır. */
-export function scrollToSection(id, smooth = true) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const offset = (document.querySelector(".topbar")?.offsetHeight || 0) + (document.querySelector(".sec-nav")?.offsetHeight || 0) + 8;
-  window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - offset, behavior: smooth ? "smooth" : "auto" });
+/** Bölüm sekmesini aç (adres parametresi ?bolum=ortalama ve "Ortalama'da tamamla" bağlantısı da bunu kullanır). */
+export function scrollToSection(id) {
+  if (!NAV.some(([k]) => k === id) || id === tab) return;
+  tab = id;
+  // Yeniden çiz (app.js hashchange dinleyicisi) ve sayfanın başına dön
+  window.dispatchEvent(new HashChangeEvent("hashchange"));
 }
 
 export const actions = {

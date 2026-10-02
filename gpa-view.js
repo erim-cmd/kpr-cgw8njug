@@ -9,6 +9,7 @@ import { store } from "./store.js";
 import { esc, toast } from "./ui.js";
 import { openNumberSheet, openLetterSheet } from "./grade-sheet.js";
 import { icon } from "./icons.js";
+import { infoNote } from "./components.js";
 import { COEF, UMIS_GRADES, UNVERIFIED, fmtGpa, nearestLetter, currentTerm } from "./gpa.js";
 
 // Hedef GNO: hesap projection().needed() ile; kart Dönem → Özet'te
@@ -32,9 +33,9 @@ export const saveTarget = (value) => {
 export function targetText(p, target) {
   const need = p.needed(target);
   if (need === null) return "";
-  if (need > 4) return `Bu dönem hepsinden A alsan da GNO <b>${target.toFixed(2)}</b> olmuyor. Daha düşük bir hedef dene ya da not yükseltmek için ders tekrarını düşün.`;
-  if (need <= 0) return `Bu dönem ne alırsan al GNO'n <b>${target.toFixed(2)}</b>'nin üstünde kalıyor.`;
-  return `GNO'n <b>${target.toFixed(2)}</b> olsun istiyorsan bu dönem en az <b class="need">${need.toFixed(2)}</b> ortalama gerekiyor (yaklaşık ${nearestLetter(need)} ortalaması).`;
+  if (need > 4) return `Bu dönem hepsinden A alsan da GNO <b>${fmtGpa(target)}</b> olmuyor. Daha düşük bir hedef dene ya da not yükseltmek için ders tekrarını düşün.`;
+  if (need <= 0) return `Bu dönem ne alırsan al GNO'n <b>${fmtGpa(target)}</b>'nin üstünde kalıyor.`;
+  return `GNO'n <b>${fmtGpa(target)}</b> olsun istiyorsan bu dönem en az <b class="need">${fmtGpa(need)}</b> ortalama gerekiyor (yaklaşık ${nearestLetter(need)} ortalaması).`;
 }
 
 let showRetake = false; // "tekrar aldığım ders var" açılınca önceki not seçimi görünür
@@ -90,7 +91,7 @@ function currentBlock(state, p) {
     ${unverified.length ? `<p class="warn-text fine gap-t">${unverified.map((c) => esc(c.letter)).join(", ")} notunun katsayısı yönetmelikte yok; doğrulanana kadar hesaba katılmıyor.</p>` : ""}
     ${p.missingCredit ? `<p class="fine gap-t">Kredisi girilmeyen ${p.missingCredit} ders hesaba katılmıyor. GNO'da KREDİ sütunu kullanılır, AKTS değil.</p>` : ""}
     ${base && !retake ? '<button class="link gap-t" type="button" data-action="show-retake">Bu dönem tekrar aldığım ders var</button>' : ""}
-    <div><button class="btn btn-primary u-calc" type="button" data-action="calc">HESAPLA</button></div>
+    <div><button class="btn btn-primary u-calc" type="button" data-action="calc">Hesapla</button></div>
     ${result}
   </div>`;
 }
@@ -100,7 +101,7 @@ export function section(state, p) {
   return `<section class="section" id="ortalama">
     <div class="section-head"><h2>Ortalama</h2><span class="u-term">BAU · A–F, 4.00 üzerinden</span></div>
     ${currentBlock(state, p)}
-    <p class="footnote">Hesap BAU Eğitim-Öğretim ve Sınav Yönetmeliği'ne göre (Md. 26, 28): ders puanı = ulusal kredi × katsayı, tekrar edilen derste son not geçerli, sonuç iki haneye yuvarlanır. NA ve F ortalamaya 0.00 girer; S, U, EX, W ortalamaya girmez. BAU bağıl değerlendirme kullandığı için harfi sen seçersin. Sonucu UMIS'teki ile karşılaştır.</p>
+    ${infoNote("Bu hesap nasıl yapılıyor?", "Hesap BAU Eğitim-Öğretim ve Sınav Yönetmeliği'ne göre (Md. 26, 28): ders puanı = ulusal kredi × katsayı, tekrar edilen derste son not geçerli, sonuç iki haneye yuvarlanır. NA ve F ortalamaya 0,00 girer; S, U, EX, W ortalamaya girmez. BAU bağıl değerlendirme kullandığı için harfi sen seçersin. Sonucu UMIS'teki ile karşılaştır.")}
   </section>`;
 }
 
@@ -163,7 +164,7 @@ export const actions = {
       context: `${c.code || c.name} · Harf notu`,
       letters: LETTERS_UMIS,
       value: c.letter,
-      impact: (l) => (l in UNVERIFIED ? `${l}: katsayısı doğrulanmadı, hesaba katılmaz` : l in COEF ? `${l} = ${COEF[l].toFixed(2)}` : "ortalamaya girmez"),
+      impact: (l) => (l in UNVERIFIED ? `${l}: katsayısı doğrulanmadı, hesaba katılmaz` : l in COEF ? `${l} = ${fmtGpa(COEF[l])}` : "ortalamaya girmez"),
       clearLabel: "Harfi temizle",
       onSave: (l) => store.saveCourse({ ...course(c.id), letter: l }),
     });

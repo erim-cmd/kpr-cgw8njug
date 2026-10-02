@@ -1,7 +1,7 @@
 {
   "id": "./app.html",
-  "name": "KPR — Öğrenci Asistanı",
-  "short_name": "KPR",
+  "name": "Köprü — Öğrenci Asistanı",
+  "short_name": "Köprü",
   "description": "Derslerinle arandaki köprü. Syllabus'unu yükle; ders programın, sınavların ve ödevlerin tek yerde.",
   "start_url": "./app.html#/bugun",
   "scope": "./",

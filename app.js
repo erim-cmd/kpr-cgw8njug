@@ -105,14 +105,14 @@ function render() {
 
   if (isOnboarding) {
     $view.innerHTML = onboarding.view();
-    document.title = "KPR — Öğrenci Asistanı";
+    document.title = "Köprü — Öğrenci Asistanı";
     return;
   }
 
   const { name } = parseHash();
   const route = ROUTES[name];
   $view.innerHTML = route.mod.view();
-  document.title = `${route.title} · KPR`;
+  document.title = `${route.title} · Köprü`;
 
   const markCurrent = (el, on) => (on ? el.setAttribute("aria-current", "page") : el.removeAttribute("aria-current"));
   $tabbar.querySelectorAll(".tab").forEach((a) => markCurrent(a, a.dataset.route === (TAB_OF[name] || name)));
