@@ -691,11 +691,6 @@ button.stat { text-align: left; color: inherit; font: inherit; cursor: pointer; 
 }
 .ask-field { flex: 1; min-width: 0; }
 .ask-field input { width: 100%; min-width: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 11px 12px; color: var(--text); font: inherit; }
-.soon-tag {
-  position: absolute; top: -9px; right: 14px; padding: 1px 9px; border-radius: 999px;
-  background: var(--surface-2); border: 1px solid var(--accent); color: var(--accent);
-  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
-}
 .ask-example {
   width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer;
   padding: 12px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); color: var(--text);
@@ -849,3 +844,12 @@ button.week-line[aria-expanded="true"] { margin-bottom: 8px; border-color: var(-
 .fl-today { stroke: var(--cyan); stroke-width: 1.2; stroke-dasharray: 3 3; }
 .fl-today-t { fill: var(--cyan); }
 .flow-legend-1 { margin-top: 6px; }
+
+/* Asistan sohbeti (oturumluk; düz metin) */
+.chat { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.msg { max-width: 88%; padding: 10px 13px; border-radius: 14px; font-size: 0.9rem; }
+.msg p { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
+.msg.q { align-self: flex-end; background: var(--surface-2); border: 1px solid var(--border); border-bottom-right-radius: 4px; }
+.msg.a { align-self: flex-start; background: var(--surface); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+.msg-src { display: block; margin-top: 6px; font-size: 0.72rem; color: var(--text-muted); }
+.msg-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }

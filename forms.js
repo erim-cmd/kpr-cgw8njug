@@ -209,22 +209,8 @@ export function openCourseForm(course = null) {
 /* Not hesabı (ders ekranı: ders.js)                                   */
 /* ------------------------------------------------------------------ */
 
-/** Girilen notlara göre ağırlıklı ortalama ve hedef için gereken ortalama. */
-export function calcGrades(grading, target) {
-  const total = grading.reduce((s, g) => s + g.weight, 0);
-  const done = grading.filter((g) => g.score !== null);
-  const doneWeight = done.reduce((s, g) => s + g.weight, 0);
-  const earned = done.reduce((s, g) => s + (g.score * g.weight) / 100, 0);
-  const remaining = total - doneWeight;
-  return {
-    total,
-    doneWeight,
-    average: doneWeight ? (earned / doneWeight) * 100 : null,
-    earned,
-    remaining,
-    needed: remaining > 0 ? ((target - earned) / remaining) * 100 : null,
-  };
-}
+// Not hesabı ders-calc.js'te (DOM'suz; Asistan ve testler de kullanıyor)
+export { calcGrades } from "./ders-calc.js";
 
 // Ders ekranı ve devamsızlık kayıtları ders.js'te (v2.11); eski içe aktarmalar bozulmasın diye buradan da verilir
 export { openCourseDetail, openAbsences } from "./ders.js";

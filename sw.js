@@ -46,6 +46,8 @@ const SHELL = [
   "./ders.js",
   "./weights.js",
   "./migrate.js",
+  "./ders-calc.js",
+  "./asistan-core.js",
   "./secmeli.js",
   "./attendance.js",
   "./alerts.js",

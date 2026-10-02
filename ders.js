@@ -10,21 +10,20 @@
  *   7. Hedef harf: "Hedef harfin → kalanlardan en az X"
  * Altta: "Bilgiler syllabus'tan alındı · Düzenle".
  *
- * Hesap yok: notlar forms.calcGrades, harfler gpa.neededByLetter/letterFor, ağırlık weights.taskWeight.
+ * Hesap yok: notlar ve hedef harf ders-calc.js, harf listesi gpa.neededByLetter, ağırlık weights.taskWeight.
  */
 
 import { store, TASK_TYPES } from "./store.js";
 import { esc, openSheet, closeSheet, toast } from "./ui.js";
-import { DAYS_SHORT, todayISO, toMin, daysUntil, fmtShort, relLabel, byDue, parseISO } from "./dates.js";
+import { DAYS_SHORT, todayISO, toMin, daysUntil, fmtShort, relLabel, byDue } from "./dates.js";
 import { icon } from "./icons.js";
 import { attendance, attendanceText } from "./attendance.js";
 import { flagItem, sortFlags } from "./components.js";
-import { SAMPLE_SCALE, letterFor, neededByLetter, COEF } from "./gpa.js";
-import { calcGrades, openCourseForm, openTaskForm } from "./forms.js";
-import { taskWeight, labelOf, groupOf } from "./weights.js";
-import { density } from "./density.js";
+import { SAMPLE_SCALE, neededByLetter } from "./gpa.js";
+import { openCourseForm, openTaskForm } from "./forms.js";
+import { calcGrades, targetResult, currentWeekOf, fmtNum } from "./ders-calc.js";
+import { taskWeight, labelOf } from "./weights.js";
 
-const fmtNum = (n) => (Math.round(n * 10) / 10).toLocaleString("tr-TR");
 const ONLINE = /teams|zoom|online|cevrimici|çevrimiçi|uzaktan|meet\b/i;
 
 // Oturum boyunca hatırlanan açık/kapalı durumları (ders başına)
@@ -118,21 +117,6 @@ function gradingBlock(c, tasks) {
 
 const EXAM_RE = /sinav|sınav|exam|midterm|vize|final|quiz/i;
 
-/** İçinde bulunulan hafta: tarihli haftalardan, yoksa dönem takviminden. */
-export function currentWeekOf(c, state) {
-  const today = todayISO();
-  const dated = c.weeks.filter((w) => w.date);
-  if (dated.length) {
-    const past = dated.filter((w) => w.date <= today);
-    if (!past.length) return null;
-    const last = past[past.length - 1];
-    // Son tarihli haftadan sonra 7 günden fazla geçtiyse plan bitti
-    return (parseISO(today) - parseISO(last.date)) / 86400000 < 7 ? last.n : null;
-  }
-  const d = density(state.tasks, state.settings);
-  return d.current === null ? null : d.current + 1;
-}
-
 function planBlock(c, st, state) {
   if (!c.weeks.length) return "";
   const cur = currentWeekOf(c, state);
@@ -151,43 +135,6 @@ function planBlock(c, st, state) {
 /* ------------------------------------------------------------------ */
 /* 7. Hedef harf                                                       */
 /* ------------------------------------------------------------------ */
-
-/** Final bileşeni: adında final/bütünleme geçen ilk bileşen (proje değil). */
-const finalIndex = (grading) => grading.findIndex((g) => groupOf(g.name) === "final");
-
-/** Hedef harf için tek satırlık sonuç (düz metin + vurgu). */
-export function targetResult(c) {
-  if (!c.grading.length || !c.scale.length) return null;
-  const r = calcGrades(c.grading, c.target);
-  const fi = finalIndex(c.grading);
-  const fin = fi >= 0 ? c.grading[fi] : null;
-  const underBar = c.finalMin !== null && fin && fin.score !== null && fin.score < c.finalMin;
-  const out = { lines: [], letter: null, done: false };
-  if (r.remaining <= 0.01 && r.doneWeight > 0) {
-    out.done = true;
-    out.letter = underBar ? "F" : letterFor(r.earned, c.scale);
-    out.lines.push(`Ders puanın ${fmtNum(r.earned)} → tahmini harfin ${out.letter}${out.letter in COEF ? ` (${COEF[out.letter].toFixed(2)})` : ""}.`);
-  } else {
-    const rows = neededByLetter(c.scale, r.earned, r.remaining);
-    const tl = rows.find((x) => x.letter === c.targetLetter) || rows.find((x) => x.letter === "B") || rows[Math.floor(rows.length / 2)];
-    out.letter = tl.letter;
-    // Kalan bileşenlerin hepsi final mi? → "Finalden en az X"
-    const left = c.grading.filter((g) => g.score === null);
-    const onlyFinal = left.length && left.every((g) => groupOf(g.name) === "final");
-    if (tl.status === "ok") out.lines.push("Bu harfi garantiledin.");
-    else if (tl.status === "no") {
-      const best = rows.find((x) => x.status !== "no");
-      out.lines.push(best ? `Bu harf artık mümkün değil, en yüksek ulaşabileceğin: ${best.letter}.` : "Kalanlardan 100 alsan da tablodaki en düşük harfe ulaşmak zor görünüyor.");
-    } else {
-      const need = Math.max(0, tl.need);
-      out.need = need;
-      out.lines.push(onlyFinal ? `Finalden en az ${fmtNum(need)} alman gerekiyor.` : `Kalan değerlendirmelerden ortalama en az ${fmtNum(need)} alman gerekiyor.`);
-    }
-    if (c.finalMin !== null && fin && fin.score === null) out.lines.push(`Finalden en az ${fmtNum(c.finalMin)} alman şart; altında kalırsan diğer notlardan bağımsız F olabilir.`);
-  }
-  if (underBar) out.lines.push(`Final notun (${fmtNum(fin.score)}) barajın (${fmtNum(c.finalMin)}) altında. Bütünlemeye girersen final satırına bütünleme notunu yaz.`);
-  return out;
-}
 
 function targetInner(c) {
   if (!c.grading.length) return '<p class="calc-note">Önce not dağılımını ekle.</p>';

@@ -38,3 +38,6 @@ jobs:
 
       - name: Veri göçü (eski kayıtlar yeni biçime)
         run: node test/migrate.mjs
+
+      - name: Asistan (internetsiz cevaplar)
+        run: node test/asistan.mjs

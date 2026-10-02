@@ -1,17 +1,34 @@
 /**
- * KPR — "Asistan" (iskelet): öğrencinin kendi dersleri hakkında soru-cevap.
- * Yalnızca öğrencinin kendi dersleri ve verisi (syllabus, tarihler, notlar) kaynak olacak;
- * okula ait işlem/birim/süreç içeriği yok.
- * Şimdilik sadece görünüm: ağ isteği, yapay zekâ çağrısı ve hazır cevap YOK.
- * Soru alanı ve örnek sorular "Bu bölüm hazırlanıyor" bildirimi verir.
+ * KPR — "Asistan": öğrencinin kendi dersleri hakkında soru-cevap (internetsiz ilk sürüm).
+ * Cevaplar asistan-core.js'ten: sadece cihazdaki veri (syllabus kuralları, görevler, not hesabı,
+ * bilgi kartı), anahtar kelimeyle. Yapay zekâ, ağ isteği, uydurma cevap YOK.
+ * Okula ait işlem/birim/süreç içeriği yok. Sohbet geçmişi sadece bu oturumda (kaydedilmez).
+ * Cevaplar düz metin: esc() ile basılır, HTML/markdown işlenmez.
  */
 
-import { toast } from "./ui.js";
+import { store } from "./store.js";
+import { esc } from "./ui.js";
 import { icon } from "./icons.js";
+import { answer, EXAMPLES } from "./asistan-core.js";
 
-const EXAMPLES = ["Bu hafta neye çalışmalıyım?", "Finalden kaç almam lazım?", "Yoklama var mı?", "Geç teslim kabul mü?"];
+// Oturumluk sohbet: { q, text, source, chips } (sayfa yenilenince silinir)
+const chat = [];
 
-const soon = () => toast("Bu bölüm hazırlanıyor");
+function ask(q, courseId = null) {
+  const a = answer(q, store.get(), { courseId });
+  // "Hangi ders?" seçimi yapılınca aynı soru o dersle tekrar sorulur; çipli soru yerinde güncellenir
+  if (courseId && chat.length && chat[chat.length - 1].chips) chat.pop();
+  chat.push({ q, ...a });
+}
+
+function bubble(m) {
+  return `<li class="msg q"><p>${esc(m.q)}</p></li>
+    <li class="msg a">
+      <p>${esc(m.text)}</p>
+      ${m.chips ? `<div class="msg-chips">${m.chips.map((c) => `<button type="button" class="pick-chip" data-action="ask-course" data-id="${esc(c.id)}">${esc(c.label)}</button>`).join("")}</div>` : ""}
+      ${m.source ? `<small class="msg-src">Kaynak: ${esc(m.source)}</small>` : ""}
+    </li>`;
+}
 
 export function view() {
   return `
@@ -20,28 +37,50 @@ export function view() {
       <p class="page-sub">Derslerin hakkında sor: tarihler, kurallar, notlar</p>
     </header>
 
+    ${chat.length ? `<ul class="chat" aria-live="polite">${chat.map(bubble).join("")}</ul>` : ""}
+
     <form class="ask-box" data-submit="ask">
       <label class="ask-field">
         <span class="visually-hidden">Sorunu yaz</span>
-        <input name="q" maxlength="200" placeholder="Örn. finalden kaç almam lazım?" autocomplete="off">
+        <input name="q" maxlength="200" placeholder="Örn. finalden kaç almam lazım?" autocomplete="off" enterkeyhint="send">
       </label>
       <button type="submit" class="btn btn-primary" aria-label="Sor">${icon.chat}Sor</button>
-      <span class="soon-tag">Yakında</span>
     </form>
 
-    <section class="section">
+    ${chat.length ? "" : `<section class="section">
       <div class="section-head"><h2>Örnek sorular</h2></div>
       <ul class="list ask-examples">${EXAMPLES.map(
-        (q) => `<li><button type="button" class="ask-example" data-action="ask-example">${icon.chat}<span>${q}</span></button></li>`
+        (q) => `<li><button type="button" class="ask-example" data-action="ask-example" data-q="${esc(q)}">${icon.chat}<span>${esc(q)}</span></button></li>`
       ).join("")}</ul>
-    </section>
-    <p class="fine">Asistan hazır olduğunda cevaplar sadece senin derslerine ve girdiğin verilere (syllabus, tarihler, notlar) dayanacak.</p>`;
+    </section>`}
+    <p class="fine">Cevaplar sadece senin derslerinden (syllabus, görevler, notlar) gelir; internete bağlanmaz. Bulamazsa bulamadığını söyler.${chat.length ? ` <button type="button" class="link" data-action="clear-chat">Sohbeti temizle</button>` : ""}</p>`;
 }
 
+const focusInput = () => requestAnimationFrame(() => document.querySelector(".ask-box input")?.focus());
+
 export const actions = {
-  "ask-example": soon,
+  "ask-example"(el, { render }) {
+    ask(el.dataset.q);
+    render();
+  },
+  "ask-course"(el, { render }) {
+    const last = chat[chat.length - 1];
+    if (!last) return;
+    ask(last.q, el.dataset.id);
+    render();
+  },
+  "clear-chat"(_el, { render }) {
+    chat.length = 0;
+    render();
+  },
 };
 
 export const submits = {
-  ask: soon,
+  ask(form, { render }) {
+    const q = form.elements.q.value.trim();
+    if (!q) return;
+    ask(q);
+    render();
+    focusInput();
+  },
 };

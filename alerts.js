@@ -11,7 +11,7 @@
 import { TASK_TYPES, isExam, isLight } from "./store.js";
 import { daysUntil, parseISO, toISO, todayIdx, toMin, nowMin, relLabel } from "./dates.js";
 import { attendance } from "./attendance.js";
-import { calcGrades } from "./forms.js";
+import { calcGrades } from "./ders-calc.js";
 import { projection, fmtGpa, standing } from "./gpa.js";
 
 const LEVEL_ORDER = { danger: 0, warn: 1, info: 2 };
