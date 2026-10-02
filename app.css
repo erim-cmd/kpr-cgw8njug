@@ -1060,3 +1060,7 @@ button.tl-row { width: 100%; padding: 10px 14px; border-radius: var(--r-md); bac
 
 /* ---- Asistan örnek cevap ---- */
 .ask-sample .chat { margin: 0; }
+
+/* Karşılama ekranında logo: arka plan kutusu yok, işaretin kendisi */
+.hero-mark { background: none !important; box-shadow: none !important; width: 88px; height: 88px; }
+.hero-mark img { width: 100%; height: 100%; display: block; }

@@ -3,7 +3,7 @@ import { icon } from "./icons.js";
 
 export function view() {
   return `<section class="welcome">
-    <div class="hero-mark">K</div>
+    <div class="hero-mark"><img src="logo-mark.svg" alt="Köprü" width="88" height="88"></div>
     <h1>Derslerinle arandaki <span class="grad">köprü</span>.</h1>
     <p>Ders programın, sınavların ve ödevlerin tek yerde. İnternet olmasa bile.</p>
     <ul class="features">

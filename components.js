@@ -93,7 +93,7 @@ export function installCard() {
       ? "Safari'de <b>Paylaş</b> → <b>Ana Ekrana Ekle</b>'ye dokun."
       : "Ana ekranına ekle, uygulama gibi tam ekran ve internetsiz kullan.";
   return `<div class="install-card">
-    <span class="brand-mark">K</span>
+    <img class="brand-mark" src="logo-mark.svg" alt="" width="32" height="32">
     <div><strong>Köprü'yü telefonuna kur</strong><p>${text}</p></div>
     ${mode === "prompt" ? '<button class="btn btn-primary" type="button" data-action="install">Kur</button>' : ""}
     <button class="icon-btn sm" type="button" data-action="dismiss-install" aria-label="Kapat">${icon.close}</button>

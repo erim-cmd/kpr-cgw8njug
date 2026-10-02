@@ -20,6 +20,7 @@ const SHELL = [
   "./app.html",
   "./gizlilik.html",
   "./manifest.webmanifest",
+  "./logo-mark.svg",
   "./tokens.css",
   "./site.css",
   "./app.css",

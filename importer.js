@@ -175,7 +175,7 @@ function showProgress(ai = false) {
     <header class="sheet-head"><h2>Syllabus okunuyor</h2></header>
     <div class="sheet-body">
       <div class="reading" role="status" aria-live="polite">
-        <div class="reading-orb"><span class="brand-mark">K</span></div>
+        <div class="reading-orb"><img class="brand-mark" src="logo-mark.svg" alt="" width="32" height="32"></div>
         <ol class="steps">${STEPS.map((s, i) => `<li data-s="${i}">${s}</li>`).join("")}</ol>
         <p class="fine">${ai ? "Yapay zekâ ile okuma genelde 10–40 saniye sürer. Pencereyi kapatma." : "Birkaç saniye sürer."}</p>
       </div>

@@ -81,6 +81,9 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .btn-block { width: 100%; }
 .btn:disabled { opacity: 0.5; cursor: default; }
 
+/* Logo işareti (logo-mark.svg): K + köprü kemeri. Eski "K" harfli kare yerine */
+img.brand-mark { background: none; border-radius: 0; object-fit: contain; display: block; }
+
 .grad { background: var(--gradient-brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
 @media (prefers-reduced-motion: reduce) {
