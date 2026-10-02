@@ -41,3 +41,6 @@ jobs:
 
       - name: Asistan (internetsiz cevaplar)
         run: node test/asistan.mjs
+
+      - name: Not girişi tuş takımı
+        run: node test/grade-sheet.mjs

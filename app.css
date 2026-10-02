@@ -853,3 +853,44 @@ button.week-line[aria-expanded="true"] { margin-bottom: 8px; border-color: var(-
 .msg.a { align-self: flex-start; background: var(--surface); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
 .msg-src { display: block; margin-top: 6px; font-size: 0.72rem; color: var(--text-muted); }
 .msg-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+/* ==========================================================
+   v2.12 — Ortak not girişi (grade-sheet.js)
+   ========================================================== */
+dialog.gsheet {
+  margin: auto auto 0; padding: 0; border: 0; width: 100%; max-width: 480px; max-height: 92dvh;
+  background: transparent; color: var(--text); overflow: visible;
+}
+dialog.gsheet::backdrop { background: rgba(8, 11, 20, 0.72); }
+dialog.gsheet[open] .gs-panel { animation: sheet-up 0.22s ease-out; }
+.gs-panel {
+  display: flex; flex-direction: column; align-items: stretch; gap: 12px;
+  padding: 6px 18px calc(16px + var(--safe-b)); border-radius: 22px 22px 0 0;
+  background: var(--surface); border: 1px solid var(--border); border-bottom: 0;
+  transition: transform 0.15s;
+}
+.gs-grip { align-self: center; width: 64px; height: 22px; display: grid; place-items: center; background: none; border: 0; cursor: grab; touch-action: none; }
+.gs-grip i { width: 40px; height: 4px; border-radius: 4px; background: var(--border); }
+.gs-ctx { margin: 0; text-align: center; font-size: 0.86rem; font-weight: 600; color: var(--text-muted); }
+.gs-value { margin: 0; text-align: center; font-variant-numeric: tabular-nums; }
+.gs-value b { font: 700 2.6rem/1.1 var(--font-display); }
+.gs-value span { color: var(--text-muted); font-size: 1.05rem; }
+.gs-impact { margin: -4px 0 0; text-align: center; font-size: 0.86rem; color: var(--cyan); }
+.gs-quick { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
+.gs-quick button { min-width: 52px; padding: 7px 10px; border-radius: 999px; cursor: pointer; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.gs-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.gs-keys button {
+  height: 52px; border-radius: 14px; cursor: pointer; background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text); font: 600 1.3rem var(--font-display);
+}
+.gs-keys button:active { background: var(--border); }
+.gs-keys button:disabled { opacity: 0.3; cursor: default; }
+.gs-save { height: 50px; font-size: 1rem; }
+.gs-save:disabled { opacity: 0.45; }
+.gs-clear { align-self: center; color: var(--text-muted); }
+.gs-letters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.gs-letters button {
+  height: 52px; border-radius: 14px; cursor: pointer; background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text); font: 700 1.15rem var(--font-display);
+}
+.gs-letters button[aria-pressed="true"] { border-color: var(--cyan); background: rgba(76, 201, 240, 0.14); }
