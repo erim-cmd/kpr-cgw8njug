@@ -13,6 +13,17 @@ export const TASK_TYPES = { sinav: "Sınav", odev: "Ödev", proje: "Proje", dige
 // UMIS not hesaplama ekranındaki liste + yönetmelikteki NI, PR (eski yedekler için)
 export const GRADE_CODES = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "E", "F", "NA", "S", "U", "EX", "W", "I", "R", "NI", "PR"];
 export const SEASONS = { guz: "Güz", bahar: "Bahar", yaz: "Yaz" };
+// Seçmeli Keşfi: ilgi alanları (anahtar → etiket). Ayarlarda sadece bu anahtarlar saklanır.
+export const INTERESTS = {
+  teknoloji: "Teknoloji",
+  finans: "Finans",
+  pazarlama: "Pazarlama",
+  hukuk: "Hukuk",
+  surdurulebilirlik: "Sürdürülebilirlik",
+  girisimcilik: "Girişimcilik",
+  veri: "Veri/Analitik",
+  uluslararasi: "Uluslararası",
+};
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -25,7 +36,8 @@ export const uid = () =>
   crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
 
 // todayView: Bugün ekranındaki [Bugün | Hafta] anahtarının son konumu (arayüz tercihi)
-const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false, todayView: "bugun" });
+// interests: Seçmeli Keşfi'nde seçilen ilgi alanları (INTERESTS anahtarları)
+const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false, todayView: "bugun", interests: [] });
 const empty = () => ({ version: 1, profile: { name: "" }, courses: [], tasks: [], transcript: [], gpaBase: null, settings: defaultSettings() });
 
 function normSession(s) {
@@ -147,6 +159,7 @@ function normSettings(s) {
     notify: s.notify === true,
     notifyClasses: s.notifyClasses === true,
     todayView: s.todayView === "hafta" ? "hafta" : "bugun",
+    interests: Array.isArray(s.interests) ? [...new Set(s.interests.filter((k) => typeof k === "string" && Object.hasOwn(INTERESTS, k)))] : [],
   };
 }
 
