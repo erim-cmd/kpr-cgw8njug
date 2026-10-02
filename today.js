@@ -70,11 +70,21 @@ function toneOf(t, n) {
 }
 
 /** Ekranın odağı: sıradaki iş tek kartta, gün bilgisi bir kez. Ayrı bir sınav yaklaşıyorsa kartın altında. */
+/**
+ * "Sıradaki" kartının seçimi tek yerde: sadece teslim ve sınav; okuma/kişisel (isLight) karta çıkmaz,
+ * "Bu hafta" listesinde kalır (ders ekranındaki "sıradaki değerlendirme" ile tutarlı).
+ * exam: karttaki işten ayrı, 30 gün içindeki en yakın sınav.
+ */
+function heroPick(open) {
+  const task = open.filter((t) => !isLight(t) && daysUntil(t.due) >= 0).sort(byDue)[0] || null;
+  const exam = open.filter((t) => isExam(t) && t.id !== task?.id && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 30).sort(byDue)[0] || null;
+  return { task, exam };
+}
+
 function heroBlock(open, courses) {
-  const next = open.filter((t) => daysUntil(t.due) >= 0).sort(byDue)[0];
+  const { task: next, exam } = heroPick(open);
   if (!next) return "";
   const c = courses.find((x) => x.id === next.courseId);
-  const exam = open.filter((t) => isExam(t) && t.id !== next.id && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 30).sort(byDue)[0];
   const ec = exam && courses.find((x) => x.id === exam.courseId);
   const n = daysUntil(next.due);
   const when = n === 0 ? "Bugün" : n === 1 ? "Yarın" : n <= 6 ? `${n} gün` : esc(fmtShort(next.due));
@@ -145,13 +155,12 @@ export function view() {
   const now = nowMin();
   const mode = state.settings.todayView;
   // Sıradaki teslim üstteki kartta; liste ondan sonrakileri 7 gün boyunca gösterir
-  const heroId = open.filter((t) => daysUntil(t.due) >= 0).sort(byDue)[0]?.id;
+  const { task: heroTask, exam: heroExam } = heroPick(open);
+  const heroId = heroTask?.id;
   const upcoming = open.filter((t) => t.id !== heroId && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 7).sort(byDue);
   const hidden = dismissed();
   // Üstteki kartın gösterdiği görev için uyarıyı tekrarlama
-  const heroTask = open.filter((t) => daysUntil(t.due) >= 0).sort(byDue)[0];
   // Kartta görünen sınav da uyarı listesinde tekrar etmesin
-  const heroExam = open.filter((t) => isExam(t) && t.id !== heroTask?.id && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 30).sort(byDue)[0];
   const shown = new Set([heroTask?.id, heroExam?.id].filter(Boolean));
   // Yaklaşan ders uyarısı Bugün'de gereksiz: aynı bilgi ders satırında ("30 dk sonra") duruyor
   const alerts = buildAlerts(state).filter((a) => !hidden[a.id] && !shown.has(a.taskId) && !a.id.startsWith("class:"));
