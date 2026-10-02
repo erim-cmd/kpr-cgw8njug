@@ -7,7 +7,7 @@ import { installMode, isStandalone, promptInstall } from "./install.js";
 import { permissionState, enableNotifications, disableNotifications, testNotification } from "./notify.js";
 import { buildICS, deliverICS, countExportable } from "./ics.js";
 
-export const APP_VERSION = "2.12.0";
+export const APP_VERSION = "2.13.0";
 
 let icsClasses = true;
 
@@ -18,7 +18,7 @@ function notifyRows(state) {
   if (perm === "unsupported") {
     main = `<div class="group-row"><div><strong>Bildirimler</strong><p>Bu tarayıcı bildirimleri desteklemiyor. Takvime aktarmayı kullan.</p></div></div>`;
   } else if (perm === "ios-install") {
-    main = `<div class="group-row"><div><strong>Bildirimler</strong><p>iPhone'da bildirim için KPR'yi önce ana ekrana ekle (Paylaş → Ana Ekrana Ekle), sonra ana ekrandaki ikondan aç.</p></div></div>`;
+    main = `<div class="group-row"><div><strong>Bildirimler</strong><p>iPhone'da bildirim için Köprü'yü önce ana ekrana ekle (Paylaş → Ana Ekrana Ekle), sonra ana ekrandaki ikondan aç.</p></div></div>`;
   } else if (perm === "denied") {
     main = `<div class="group-row"><div><strong>Bildirimler</strong><p>İzin reddedilmiş. Tarayıcının site ayarlarından bildirim iznini aç, sonra buraya dön.</p></div><span class="status-warn">Kapalı</span></div>`;
   } else {
@@ -111,7 +111,7 @@ export function view() {
       </div>
     </section>
 
-    <p class="footnote">KPR v${APP_VERSION} · <a href="./">KPR hakkında</a> · <a href="gizlilik.html">Gizlilik ve KVKK</a></p>`;
+    <p class="footnote">Köprü v${APP_VERSION} · <a href="./">Köprü hakkında</a> · <a href="gizlilik.html">Gizlilik ve KVKK</a></p>`;
 }
 
 let resetArmed = false;
@@ -210,7 +210,7 @@ export const changes = {
       if (!store.get().profile.name) store.setName(keepName);
       toast("Yedek yüklendi");
     } catch {
-      toast("Bu dosya geçerli bir KPR yedeği değil");
+      toast("Bu dosya geçerli bir Köprü yedeği değil");
     }
   },
 };

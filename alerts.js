@@ -45,7 +45,8 @@ export function buildAlerts(state) {
     out.push({
       id: `exam:${t.id}:${n}`,
       level: n <= 1 ? "danger" : n <= 3 ? "warn" : "info",
-      title: `${label(t, courses)} ${n === 0 ? "bugün" : n === 1 ? "yarın" : `${n} gün sonra`}${t.time ? ` · ${t.time}` : ""}`,
+      // "Quiz 2 · 5 gün sonra": başlıktaki sayı ile gün sayısı yan yana gelip karışmasın
+      title: `${label(t, courses)} · ${n === 0 ? "bugün" : n === 1 ? "yarın" : `${n} gün sonra`}${t.time ? ` · ${t.time}` : ""}`,
       text: n <= 1 ? "Son tekrar zamanı. Sınıfını ve saatini kontrol et." : "Çalışma planını şimdi yap; son güne kalmasın.",
       taskId: t.id,
     });
@@ -58,7 +59,7 @@ export function buildAlerts(state) {
     out.push({
       id: `due:${t.id}:${n}`,
       level: n === 0 ? "danger" : "warn",
-      title: `${TASK_TYPES[t.type]}: ${label(t, courses)} ${relLabel(n).toLocaleLowerCase("tr-TR")}${t.time ? ` · ${t.time}` : ""}`,
+      title: `${TASK_TYPES[t.type]}: ${label(t, courses)} · ${relLabel(n).toLocaleLowerCase("tr-TR")}${t.time ? ` · ${t.time}` : ""}`,
       text: "Teslim saatini ve yükleme yerini kontrol et.",
       taskId: t.id,
     });

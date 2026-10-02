@@ -1296,7 +1296,7 @@ export function parseSyllabus(text, now = new Date()) {
   else if (Math.abs(total - 100) > 0.5) warnings.add(`Not ağırlıklarının toplamı %${Math.round(total * 10) / 10}, 100 değil; kontrol et.`);
   if (att.percent === null && att.max_absences === null)
     warnings.add(policies.some((p) => p.kind === "devam" && /orani syllabus.ta yazmiyor/.test(fold(p.rule))) ? "Yoklama alınıyor ama devam oranı yazmıyor; hocana sorup gir." : "Devam şartı bulunamadı.");
-  if (att.unit && /saat|hour/.test(att.unit)) warnings.add("Devamsızlık saat olarak verilmiş; KPR ders sayısıyla sayar, kontrol et.");
+  if (att.unit && /saat|hour/.test(att.unit)) warnings.add("Devamsızlık saat olarak verilmiş; Köprü ders sayısıyla sayar, kontrol et.");
   if (att.unit && /hafta|week/.test(att.unit)) warnings.add("Devamsızlık hafta olarak verilmiş; haftada birden çok ders varsa sayıyı ona göre düzelt.");
   if (!items.length) warnings.add("Sınav veya ödev tarihi bulunamadı.");
 

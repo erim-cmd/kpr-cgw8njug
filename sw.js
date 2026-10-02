@@ -11,7 +11,7 @@
  * Uygulamada "Yeni sürüm hazır → Yenile" uyarısı çıkar (bkz. js/app.js).
  */
 
-const VERSION = "2.12.0";
+const VERSION = "2.13.0";
 const SHELL_CACHE = `kpr-shell-${VERSION}`;
 const FONT_CACHE = "kpr-fonts";
 
@@ -183,7 +183,7 @@ self.addEventListener("push", (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch { data = { title: event.data?.text() }; }
   event.waitUntil(
-    self.registration.showNotification(data.title || "KPR", {
+    self.registration.showNotification(data.title || "Köprü", {
       body: data.body || "Yaklaşan bir hatırlatman var.", tag: data.tag, icon: "icon-192.png", data: { url: data.url || "#/bugun" },
     })
   );

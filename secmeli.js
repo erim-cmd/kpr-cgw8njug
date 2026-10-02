@@ -11,8 +11,20 @@ import { store, INTERESTS } from "./store.js";
 import { esc } from "./ui.js";
 import { icon } from "./icons.js";
 
-// Öneri listesi: eşleştirme gelene kadar boş (sahte ders yok)
+// Öneri listesi: eşleştirme gelene kadar boş (sahte ders öneri gibi gösterilmez)
 const SUGGESTIONS = [];
+
+// Eşleştirme gelene kadar arayüzün nasıl görüneceğini gösteren ÖRNEK kartlar.
+// "Önizleme" etiketiyle ve soluk çizilir; gerçek bir ders önerisi değildir, okul verisi içermez.
+const PREVIEW = [
+  { code: "ÖRN 301", name: "Ürün yönetimine giriş", fit: 92, matches: ["girisimcilik", "teknoloji"] },
+  { code: "ÖRN 214", name: "Veri görselleştirme", fit: 81, matches: ["veri", "teknoloji"] },
+  { code: "ÖRN 330", name: "Dijital pazarlama stratejisi", fit: 74, matches: ["pazarlama", "girisimcilik"] },
+  { code: "ÖRN 205", name: "Finansal okuryazarlık", fit: 68, matches: ["finans"] },
+  { code: "ÖRN 318", name: "Sürdürülebilir tasarım", fit: 63, matches: ["surdurulebilirlik", "teknoloji"] },
+  { code: "ÖRN 240", name: "Teknoloji hukukuna giriş", fit: 58, matches: ["hukuk", "teknoloji"] },
+  { code: "ÖRN 260", name: "Küresel ekonomiye bakış", fit: 55, matches: ["uluslararasi", "finans"] },
+];
 
 let editing = false; // kayıtlı seçim varken kart yeniden açıldı mı
 let draft = null; // açık karttaki seçim (Tamam'a basılınca kaydedilir)
@@ -21,9 +33,9 @@ let draft = null; // açık karttaki seçim (Tamam'a basılınca kaydedilir)
  * Ders kartı: { code, name, fit: 0–100, matches: [INTERESTS anahtarı] }.
  * Eşleştirme gelince SUGGESTIONS bununla çizilecek.
  */
-export function courseCard(c) {
+export function courseCard(c, preview = false) {
   const fit = Math.max(0, Math.min(100, Math.round(Number(c.fit) || 0)));
-  return `<li class="el-card">
+  return `<li class="el-card${preview ? " is-preview" : ""}">
     <div class="el-top">
       <div class="el-title"><b>${esc(c.code)}</b><span>${esc(c.name)}</span></div>
       <span class="el-fit">%${fit}</span>
@@ -52,6 +64,14 @@ function interestTags(saved) {
   </button>`;
 }
 
+/** İlgi alanına uyan örnek kartlar (en fazla 3), üstünde "Önizleme" açıklaması. */
+function previewList(saved) {
+  const keys = new Set(saved);
+  const list = PREVIEW.filter((c) => !keys.size || c.matches.some((k) => keys.has(k))).slice(0, 3);
+  return `<p class="preview-note"><span class="badge soft">Önizleme</span>Gerçek öneriler ders listesi eklenince gelecek. Kartlar böyle görünecek:</p>
+    <ul class="list" aria-label="Örnek kartlar">${list.map((c) => courseCard(c, true)).join("")}</ul>`;
+}
+
 export function view() {
   const saved = store.get().settings.interests;
   const open = editing || !saved.length;
@@ -68,7 +88,7 @@ export function view() {
       <div class="section-head"><h2>Öneriler</h2></div>
       ${SUGGESTIONS.length
         ? `<ul class="list">${SUGGESTIONS.map(courseCard).join("")}</ul>`
-        : `<div class="empty"><span class="empty-icon">${icon.compass}</span><strong>Seçmeli önerileri yakında burada.</strong></div>`}
+        : previewList(saved)}
     </section>
 
     <p class="fine el-note">Bu bir öneridir, kayıt değildir. Kayıt okulunun kendi sisteminde yapılır.</p>`;

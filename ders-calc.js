@@ -47,7 +47,7 @@ export function targetResult(c) {
     out.done = true;
     out.status = "done";
     out.letter = underBar ? "F" : letterFor(r.earned, c.scale);
-    out.lines.push(`Ders puanın ${fmtNum(r.earned)} → tahmini harfin ${out.letter}${out.letter in COEF ? ` (${COEF[out.letter].toFixed(2)})` : ""}.`);
+    out.lines.push(`Ders puanın ${fmtNum(r.earned)} → tahmini harfin ${out.letter}${out.letter in COEF ? ` (${COEF[out.letter].toFixed(2).replace(".", ",")})` : ""}.`);
   } else {
     const rows = neededByLetter(c.scale, r.earned, r.remaining);
     const tl = rows.find((x) => x.letter === c.targetLetter) || rows.find((x) => x.letter === "B") || rows[Math.floor(rows.length / 2)];

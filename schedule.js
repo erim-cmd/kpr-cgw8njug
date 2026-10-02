@@ -37,6 +37,11 @@ export function resetDay() {
   selected = null;
 }
 
+/** Bugün ekranındaki hafta şeridinden bir güne dokununca Hafta görünümü o günle açılır. */
+export function setDay(i) {
+  selected = Number.isInteger(i) && i >= 0 && i <= 6 ? i : null;
+}
+
 export const actions = {
   "pick-day"(el, { render }) {
     selected = Number(el.dataset.day);

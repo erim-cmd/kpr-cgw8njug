@@ -29,11 +29,14 @@ export function sessionItem(s, now = null, absentDate = null) {
     ? `<button type="button" class="abs-btn ${absent ? "on" : ""}" data-action="mark-absent" data-id="${esc(s.course.id)}" data-start="${esc(s.start)}" data-date="${esc(absentDate)}" aria-pressed="${!!absent}">${absent ? "Gitmedim ✓" : "Gitmedim"}</button>`
     : "";
   const meta = [s.course.code, s.room].filter(Boolean).map(esc).join(" · ");
+  // Bugün başlamasına 2 saatten az kalan ders: "40 dk sonra"
+  const left = now !== null && !state ? toMin(s.start) - now : null;
+  const soon = left !== null && left > 0 && left <= 120 ? `<span class="badge soft">${left < 60 ? `${left} dk sonra` : `${Math.floor(left / 60)} sa ${left % 60 ? `${left % 60} dk ` : ""}sonra`}</span>` : "";
   return `<li class="${absBtn ? "session-wrap" : ""}">
     <button class="session ${state} ${absent ? "absent" : ""}" style="--c:${s.course.color}" data-action="course-detail" data-id="${esc(s.course.id)}">
       <span class="session-time">${esc(s.start)}<small>${esc(s.end)}</small></span>
       <span>
-        <span class="session-name">${esc(s.course.name)}${state === "now" ? '<span class="badge">Şu an</span>' : ""}</span>
+        <span class="session-name">${esc(s.course.name)}${state === "now" ? '<span class="badge">Şu an</span>' : soon}</span>
         ${meta ? `<span class="session-meta">${meta}</span>` : ""}
       </span>
     </button>${absBtn}
@@ -72,7 +75,9 @@ export function emptyState(title, text, action, label, secondary) {
 }
 
 /** Syllabus yükleme çağrısı: ders ekleme noktalarında gösterilir. */
-export function importCard() {
+export function importCard(compact = false) {
+  // Ders varken büyük kart yerine ince satır: sağ alttaki + düğmesi de aynı işi yapıyor
+  if (compact) return `<button class="import-row" type="button" data-action="import-syllabus">${icon.upload}<span>Syllabus'tan ders ekle</span></button>`;
   return `<button class="import-card" type="button" data-action="import-syllabus">
     <span class="import-icon">${icon.upload}</span>
     <span><strong>Syllabus'tan ekle</strong><small>PDF ya da fotoğraf yükle, ders saatleri ve sınav tarihleri otomatik gelsin.</small></span>
@@ -89,7 +94,7 @@ export function installCard() {
       : "Ana ekranına ekle, uygulama gibi tam ekran ve internetsiz kullan.";
   return `<div class="install-card">
     <span class="brand-mark">K</span>
-    <div><strong>KPR'yi telefonuna kur</strong><p>${text}</p></div>
+    <div><strong>Köprü'yü telefonuna kur</strong><p>${text}</p></div>
     ${mode === "prompt" ? '<button class="btn btn-primary" type="button" data-action="install">Kur</button>' : ""}
     <button class="icon-btn sm" type="button" data-action="dismiss-install" aria-label="Kapat">${icon.close}</button>
   </div>`;
@@ -108,4 +113,9 @@ export function flagItem(p, withHide = false) {
     ${p.source || withHide ? `<p class="flag-foot">${p.source ? `<small class="irow-src">“${esc(p.source)}”</small>` : ""}
       ${withHide ? `<button type="button" class="link" data-hide-policy="${esc(p.id)}">Gizle</button>` : ""}</p>` : ""}
   </li>`;
+}
+
+/** Açıklama / yönetmelik notu: ekranda tek satırlık "ⓘ" bağlantısı, dokununca açılır. */
+export function infoNote(summary, text) {
+  return `<details class="info-note"><summary><span aria-hidden="true">ⓘ</span>${summary}</summary><p>${text}</p></details>`;
 }
