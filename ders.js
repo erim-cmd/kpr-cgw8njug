@@ -17,7 +17,7 @@ import { esc, openSheet, closeSheet, toast } from "./ui.js";
 import { DAYS_SHORT, todayISO, toMin, daysUntil, fmtShort, relLabel, byDue } from "./dates.js";
 import { icon } from "./icons.js";
 import { attendance, attendanceText } from "./attendance.js";
-import { sortFlags, SEV_LABEL } from "./components.js";
+import { sortFlags, SEV_LABEL, infoNote } from "./components.js";
 import { POLICY_KINDS } from "./store.js";
 import { openImport } from "./importer.js";
 import { SAMPLE_SCALE, neededByLetter } from "./gpa.js";
@@ -36,10 +36,12 @@ const uiOf = (id) => ui.get(id) || ui.set(id, { allFlags: false, plan: false, al
 /* 2. Sıradaki değerlendirme                                           */
 /* ------------------------------------------------------------------ */
 
+/** Dersin sıradaki değerlendirmesi (okuma ve kişisel işler değerlendirme değildir). */
+const nextTask = (c, tasks) => tasks.filter((t) => t.courseId === c.id && !t.done && !isLight(t) && daysUntil(t.due) >= 0).sort(byDue)[0] || null;
+
 function nextBlock(c, tasks) {
   const mine = tasks.filter((t) => t.courseId === c.id);
-  // Okuma ve kişisel işler değerlendirme değildir
-  const next = mine.filter((t) => !t.done && !isLight(t) && daysUntil(t.due) >= 0).sort(byDue)[0];
+  const next = nextTask(c, tasks);
   if (!next) return "";
   const w = taskWeight(next, c, mine);
   const n = daysUntil(next.due);
@@ -104,7 +106,9 @@ function gradingBlock(c, tasks) {
   }
   const total = c.grading.reduce((s, g) => s + g.weight, 0) || 1;
   const r = calcGrades(c.grading, c.target);
-  const mine = tasks.filter((t) => t.courseId === c.id && !t.done && daysUntil(t.due) >= 0).sort(byDue);
+  // Üstteki "sıradaki" kartında görünen görev burada tekrar etmez
+  const top = nextTask(c, tasks);
+  const mine = tasks.filter((t) => t.courseId === c.id && !t.done && daysUntil(t.due) >= 0 && t.id !== top?.id).sort(byDue);
   // Her bileşen bir satır: ad · ağırlık rozeti · (varsa) not. Dokununca ortak not girişi açılır.
   const rows = c.grading.map((g, i) => `<li><button type="button" class="grade-row ${g.score !== null ? "has" : ""}" data-grade-i="${i}"
       aria-label="${esc(g.name)}, ağırlık yüzde ${fmtNum(g.weight)}, ${g.score !== null ? `notun ${fmtNum(g.score)}` : "not girilmedi"}">
@@ -114,8 +118,8 @@ function gradingBlock(c, tasks) {
     </button></li>`).join("");
   return `<section class="cd-sec"><h3 class="mini-title">Değerlendirme</h3>
     <ul class="grade-rows">${rows}</ul>
-    <p class="fine">${r.average !== null ? `Şu ana kadarki ortalaman <b>${fmtNum(r.average)}</b> (notun %${fmtNum(r.doneWeight)}'lik kısmı girildi).` : "Aldığın notu girmek için satıra dokun; hedef harf hesabı buna göre güncellenir."}</p>
-    ${Math.abs(total - 100) > 0.01 ? `<p class="warn-text fine">Ağırlıkların toplamı %${fmtNum(total)}, 100 değil. Düzenle'den kontrol et.</p>` : ""}
+    <p class="cd-note">${r.average !== null ? `Şu ana kadarki ortalaman <b>${fmtNum(r.average)}</b> (notun %${fmtNum(r.doneWeight)}'lik kısmı girildi).` : "Aldığın notu girmek için satıra dokun; hedef harf hesabı buna göre güncellenir."}</p>
+    ${Math.abs(total - 100) > 0.01 ? `<p class="cd-note warn-text">Ağırlıkların toplamı %${fmtNum(total)}, 100 değil. Düzenle'den kontrol et.</p>` : ""}
     ${mine.length ? `<ul class="kv">${mine.map((t) => `<li><b>${esc(t.title)}</b><span>${relLabel(daysUntil(t.due))} · ${fmtShort(t.due)}</span></li>`).join("")}</ul>` : ""}
   </section>`;
 }
@@ -156,7 +160,8 @@ function planBlock(c, st, state) {
 function targetInner(c) {
   if (!c.grading.length) return '<p class="calc-note">Önce not dağılımını ekle.</p>';
   if (!c.scale.length) {
-    return `<p class="calc-note">BAU'da harf eşikleri hocaya göre değişir. Hocanın tablosunu gir ya da örnekle başlayıp düzelt.</p>
+    return `<p class="calc-note">Hocanın harf tablosunu gir ya da örnekle başlayıp düzelt.</p>
+      ${infoNote("Neden tablo gerekiyor?", "BAU'da harf eşikleri hocaya göre değişir; hedef harf hesabı hocanın açıkladığı tabloya göre yapılır.")}
       <div class="empty-actions"><button type="button" class="btn btn-ghost" data-scale-sample>Örnek tabloyla başla</button></div>`;
   }
   const res = targetResult(c);
@@ -179,7 +184,8 @@ function allLettersBlock(c, st) {
     <div class="scale-grid">${c.scale.map((x, i) => `<button type="button" class="scale-cell" data-scale-i="${i}" aria-label="${esc(x.letter)} için en düşük puan ${fmtNum(x.min)}"><span>${esc(x.letter)}</span><b>${fmtNum(x.min)}</b></button>`).join("")}
       <button type="button" class="scale-cell" data-final-min aria-label="Final barajı"><span>Final barajı</span><b>${c.finalMin !== null ? fmtNum(c.finalMin) : "yok"}</b></button>
     </div>
-    <p class="fine gap-t">Kutular o harf için gereken en düşük ders puanı; hocanın tablosuyla aynı olmalı. <button type="button" class="link" data-scale-clear>Tabloyu kaldır</button> · <button type="button" class="link" data-toggle="allLetters">Kapat</button></p>
+    ${infoNote("Harf eşikleri nedir?", "Kutular o harf için gereken en düşük ders puanı; hocanın tablosuyla aynı olmalı.")}
+    <p class="cd-note gap-t"><button type="button" class="link" data-scale-clear>Tabloyu kaldır</button> · <button type="button" class="link" data-toggle="allLetters">Kapat</button></p>
   </div>`;
 }
 

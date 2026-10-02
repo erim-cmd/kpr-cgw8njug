@@ -25,7 +25,6 @@
   /* Bileşen tonları (app.css'teki sabit renkler buraya taşındı; değerler aynı) */
   --danger-text: #F58BA0;   /* kırmızı zemin üstünde açık yazı (sınav etiketi, risk) */
   --warn-soft-text: #F7D08F; /* uyarı kutusu yazısı */
-  --violet-text: #B39BFA;   /* mor zemin üstünde açık yazı (proje, sunum etiketi) */
   --on-violet: #FFFFFF;     /* mor (Asistan) düğme üstündeki simge */
   --switch-knob: #FFFFFF;   /* açık anahtarın topuzu */
   --scrim: #080B14;         /* pencere arkası karartma (yarı saydam kullanılır) */

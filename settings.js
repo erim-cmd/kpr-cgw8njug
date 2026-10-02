@@ -2,12 +2,13 @@ import { store } from "./store.js";
 import { runMigrations } from "./migrate.js";
 import { esc, toast } from "./ui.js";
 import { icon } from "./icons.js";
+import { infoNote } from "./components.js";
 import { todayISO } from "./dates.js";
 import { installMode, isStandalone, promptInstall } from "./install.js";
 import { permissionState, enableNotifications, disableNotifications, testNotification } from "./notify.js";
 import { buildICS, deliverICS, countExportable } from "./ics.js";
 
-export const APP_VERSION = "2.13.2";
+export const APP_VERSION = "2.14.0";
 
 let icsClasses = true;
 
@@ -74,7 +75,7 @@ export function view() {
     <section class="section">
       <div class="section-head"><h2>Hatırlatmalar</h2></div>
       <div class="group">${notifyRows(store.get())}</div>
-      <p class="fine gap-t">Uygulama kapalıyken zamanında bildirim için sunucu gerekiyor; o gelene kadar en garanti yol takvime aktarmak. Android'de uygulama kapalıyken de ara ara kontrol ediyoruz.</p>
+      <div class="gap-t">${infoNote("Bildirimler nasıl çalışır?", "Uygulama kapalıyken zamanında bildirim için sunucu gerekiyor; o gelene kadar en garanti yol takvime aktarmak. Android'de uygulama kapalıyken de ara ara kontrol ediyoruz.")}</div>
     </section>
 
     <section class="section">
@@ -95,7 +96,7 @@ export function view() {
       <div class="group">
         ${installRow()}
         <div class="group-row"><div><strong>İnternetsiz çalışma</strong><p>Uygulama bir kez açıldıktan sonra çevrimdışı da çalışır.</p></div>
-          <span class="status-ok" id="sw-status">${"serviceWorker" in navigator && navigator.serviceWorker.controller ? "Hazır ✓" : "Hazırlanıyor…"}</span></div>
+          ${"serviceWorker" in navigator && navigator.serviceWorker.controller ? '<span class="status-ok" id="sw-status">Hazır ✓</span>' : '<span class="status-muted" id="sw-status">Hazırlanıyor…</span>'}</div>
       </div>
     </section>
 
