@@ -22,6 +22,14 @@
   --gradient-brand: linear-gradient(120deg, var(--cyan), var(--violet));
   --gradient: var(--cyan);
   --on-accent: #0E1320;
+  /* Bileşen tonları (app.css'teki sabit renkler buraya taşındı; değerler aynı) */
+  --critical: #F0616D;      /* kritik kural kartı, acil "Sıradaki" kartı */
+  --caution: #F2B544;       /* dikkat kuralı kartı */
+  --danger-text: #F58BA0;   /* kırmızı zemin üstünde açık yazı (sınav etiketi, risk) */
+  --warn-soft-text: #F7D08F; /* uyarı kutusu yazısı */
+  --violet-text: #B39BFA;   /* mor zemin üstünde açık yazı (proje, sunum etiketi) */
+  --on-violet: #FFFFFF;     /* mor (Asistan) düğme üstündeki simge */
+  --switch-knob: #FFFFFF;   /* açık anahtarın topuzu */
   /* Köşe: 3 değer + hap */
   --r-sm: 8px;
   --r-md: 12px;
