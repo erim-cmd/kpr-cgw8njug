@@ -1,10 +1,9 @@
 import { store } from "./store.js";
 import { esc } from "./ui.js";
 import { icon } from "./icons.js";
-import { todayIdx, todayISO, toISO, toMin, nowMin, daysUntil, fmtLong, fmtShort, greeting, byDue, relLabel, parseISO, DAYS, DAYS_SHORT } from "./dates.js";
+import { todayIdx, todayISO, toISO, toMin, nowMin, daysUntil, fmtLong, fmtShort, greeting, byDue, relLabel, parseISO, DAYS } from "./dates.js";
 import { TASK_TYPES, isExam, isLight } from "./store.js";
-import { density } from "./density.js";
-import { sessionsOn, sessionItem, taskItem, emptyState, installCard } from "./components.js";
+import { sessionsOn, sessionItem, taskItem, emptyState, installCard, weekStripHtml } from "./components.js";
 import { buildAlerts } from "./alerts.js";
 import { permissionState } from "./notify.js";
 import { weekView, resetDay, setDay, actions as weekActions } from "./schedule.js";
@@ -100,37 +99,8 @@ function heroBlock(open, courses) {
  * Dönem başlangıcı girildiyse üstünde "3. hafta / 14 · Gelecek hafta: vize haftası" (Dönem akışıyla aynı hesap).
  * Güne dokununca Hafta görünümü o günle açılır.
  */
-function weekStrip(state, open) {
-  const d = density(open, state.settings);
-  const ti = todayIdx();
-  const monday = new Date();
-  monday.setDate(monday.getDate() - ti);
-  const tag = (w) => (w.final ? "final haftası" : w.vize ? "vize haftası" : w.busy ? "yoğun" : "sakin");
-  const cur = d.current !== null ? d.weeks[d.current] : null;
-  const nxt = cur ? d.weeks[d.current + 1] : null;
-  const days = DAYS_SHORT.map((label, i) => {
-    const day = new Date(monday);
-    day.setDate(monday.getDate() + i);
-    const iso = toISO(day);
-    const due = open.filter((t) => t.due === iso && !isLight(t));
-    const exam = due.some(isExam);
-    const task = due.some((t) => !isExam(t));
-    const what = [exam && "sınav", task && "teslim"].filter(Boolean).join(", ");
-    return `<button type="button" class="wk-day${i === ti ? " is-today" : ""}${i < ti ? " is-past" : ""}" data-action="strip-day" data-day="${i}"
-      aria-label="${DAYS[i]} ${day.getDate()}${what ? `: ${what}` : ""}">
-      <span class="wk-dn">${label}</span><span class="wk-num">${day.getDate()}</span>
-      <span class="wk-dots">${exam ? '<i class="ex"></i>' : ""}${task ? '<i class="due"></i>' : ""}</span>
-    </button>`;
-  }).join("");
-  return `<section class="wk" aria-label="Bu hafta">
-    <div class="wk-head">
-      <span>${cur ? `<b>${d.current + 1}. hafta</b> / ${d.weeks.length}` : `<b>Bu hafta</b>`}</span>
-      ${nxt ? `<span>Gelecek hafta: <b class="${nxt.final || nxt.vize ? "danger-text" : nxt.busy ? "warn-text" : ""}">${tag(nxt)}</b></span>` : ""}
-    </div>
-    <div class="wk-days">${days}</div>
-    <div class="wk-legend" aria-hidden="true"><span><i class="ex"></i>Sınav</span><span><i class="due"></i>Teslim</span></div>
-  </section>`;
-}
+// Hafta şeridi components.js'te (Hafta görünümüyle ortak)
+const weekStrip = (state) => weekStripHtml({ state, action: "strip-day" });
 
 /** Selamın altındaki tek cümle: bugünün ve haftanın özeti. */
 function summary(state, open, sessions, now) {
