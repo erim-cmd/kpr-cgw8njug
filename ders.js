@@ -12,7 +12,7 @@
  * Hesap yok: notlar ve hedef harf ders-calc.js, harf listesi gpa.neededByLetter, ağırlık weights.taskWeight.
  */
 
-import { store, TASK_TYPES } from "./store.js";
+import { store, TASK_TYPES, isLight } from "./store.js";
 import { esc, openSheet, closeSheet, toast } from "./ui.js";
 import { DAYS_SHORT, todayISO, toMin, daysUntil, fmtShort, relLabel, byDue } from "./dates.js";
 import { icon } from "./icons.js";
@@ -38,7 +38,8 @@ const uiOf = (id) => ui.get(id) || ui.set(id, { allFlags: false, plan: false, al
 
 function nextBlock(c, tasks) {
   const mine = tasks.filter((t) => t.courseId === c.id);
-  const next = mine.filter((t) => !t.done && daysUntil(t.due) >= 0).sort(byDue)[0];
+  // Okuma ve kişisel işler değerlendirme değildir
+  const next = mine.filter((t) => !t.done && !isLight(t) && daysUntil(t.due) >= 0).sort(byDue)[0];
   if (!next) return "";
   const w = taskWeight(next, c, mine);
   const n = daysUntil(next.due);
@@ -84,9 +85,10 @@ function flagsBlock(c, st) {
       ${p.source ? `<details class="flag-src"><summary>Syllabus'ta ne yazıyor?</summary><small class="irow-src">“${esc(p.source)}”</small></details>` : ""}
       <button type="button" class="link flag-hide" data-hide-policy="${esc(p.id)}">Gizle</button>
     </li>`;
-  return `<section class="cd-sec"><h3 class="mini-title">Dikkat edilecekler</h3>
+  // "Tümü (N)" başlık satırında: ilk görünümde "Bu hafta" satırına yer kalsın
+  return `<section class="cd-sec"><div class="section-head cd-flags-head"><h3 class="mini-title">Dikkat edilecekler</h3>
+      ${shown.length > 2 ? `<button type="button" class="link" data-toggle="allFlags">${st.allFlags ? "Daha az" : `Tümü (${shown.length})`}</button>` : ""}</div>
     ${list.length ? `<ul class="flags">${list.map(item).join("")}</ul>` : ""}
-    ${shown.length > 2 ? `<button type="button" class="link" data-toggle="allFlags">${st.allFlags ? "Daha az" : `Tümü (${shown.length})`}</button>` : ""}
     ${hidden ? `<button type="button" class="link" data-show-policies>Gizlenen ${hidden} kuralı göster</button>` : ""}
   </section>`;
 }
