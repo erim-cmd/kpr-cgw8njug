@@ -167,19 +167,11 @@ body.onboarding #view { padding-bottom: 32px; }
 .empty p { margin: 0 0 16px; font-size: var(--fs-sm); }
 
 /* ---- Gün seçici ve segment kontrol ---- */
-.chips { display: flex; gap: 6px; overflow-x: auto; margin: 0 -16px 20px; padding: 2px 16px; scrollbar-width: none; }
-.chips::-webkit-scrollbar { display: none; }
-.chip {
   flex: 1 0 44px; display: flex; flex-direction: column; align-items: center; gap: 5px;
   padding: 9px 6px 7px; border-radius: var(--r-md); cursor: pointer;
   background: var(--surface); border: 1px solid var(--border);
   color: var(--text-muted); font-size: var(--fs-xs); font-weight: 600;
 }
-.chip i { width: 5px; height: 5px; border-radius: 50%; background: transparent; }
-.chip.has i { background: var(--text-muted); }
-.chip.today { color: var(--text); }
-.chip[aria-pressed="true"] { background: var(--surface-2); border-color: var(--cyan); color: var(--text); }
-.chip[aria-pressed="true"].has i { background: var(--cyan); }
 .day-title { display: flex; align-items: center; gap: 8px; font: 600 var(--fs-lg) var(--font-display); margin: 0 0 12px; }
 
 .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 4px; margin-bottom: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); }
@@ -615,7 +607,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 
 /* Bugün: [Bugün | Hafta] anahtarı */
 .today-seg { margin-top: -8px; }
-.week-view .chips { margin-bottom: 16px; }
 .week-more { margin: 18px 0 0; text-align: center; }
 
 /* Dönem: yapışkan bölüm şeridi (üst menünün hemen altında) */
@@ -941,6 +932,9 @@ button.tl-row { width: 100%; padding: 10px 14px; border-radius: var(--r-md); bac
 .wk-day.is-past .wk-num { color: var(--text-dim); }
 .wk-day.is-today .wk-num { background: var(--cyan); color: var(--on-accent); }
 .wk-day.is-today .wk-dn { color: var(--cyan); }
+/* Hafta görünümünde seçili gün: halka (bugün dolu daire olarak kalır) */
+.wk-day.is-sel .wk-num { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--cyan); }
+.wk-day.is-sel .wk-dn { color: var(--text); }
 .wk-dots { display: flex; gap: 3px; height: 5px; }
 .wk-dots i, .wk-legend i { display: block; width: 5px; height: 5px; border-radius: 50%; }
 .ex { background: var(--danger); }
