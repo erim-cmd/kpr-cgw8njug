@@ -22,5 +22,17 @@ AGENTS.md eklenirse: biri güncellenince diğeri de güncellenir.
 - Ayrıştırıcı testi: `node test/check.mjs` (test/syllabus/*.pdf|docx ↔ expected.json). Ayrıştırıcıya dokunan her değişiklikten sonra çalıştır; yeni format görülünce `make*.py`'ye örnek + beklenen değer ekle.
 - Bitti tanımı: tarayıcıda gözle kontrol + konsolda hata yok + telefonda (390px) taşma yok.
 
+## Tasarım kuralları
+- Ürün adı arayüzde her yerde "Köprü". "KPR" sadece logoda ve kod/veri anahtarlarında (`kpr:*`) kalır.
+- Logo: `logo-mark.svg` (işaret). Yazılı logo ve PNG'ler `docs/marka/` içinde. Logoyu elle yeniden çizme, bu dosyaları kullan. Logodaki "AI STUDY COMPANION" alt yazısı yapay zekâ özelliği gelince ürünle uyumlu olacak; kaldırma.
+- Renkler `tokens.css`'ten gelir, yeni sabit renk yazma. Vurgu düz `--cyan`. Gradyan (`--gradient-brand`) sadece marka anında (`.grad`). Asistan mor (`--violet`).
+- Renk anlamı: kırmızı (`--danger`) sadece sınav ve kritik kural; sarı (`--warn`) yaklaşan teslim; yeşil (`--ok`) tamamlandı/başarılı.
+- Köşe: sadece `--r-sm`, `--r-md`, `--r-lg`, `--r-pill`. Yazı boyutu: sadece `--fs-2xs` … `--fs-3xl`. Yeni px/rem değeri ekleme.
+- Tek kenarlı renkli şerit + yuvarlak köşe birlikte kullanılmaz.
+- Türkçe biçim: ondalık virgüllü (`fmtGpa` → 3,12), tarih ay adı tam ("3 Ekim").
+- Ekranda aynı bilgi iki kez gösterilmez (örn. Bugün kartında görünen sınav Dikkat listesinde tekrar etmez).
+- Uzun açıklama/yönetmelik metni ekranda paragraf olarak değil, `components.js` `infoNote()` ile "ⓘ" altında.
+- Gerçek veri olmayan örnek içerik "Önizleme" etiketiyle ve soluk/kesikli çizilir; gerçekmiş gibi gösterilmez.
+
 ## Yayın
 Adım adım: `docs/YAYIN.md`. Yarım işler: `Backlog.md`.
