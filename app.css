@@ -799,3 +799,32 @@ button.stat { text-align: left; color: inherit; font: inherit; cursor: pointer; 
 .tl-row select { width: 96px; }
 .tl-res { margin-top: 8px; }
 .cd-src { text-align: center; margin-top: 4px; }
+
+/* Görev formu: tür çipleri + "Daha fazla" */
+.type-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.type-chips .seg-item label {
+  display: block; padding: 7px 12px; border-radius: 999px; cursor: pointer;
+  background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); font-weight: 600; font-size: 0.84rem;
+}
+.type-chips .seg-item input { position: absolute; opacity: 0; pointer-events: none; }
+.type-chips .seg-item input:checked + label { background: var(--surface-2); border-color: var(--cyan); color: var(--text); }
+.type-chips .seg-item input:focus-visible + label { outline: 2px solid var(--cyan); }
+.more-fields { border-top: 1px solid var(--border); padding-top: 10px; }
+.more-fields summary { cursor: pointer; color: var(--cyan); font-size: 0.86rem; font-weight: 600; list-style: none; }
+.more-fields summary::-webkit-details-marker { display: none; }
+.more-fields[open] summary { margin-bottom: 12px; }
+.more-fields > * + * { margin-top: 12px; }
+/* Görev türü etiketleri (tokens.css renkleri) */
+.tag-quiz { background: rgba(245, 184, 76, 0.16); color: var(--warn); }
+.tag-okuma { background: rgba(124, 140, 248, 0.16); color: var(--accent); }
+.tag-lab { background: rgba(74, 222, 128, 0.14); color: var(--ok); }
+.tag-sunum { background: rgba(139, 92, 246, 0.2); color: #B39BFA; }
+.tag-kisisel { background: var(--surface-2); color: var(--text-muted); }
+.tag-diger { background: var(--surface-2); color: var(--text-muted); }
+
+/* Bugün: hafta satırı (doluysa yerinde açılır, sakinse düz metin) */
+button.week-line { width: 100%; font: inherit; text-align: left; cursor: pointer; }
+button.week-line[aria-expanded="true"] { margin-bottom: 8px; border-color: var(--cyan); }
+.week-line .chev { margin-left: auto; color: var(--text-muted); }
+.week-line.calm { color: var(--text-muted); cursor: default; }
+.week-list { margin-bottom: 28px; }

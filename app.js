@@ -158,11 +158,12 @@ const globalActions = {
     render();
   },
 
-  // Devamsızlık: bugünkü derste "Gelmedim"
+  // Devamsızlık: biten derste "Gitmedim" (Geri al bildirimi 5 sn)
   "mark-absent": (el) => {
     const c = find(store.get().courses, el.dataset.id);
     if (!c) return;
-    const date = todayISO();
+    // Bugün listesinde dünkü (son 24 saatte biten) dersler de olabilir: tarih düğmeden gelir
+    const date = el.dataset.date || todayISO();
     const existing = c.absences.find((a) => a.date === date && a.start === el.dataset.start);
     if (existing) {
       store.removeAbsence(c.id, existing.id);

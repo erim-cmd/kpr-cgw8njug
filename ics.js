@@ -8,7 +8,7 @@
  * çoğu zaman atar ve kendi varsayılan hatırlatmasını kullanır.
  */
 
-import { TASK_TYPES } from "./store.js";
+import { TASK_TYPES, isExam } from "./store.js";
 import { parseISO, toISO, todayISO } from "./dates.js";
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -51,15 +51,15 @@ function taskEvent(t, course, now) {
 
   if (t.time) {
     const start = at(t.due, t.time);
-    const end = new Date(start.getTime() + (t.type === "sinav" ? 120 : 30) * 60000);
+    const end = new Date(start.getTime() + (isExam(t) ? 120 : 30) * 60000);
     lines.push(`DTSTART:${local(start)}`, `DTEND:${local(end)}`);
-    if (t.type === "sinav") lines.push(...alarm("-P7D", `1 hafta kaldı: ${summary}`), ...alarm("-P1D", `Yarın: ${summary}`), ...alarm("-PT2H", `2 saat sonra: ${summary}`));
+    if (isExam(t)) lines.push(...alarm("-P7D", `1 hafta kaldı: ${summary}`), ...alarm("-P1D", `Yarın: ${summary}`), ...alarm("-PT2H", `2 saat sonra: ${summary}`));
     else lines.push(...alarm("-P1D", `Yarın teslim: ${summary}`), ...alarm("-PT3H", `3 saat kaldı: ${summary}`));
   } else {
     // Tüm gün: tetikleyici günün 00:00'ına göre. -PT4H = önceki gün 20:00, PT8H = aynı gün 08:00
     const next = new Date(parseISO(t.due).getTime() + 86400000);
     lines.push(`DTSTART;VALUE=DATE:${dateOnly(t.due)}`, `DTEND;VALUE=DATE:${dateOnly(toISO(next))}`);
-    if (t.type === "sinav") lines.push(...alarm("-P6DT15H", `1 hafta kaldı: ${summary}`), ...alarm("-PT4H", `Yarın: ${summary}`), ...alarm("PT8H", `Bugün: ${summary}`));
+    if (isExam(t)) lines.push(...alarm("-P6DT15H", `1 hafta kaldı: ${summary}`), ...alarm("-PT4H", `Yarın: ${summary}`), ...alarm("PT8H", `Bugün: ${summary}`));
     else lines.push(...alarm("-P2DT4H", `3 gün kaldı: ${summary}`), ...alarm("-PT4H", `Yarın teslim: ${summary}`));
   }
   lines.push("END:VEVENT");

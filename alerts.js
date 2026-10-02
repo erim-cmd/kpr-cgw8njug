@@ -8,7 +8,7 @@
  * Tasarım ilkesi: seri, rozet, "%X tamamlandı" yok. Uyarı bir sonraki adımı söyler ve çekilir.
  */
 
-import { TASK_TYPES } from "./store.js";
+import { TASK_TYPES, isExam, isLight } from "./store.js";
 import { daysUntil, parseISO, toISO, todayIdx, toMin, nowMin, relLabel } from "./dates.js";
 import { attendance } from "./attendance.js";
 import { calcGrades } from "./forms.js";
@@ -39,7 +39,7 @@ export function buildAlerts(state) {
   }
 
   // 2) Yaklaşan sınavlar (7 gün)
-  for (const t of open.filter((x) => x.type === "sinav")) {
+  for (const t of open.filter(isExam)) {
     const n = daysUntil(t.due);
     if (n < 0 || n > 7) continue;
     out.push({
@@ -52,7 +52,7 @@ export function buildAlerts(state) {
   }
 
   // 3) Yakın teslimler (2 gün)
-  for (const t of open.filter((x) => x.type !== "sinav")) {
+  for (const t of open.filter((x) => !isExam(x))) {
     const n = daysUntil(t.due);
     if (n < 0 || n > 2) continue;
     out.push({
@@ -65,8 +65,9 @@ export function buildAlerts(state) {
   }
 
   // 4) Yoğun hafta (önümüzdeki 7 gün)
-  const week = open.filter((t) => daysUntil(t.due) >= 0 && daysUntil(t.due) <= 6);
-  const weekExams = week.filter((t) => t.type === "sinav").length;
+  // Okuma ve kişisel işler haftayı "yoğun" yapmaz
+  const week = open.filter((t) => !isLight(t) && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 6);
+  const weekExams = week.filter(isExam).length;
   if (weekExams >= 2 || week.length >= 4) {
     out.push({
       id: `busy:${toISO(new Date())}:${week.length}`,
@@ -180,7 +181,7 @@ export function buildReminders(state, from = new Date(), days = 8) {
 
   for (const t of tasks.filter((x) => !x.done)) {
     const name = label(t, courses);
-    if (t.type === "sinav") {
+    if (isExam(t)) {
       const exam = at(t.due, t.time || "09:00");
       push({ id: `r:${t.id}:7d`, fireAt: at(toISO(addDays(exam, -7)), "09:00"), title: `1 hafta kaldı: ${name}`, body: "Çalışma planını bugün yap.", url: "#/gorevler" });
       push({ id: `r:${t.id}:1d`, fireAt: at(toISO(addDays(exam, -1)), "20:00"), title: `Yarın sınav: ${name}`, body: t.time ? `Saat ${t.time}. Son tekrar zamanı.` : "Son tekrar zamanı.", url: "#/gorevler" });
@@ -202,7 +203,7 @@ export function buildReminders(state, from = new Date(), days = 8) {
     if (classes.length || due.length) {
       const parts = [];
       if (classes.length) parts.push(`${classes.length} ders`);
-      const exams = due.filter((t) => t.type === "sinav").length;
+      const exams = due.filter(isExam).length;
       if (exams) parts.push(`${exams} sınav`);
       if (due.length - exams) parts.push(`${due.length - exams} teslim`);
       const first = classes.sort((a, b) => toMin(a.s.start) - toMin(b.s.start))[0];

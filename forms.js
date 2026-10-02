@@ -1,6 +1,6 @@
 /** KPR — Ders ve görev ekleme/düzenleme formları, ders detayı ve not hesaplayıcı (alttan açılan sayfa). */
 
-import { store, COLORS, TASK_TYPES } from "./store.js";
+import { store, COLORS, TASK_TYPES, QUICK_TYPES } from "./store.js";
 import { esc, openSheet, closeSheet, toast, armDelete } from "./ui.js";
 import { DAYS, todayIdx, todayISO, toMin } from "./dates.js";
 import { icon } from "./icons.js";
@@ -233,26 +233,38 @@ export { openCourseDetail, openAbsences } from "./ders.js";
 /* Görev formu                                                         */
 /* ------------------------------------------------------------------ */
 
+const NOTE_HINT = {
+  quiz: "Hoca derste duyurdu… (konular, süre)",
+  okuma: "Hangi bölüm, kaç sayfa…",
+  lab: "Deney adı, yükleme yeri…",
+  sunum: "Grup, süre, konu…",
+  kisisel: "Ne yapacaksın…",
+};
+const noteHint = (type) => NOTE_HINT[type] || "Konular, sınıf, getirilecekler…";
+
+/**
+ * Görev formu: üstte tür, altında en fazla 3 alan (ders, tarih + saat, not).
+ * Başlık, diğer türler (Sınav/Proje/Diğer; syllabus bunları üretir) ve kaynak "Daha fazla"da.
+ * Başlık boş bırakılırsa türden ve dersten üretilir ("Quiz · MCH 2016").
+ */
 export function openTaskForm(task = null, defaults = {}) {
   const { courses } = store.get();
-  const t = task || { title: "", type: "sinav", courseId: null, due: todayISO(), time: "", note: "", source: "", ...defaults };
+  const t = task || { title: "", type: "odev", courseId: null, due: todayISO(), time: "", note: "", source: "", ...defaults };
+  const quick = QUICK_TYPES.includes(t.type) ? QUICK_TYPES : [t.type, ...QUICK_TYPES];
+  const others = Object.keys(TASK_TYPES).filter((k) => !quick.includes(k));
+  const chip = (k) => `<div class="seg-item">
+      <input type="radio" id="type-${k}" name="type" value="${k}" ${k === t.type ? "checked" : ""}>
+      <label for="type-${k}">${TASK_TYPES[k]}</label>
+    </div>`;
 
   openSheet(
-    `<form class="sheet-form">
+    `<form class="sheet-form task-form">
       ${head(task ? "Görevi düzenle" : "Yeni görev")}
       <div class="sheet-body">
         <fieldset class="field"><legend>Tür</legend>
-          <div class="seg in-form">
-            ${Object.entries(TASK_TYPES).map(([k, label]) => `<div class="seg-item">
-              <input type="radio" id="type-${k}" name="type" value="${k}" ${k === t.type ? "checked" : ""}>
-              <label for="type-${k}">${label}</label>
-            </div>`).join("")}
-          </div>
+          <div class="type-chips">${quick.map(chip).join("")}</div>
         </fieldset>
-        <label class="field"><span>Başlık</span>
-          <input name="title" value="${esc(t.title)}" required maxlength="120" placeholder="ör. Vize sınavı" ${task ? "" : "autofocus"}>
-        </label>
-        <label class="field"><span>Ders</span>
+        <label class="field"><span>Ders <span class="hint">(isteğe bağlı)</span></span>
           <select name="courseId">
             <option value="">Derse bağlı değil</option>
             ${courses.map((c) => `<option value="${esc(c.id)}" ${c.id === t.courseId ? "selected" : ""}>${esc(c.code ? `${c.code} — ${c.name}` : c.name)}</option>`).join("")}
@@ -267,30 +279,46 @@ export function openTaskForm(task = null, defaults = {}) {
           </label>
         </div>
         <label class="field"><span>Not <span class="hint">(isteğe bağlı)</span></span>
-          <textarea name="note" maxlength="500" placeholder="Konular, sınıf, getirilecekler…">${esc(t.note)}</textarea>
+          <textarea name="note" maxlength="500" placeholder="${esc(noteHint(t.type))}">${esc(t.note)}</textarea>
         </label>
-        ${t.source ? `<p class="source-quote"><b>Syllabus'taki kaynağı</b>“${esc(t.source)}”</p>` : ""}
+        <details class="more-fields" ${task ? "open" : ""}>
+          <summary>Daha fazla</summary>
+          <label class="field"><span>Başlık <span class="hint">(boşsa türden)</span></span>
+            <input name="title" value="${esc(t.title)}" maxlength="120" placeholder="ör. Ödev 2">
+          </label>
+          <fieldset class="field"><legend>Diğer türler</legend>
+            <div class="type-chips">${others.map(chip).join("")}</div>
+          </fieldset>
+          ${t.source ? `<p class="source-quote"><b>Syllabus'taki kaynağı</b>“${esc(t.source)}”</p>` : ""}
+        </details>
       </div>
       ${foot(!!task)}
     </form>`,
     (d) => {
       const form = d.querySelector("form");
+      // Tür değişince not ipucu da değişsin (ör. Quiz → "Hoca derste duyurdu…")
+      form.addEventListener("change", (e) => {
+        if (e.target.name === "type") form.elements.note.placeholder = noteHint(e.target.value);
+      });
       form.addEventListener("submit", (e) => {
         e.preventDefault();
         const fd = new FormData(form);
+        const type = fd.get("type") || "odev";
+        const course = courses.find((c) => c.id === fd.get("courseId"));
+        const title = fd.get("title").trim() || `${TASK_TYPES[type]}${course ? ` · ${course.code || course.name}` : ""}`;
         store.saveTask({
           ...task,
           done: task?.done ?? false,
-          title: fd.get("title"),
-          type: fd.get("type"),
+          title,
+          type,
           courseId: fd.get("courseId") || null,
           due: fd.get("due"),
           time: fd.get("time"),
           note: fd.get("note"),
         });
         closeSheet();
-        if (!task && fd.get("type") === "sinav" && canAsk()) {
-          toast("Sınav eklendi. Önceden hatırlatayım mı?", { label: "Evet", onClick: () => enableNotifications() });
+        if (!task && (type === "sinav" || type === "quiz") && canAsk()) {
+          toast(`${TASK_TYPES[type]} eklendi. Önceden hatırlatayım mı?`, { label: "Evet", onClick: () => enableNotifications() });
         } else {
           toast(task ? "Görev güncellendi" : "Görev eklendi");
         }

@@ -8,7 +8,16 @@
 const KEY = "kpr:data:v1";
 
 export const COLORS = ["#4CC9F0", "#8B5CF6", "#F472B6", "#F5B84C", "#4ADE80", "#F0607A", "#60A5FA", "#2DD4BF"];
-export const TASK_TYPES = { sinav: "Sınav", odev: "Ödev", proje: "Proje", diger: "Diğer" };
+// sinav/proje/diger syllabus'tan gelir (eski kayıtlar da bu türlerde); diğerleri öğrencinin elle eklediği işler
+export const TASK_TYPES = {
+  sinav: "Sınav", odev: "Ödev", proje: "Proje", quiz: "Quiz", okuma: "Okuma", lab: "Lab raporu",
+  sunum: "Sunum hazırlığı", kisisel: "Kişisel", diger: "Diğer",
+};
+// Elle eklemede öne çıkan türler (sıra = formdaki sıra)
+export const QUICK_TYPES = ["odev", "quiz", "okuma", "lab", "sunum", "kisisel"];
+// Sınav gibi yaklaşan uyarı alanlar; yoğunluğa/not ağırlığına katılmayanlar
+export const isExam = (t) => t.type === "sinav" || t.type === "quiz";
+export const isLight = (t) => t.type === "okuma" || t.type === "kisisel";
 // BAU harf notları (Yönetmelik Md. 26). Katsayılar gpa.js'te.
 // UMIS not hesaplama ekranındaki liste + yönetmelikteki NI, PR (eski yedekler için)
 export const GRADE_CODES = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "E", "F", "NA", "S", "U", "EX", "W", "I", "R", "NI", "PR"];
