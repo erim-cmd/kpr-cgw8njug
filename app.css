@@ -779,20 +779,34 @@ button.stat { text-align: left; color: inherit; font: inherit; cursor: pointer; 
 .tl-res { margin-top: 8px; }
 .cd-src { text-align: center; margin-top: 4px; }
 
-/* Görev formu: tür çipleri + "Daha fazla" */
-.type-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.type-chips .seg-item label {
-  display: block; padding: 7px 12px; border-radius: 999px; cursor: pointer;
+/* Görev formu (v2.12): radyo çipleri, hepsi ilk ekranda */
+.task-form .sheet-body { gap: 14px; }
+.pchips { display: flex; gap: 6px; }
+.pchips.one-row { flex-wrap: nowrap; }
+.pchips.one-row .pchip { flex: 1 1 0; min-width: 0; }
+.pchips.scroll-row { overflow-x: auto; scrollbar-width: none; margin: 0 -20px; padding: 2px 20px; }
+.pchips.scroll-row::-webkit-scrollbar { display: none; }
+.pchip { position: relative; flex: none; }
+.pchip input { position: absolute; opacity: 0; pointer-events: none; }
+.pchip span {
+  display: block; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  padding: 8px 12px; border-radius: 999px; cursor: pointer;
   background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); font-weight: 600; font-size: 0.84rem;
 }
-.type-chips .seg-item input { position: absolute; opacity: 0; pointer-events: none; }
-.type-chips .seg-item input:checked + label { background: var(--surface-2); border-color: var(--cyan); color: var(--text); }
-.type-chips .seg-item input:focus-visible + label { outline: 2px solid var(--cyan); }
-.more-fields { border-top: 1px solid var(--border); padding-top: 10px; }
-.more-fields summary { cursor: pointer; color: var(--cyan); font-size: 0.86rem; font-weight: 600; list-style: none; }
-.more-fields summary::-webkit-details-marker { display: none; }
-.more-fields[open] summary { margin-bottom: 12px; }
-.more-fields > * + * { margin-top: 12px; }
+.pchips.one-row .pchip span { padding: 8px 4px; }
+.pchip input:checked + span { background: var(--surface-2); border-color: var(--cyan); color: var(--text); }
+.pchip input:focus-visible + span { outline: 2px solid var(--cyan); }
+.field-label { display: block; margin-bottom: 6px; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); }
+.title-field input { font: 600 1.15rem var(--font-display); padding: 12px 14px; }
+.due-pick { margin-top: 8px; }
+.time-link { margin-top: 8px; font-size: 0.82rem; }
+.time-pick { margin-top: 8px; max-width: 140px; }
+textarea.grow { resize: none; overflow: hidden; min-height: 44px; }
+.fixed-type { margin: 0; display: flex; align-items: center; gap: 8px; }
+.fixed-type .tag { font-size: 0.8rem; padding: 3px 10px; }
+.fixed-type small { color: var(--text-muted); }
+.task-form .sheet-foot { position: sticky; bottom: 0; background: var(--surface); }
+
 /* Görev türü etiketleri (tokens.css renkleri) */
 .tag-quiz { background: rgba(245, 184, 76, 0.16); color: var(--warn); }
 .tag-okuma { background: rgba(124, 140, 248, 0.16); color: var(--accent); }
@@ -894,3 +908,10 @@ dialog.gsheet[open] .gs-panel { animation: sheet-up 0.22s ease-out; }
   color: var(--text); font: 700 1.15rem var(--font-display);
 }
 .gs-letters button[aria-pressed="true"] { border-color: var(--cyan); background: rgba(76, 201, 240, 0.14); }
+
+/* Bugün: sıradaki kartı — gün en başta; bugün/yarın değilse nötr */
+.hero-day { margin: 0; font-size: 0.86rem; color: var(--text-muted); }
+.hero-day b { font: 700 1.05rem var(--font-display); color: var(--text); }
+.hero.urgent .hero-day b { color: #F0616D; }
+.hero.calm { background: var(--surface); }
+.hero-count small { display: block; }

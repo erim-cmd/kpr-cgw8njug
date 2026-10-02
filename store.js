@@ -13,8 +13,10 @@ export const TASK_TYPES = {
   sinav: "Sınav", odev: "Ödev", proje: "Proje", quiz: "Quiz", okuma: "Okuma", lab: "Lab raporu",
   sunum: "Sunum hazırlığı", kisisel: "Kişisel", diger: "Diğer",
 };
-// Elle eklemede öne çıkan türler (sıra = formdaki sıra)
-export const QUICK_TYPES = ["odev", "quiz", "okuma", "lab", "sunum", "kisisel"];
+// Elle eklenebilen türler (sıra = formdaki tek satırlık çipler). Sınav/proje/diğer syllabus'tan gelir;
+// "okuma" eski kayıtlarda kalır ama formda seçilmez.
+export const QUICK_TYPES = ["odev", "quiz", "lab", "sunum", "kisisel"];
+export const QUICK_LABEL = { odev: "Ödev", quiz: "Quiz", lab: "Lab", sunum: "Sunum", kisisel: "Kişisel" };
 // Sınav gibi yaklaşan uyarı alanlar; yoğunluğa/not ağırlığına katılmayanlar
 export const isExam = (t) => t.type === "sinav" || t.type === "quiz";
 export const isLight = (t) => t.type === "okuma" || t.type === "kisisel";

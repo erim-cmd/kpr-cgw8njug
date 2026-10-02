@@ -1,8 +1,8 @@
 /** KPR — Ders ve görev ekleme/düzenleme formları, ders detayı ve not hesaplayıcı (alttan açılan sayfa). */
 
-import { store, COLORS, TASK_TYPES, QUICK_TYPES } from "./store.js";
+import { store, COLORS, TASK_TYPES, QUICK_TYPES, QUICK_LABEL } from "./store.js";
 import { esc, openSheet, closeSheet, toast, armDelete } from "./ui.js";
-import { DAYS, todayIdx, todayISO, toMin } from "./dates.js";
+import { DAYS, todayIdx, todayISO, toMin, toISO, fmtShort } from "./dates.js";
 import { icon } from "./icons.js";
 import { canAsk, enableNotifications } from "./notify.js";
 
@@ -221,90 +221,133 @@ export { openCourseDetail, openAbsences } from "./ders.js";
 
 const NOTE_HINT = {
   quiz: "Hoca derste duyurdu… (konular, süre)",
-  okuma: "Hangi bölüm, kaç sayfa…",
   lab: "Deney adı, yükleme yeri…",
   sunum: "Grup, süre, konu…",
   kisisel: "Ne yapacaksın…",
 };
-const noteHint = (type) => NOTE_HINT[type] || "Konular, sınıf, getirilecekler…";
+const noteHint = (type) => NOTE_HINT[type] || "Not ekle (isteğe bağlı)";
+
+/** Tarih çipleri: Bugün, Yarın ve bu haftanın kalan günleri (pazara kadar). */
+function dateChips() {
+  const out = [];
+  const d = new Date();
+  for (let i = 0; i < 7; i++) {
+    const iso = toISO(d);
+    const label = i === 0 ? "Bugün" : i === 1 ? "Yarın" : DAYS[(d.getDay() + 6) % 7];
+    out.push({ iso, label });
+    if (i >= 1 && d.getDay() === 0) break; // pazar: hafta bitti
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+}
+
+const radio = (name, value, label, checked, extra = "") => `<label class="pchip">
+    <input type="radio" name="${name}" value="${esc(value)}" ${checked ? "checked" : ""} ${extra}><span>${esc(label)}</span></label>`;
 
 /**
- * Görev formu: üstte tür, altında en fazla 3 alan (ders, tarih + saat, not).
- * Başlık, diğer türler (Sınav/Proje/Diğer; syllabus bunları üretir) ve kaynak "Daha fazla"da.
- * Başlık boş bırakılırsa türden ve dersten üretilir ("Quiz · MCH 2016").
+ * Görev formu, hepsi ilk ekranda: tür (tek satır) → Başlık → Ders → Tarih → Not; Kaydet altta yapışık.
+ * Elle sadece ödev/quiz/lab/sunum/kişisel eklenir; sınav/proje/diğer syllabus'tan gelir ve
+ * düzenlenirken türü değişmez (etiket olarak görünür). Başlık boşsa "Quiz · MCH 2016" gibi önerilen kullanılır.
  */
 export function openTaskForm(task = null, defaults = {}) {
   const { courses } = store.get();
   const t = task || { title: "", type: "odev", courseId: null, due: todayISO(), time: "", note: "", source: "", ...defaults };
-  const quick = QUICK_TYPES.includes(t.type) ? QUICK_TYPES : [t.type, ...QUICK_TYPES];
-  const others = Object.keys(TASK_TYPES).filter((k) => !quick.includes(k));
-  const chip = (k) => `<div class="seg-item">
-      <input type="radio" id="type-${k}" name="type" value="${k}" ${k === t.type ? "checked" : ""}>
-      <label for="type-${k}">${TASK_TYPES[k]}</label>
-    </div>`;
+  const fixedType = !QUICK_TYPES.includes(t.type);
+  const chips = dateChips();
+  const onChip = chips.some((c) => c.iso === t.due);
+  const suggest = (type, courseId) => {
+    const c = courses.find((x) => x.id === courseId);
+    return `${TASK_TYPES[type]}${c ? ` · ${c.code || c.name}` : ""}`;
+  };
 
   openSheet(
     `<form class="sheet-form task-form">
       ${head(task ? "Görevi düzenle" : "Yeni görev")}
       <div class="sheet-body">
-        <fieldset class="field"><legend>Tür</legend>
-          <div class="type-chips">${quick.map(chip).join("")}</div>
-        </fieldset>
-        <label class="field"><span>Ders <span class="hint">(isteğe bağlı)</span></span>
-          <select name="courseId">
-            <option value="">Derse bağlı değil</option>
-            ${courses.map((c) => `<option value="${esc(c.id)}" ${c.id === t.courseId ? "selected" : ""}>${esc(c.code ? `${c.code} — ${c.name}` : c.name)}</option>`).join("")}
-          </select>
+        ${fixedType
+          ? `<p class="fixed-type"><span class="tag tag-${t.type}">${TASK_TYPES[t.type]}</span> <small>syllabus'tan</small></p>
+             <input type="hidden" name="type" value="${esc(t.type)}">`
+          : `<div class="pchips one-row" role="radiogroup" aria-label="Tür">${QUICK_TYPES.map((k) => radio("type", k, QUICK_LABEL[k], k === t.type)).join("")}</div>`}
+        <label class="field title-field"><span class="visually-hidden">Başlık</span>
+          <input name="title" value="${esc(t.title)}" maxlength="120" placeholder="${esc(suggest(t.type, t.courseId))}" autofocus autocomplete="off" enterkeyhint="done">
         </label>
-        <div class="row2">
-          <label class="field"><span>Tarih</span>
-            <input type="date" name="due" value="${esc(t.due)}" required>
-          </label>
-          <label class="field"><span>Saat <span class="hint">(isteğe bağlı)</span></span>
-            <input type="time" name="time" value="${esc(t.time)}">
-          </label>
+        <div class="field"><span class="field-label">Ders</span>
+          <div class="pchips scroll-row" role="radiogroup" aria-label="Ders">
+            ${radio("courseId", "", "Derssiz", !t.courseId)}
+            ${courses.map((c) => radio("courseId", c.id, c.code || c.name, c.id === t.courseId)).join("")}
+          </div>
         </div>
-        <label class="field"><span>Not <span class="hint">(isteğe bağlı)</span></span>
-          <textarea name="note" maxlength="500" placeholder="${esc(noteHint(t.type))}">${esc(t.note)}</textarea>
+        <div class="field"><span class="field-label">Tarih</span>
+          <div class="pchips scroll-row" role="radiogroup" aria-label="Tarih">
+            ${chips.map((c) => radio("dueQuick", c.iso, c.label, c.iso === t.due)).join("")}
+            ${radio("dueQuick", "pick", onChip ? "Tarih seç" : fmtShort(t.due), !onChip)}
+          </div>
+          <input type="date" name="due" value="${esc(t.due)}" class="due-pick" ${onChip ? "hidden" : ""} aria-label="Tarih seç">
+          ${t.time ? "" : '<button type="button" class="link time-link" data-time>+ Saat ekle</button>'}
+          <input type="time" name="time" value="${esc(t.time)}" class="time-pick" ${t.time ? "" : "hidden"} aria-label="Saat">
+        </div>
+        <label class="field"><span class="visually-hidden">Not</span>
+          <textarea name="note" rows="1" maxlength="500" placeholder="${esc(noteHint(t.type))}" class="grow">${esc(t.note)}</textarea>
         </label>
-        <details class="more-fields" ${task ? "open" : ""}>
-          <summary>Daha fazla</summary>
-          <label class="field"><span>Başlık <span class="hint">(boşsa türden)</span></span>
-            <input name="title" value="${esc(t.title)}" maxlength="120" placeholder="ör. Ödev 2">
-          </label>
-          <fieldset class="field"><legend>Diğer türler</legend>
-            <div class="type-chips">${others.map(chip).join("")}</div>
-          </fieldset>
-          ${t.source ? `<p class="source-quote"><b>Syllabus'taki kaynağı</b>“${esc(t.source)}”</p>` : ""}
-        </details>
+        ${t.source ? `<p class="source-quote"><b>Syllabus'taki kaynağı</b>“${esc(t.source)}”</p>` : ""}
       </div>
       ${foot(!!task)}
     </form>`,
     (d) => {
       const form = d.querySelector("form");
-      // Tür değişince not ipucu da değişsin (ör. Quiz → "Hoca derste duyurdu…")
+      const due = form.elements.due;
+      const grow = (el) => {
+        el.style.height = "auto";
+        el.style.height = el.scrollHeight + "px";
+      };
+      grow(form.elements.note);
+      form.elements.note.addEventListener("input", (e) => grow(e.target));
+      const refreshHints = () => {
+        const type = form.elements.type.value;
+        form.elements.note.placeholder = noteHint(type);
+        form.elements.title.placeholder = suggest(type, form.elements.courseId.value || null);
+      };
       form.addEventListener("change", (e) => {
-        if (e.target.name === "type") form.elements.note.placeholder = noteHint(e.target.value);
+        if (e.target.name === "type" || e.target.name === "courseId") refreshHints();
+        if (e.target.name === "dueQuick") {
+          const pick = e.target.value === "pick";
+          due.hidden = !pick;
+          if (pick) {
+            due.focus();
+            due.showPicker?.();
+          } else due.value = e.target.value;
+        }
+      });
+      form.querySelector("[data-time]")?.addEventListener("click", (e) => {
+        e.target.remove();
+        form.elements.time.hidden = false;
+        form.elements.time.focus();
       });
       form.addEventListener("submit", (e) => {
         e.preventDefault();
         const fd = new FormData(form);
         const type = fd.get("type") || "odev";
-        const course = courses.find((c) => c.id === fd.get("courseId"));
-        const title = fd.get("title").trim() || `${TASK_TYPES[type]}${course ? ` · ${course.code || course.name}` : ""}`;
+        const courseId = fd.get("courseId") || null;
+        if (!fd.get("due")) {
+          due.hidden = false;
+          due.setCustomValidity("Tarih seç.");
+          due.reportValidity();
+          due.addEventListener("input", () => due.setCustomValidity(""), { once: true });
+          return;
+        }
         store.saveTask({
           ...task,
           done: task?.done ?? false,
-          title,
+          title: fd.get("title").trim() || suggest(type, courseId),
           type,
-          courseId: fd.get("courseId") || null,
+          courseId,
           due: fd.get("due"),
           time: fd.get("time"),
           note: fd.get("note"),
         });
         closeSheet();
-        if (!task && (type === "sinav" || type === "quiz") && canAsk()) {
-          toast(`${TASK_TYPES[type]} eklendi. Önceden hatırlatayım mı?`, { label: "Evet", onClick: () => enableNotifications() });
+        if (!task && type === "quiz" && canAsk()) {
+          toast("Quiz eklendi. Önceden hatırlatayım mı?", { label: "Evet", onClick: () => enableNotifications() });
         } else {
           toast(task ? "Görev güncellendi" : "Görev eklendi");
         }
