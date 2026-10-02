@@ -91,6 +91,21 @@ function normAbsence(a) {
   return { id: str(a.id, 64) || uid(), date: a.date, start: TIME.test(a.start) ? a.start : "" };
 }
 
+// Haftalık plan (syllabus'tan): en fazla 20 hafta, konu en fazla 200 karakter
+function normWeeks(list) {
+  const seen = new Set();
+  return arr(list)
+    .map((w) => ({
+      n: Number.isInteger(w?.n) && w.n > 0 && w.n <= 30 ? w.n : null,
+      date: DATE.test(w?.date) ? w.date : null,
+      topic: str(w?.topic, 200),
+      note: str(w?.note, 200) || null,
+    }))
+    .filter((w) => w.n !== null && w.topic && !seen.has(w.n) && seen.add(w.n))
+    .sort((a, b) => a.n - b.n)
+    .slice(0, 20);
+}
+
 function normCourse(c) {
   const name = str(c?.name, 80);
   if (!name) return null;
@@ -120,6 +135,7 @@ function normCourse(c) {
     attendPct: num(c.attendPct, 0, 100),
     absLimit: Number.isInteger(c.absLimit) && c.absLimit >= 0 && c.absLimit <= 200 ? c.absLimit : null,
     absences: arr(c.absences).map(normAbsence).filter(Boolean).slice(0, 300),
+    weeks: normWeeks(c.weeks),
   };
 }
 

@@ -746,3 +746,16 @@ button.stat { text-align: left; color: inherit; font: inherit; cursor: pointer; 
 .el-bar i { display: block; height: 100%; background: var(--gradient); }
 .el-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .el-note { text-align: center; margin-top: 18px; }
+
+/* ==========================================================
+   v2.11
+   ========================================================== */
+/* Kontrol ekranı: haftalık konular */
+.wk-edit summary { cursor: pointer; list-style: none; }
+.wk-edit summary::-webkit-details-marker { display: none; }
+.wk-edit summary::after { content: " ▾"; }
+.wk-edit[open] summary::after { content: " ▴"; }
+.wrows { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.wrow { display: flex; align-items: center; gap: 8px; }
+.wrow-n { flex: none; width: 34px; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); }
+.wrow input { flex: 1; min-width: 0; }

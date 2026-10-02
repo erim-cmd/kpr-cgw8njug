@@ -270,6 +270,29 @@ function itemRow(it, i) {
   </li>`;
 }
 
+/** Haftalık konular: kapalı gelir, açınca her hafta düzeltilebilir (boş bırakılan hafta kaydedilmez). */
+function weeksBlock(weeks) {
+  if (!weeks.length) return "";
+  return `<details class="wk-edit">
+    <summary class="mini-title">Haftalık konular (${weeks.length})</summary>
+    <ul class="wrows">${weeks.map((w) => `<li class="wrow" data-n="${w.n}" data-date="${esc(w.date || "")}" data-note="${esc(w.note || "")}">
+      <span class="wrow-n">H${w.n}</span>
+      <input data-f="topic" value="${esc(w.topic)}" maxlength="200" aria-label="${w.n}. hafta konusu">
+    </li>`).join("")}</ul>
+  </details>`;
+}
+
+function readWeeks(form) {
+  return [...form.querySelectorAll(".wrow")]
+    .map((row) => ({
+      n: Number(row.dataset.n),
+      date: row.dataset.date || null,
+      topic: row.querySelector('[data-f="topic"]').value.trim(),
+      note: row.dataset.note || null,
+    }))
+    .filter((w) => w.topic);
+}
+
 function openReview(r, { reader = "local", aiError = "" } = {}) {
   const { courses } = store.get();
   const code = (r.course.code || "").trim().toLowerCase();
@@ -317,6 +340,8 @@ function openReview(r, { reader = "local", aiError = "" } = {}) {
 
         <h3 class="mini-title">Sınav ve ödev tarihleri</h3>
         ${r.items.length ? `<ul class="irows">${r.items.map(itemRow).join("")}</ul>` : '<p class="calc-note">Tarih bulunamadı. Kaydettikten sonra elle ekleyebilirsin.</p>'}
+
+        ${weeksBlock(r.weeks || [])}
 
         <h3 class="mini-title">Devam şartı</h3>
         <div class="row2">
@@ -396,6 +421,7 @@ function openReview(r, { reader = "local", aiError = "" } = {}) {
             attendPct: numOrNull(fd.get("attendPct")),
             absLimit: fd.get("absLimit") === "" ? null : Math.round(Number(fd.get("absLimit"))),
             policies: (r.policies || []).length ? r.policies : existing?.policies ?? [],
+            weeks: (r.weeks || []).length ? readWeeks(form) : existing?.weeks ?? [],
             finalMin: r.final_min ?? existing?.finalMin ?? null,
           },
           tasks

@@ -2,7 +2,7 @@
  * KPR — Syllabus okuma (Cloudflare Pages Function)  POST /api/syllabus
  *
  * İstek:  { data: <base64>, mediaType: "application/pdf" | "image/jpeg", fileName }
- * Cevap:  { result: { course, sessions, items, grading, attendance, warnings } }
+ * Cevap:  { result: { course, sessions, items, weeks, grading, attendance, warnings } }
  *         (importer.js'teki kontrol ekranının beklediği biçim)
  *
  * Ortam değişkenleri (Cloudflare → Pages → Settings → Variables and Secrets):
@@ -48,6 +48,10 @@ export const SCHEMA = obj({
       title: str, date: str, time: str, week: intOrNull, source: str,
     }),
   },
+  weeks: {
+    type: "array",
+    items: obj({ n: { type: "integer" }, date: { type: ["string", "null"] }, topic: str, note: { type: ["string", "null"] } }),
+  },
   grading: { type: "array", items: obj({ name: str, weight: { type: "number" } }) },
   attendance: obj({ percent: numOrNull, max_absences: intOrNull, source: str }),
   final_min: numOrNull,
@@ -85,6 +89,11 @@ items (every dated or scheduled assessment)
 - date: "YYYY-MM-DD" only if a calendar date is given. If the year is missing, infer it from the academic term (fall term Sep–Jan, spring Feb–Jun) relative to today. If only a week number is given: when the syllabus also states the term start date or a dated weekly calendar, compute the date of that week and add a Turkish warning that it was computed; otherwise date "" and week = that number.
 - time: "HH:MM" if given, else "".
 - source: the exact short phrase from the syllabus this came from (max ~150 characters).
+
+weeks: the weekly learning plan (haftalık plan / weekly schedule), one entry per week row, max 20.
+- n: the week number. date: "YYYY-MM-DD" if that row gives a date, else null.
+- topic: that week's subject as written (max ~200 characters). note: a short remark from a notes column (e.g. "Quiz 1"), else null.
+- Do not invent topics; if the plan is not a readable table, return [].
 
 grading: assessment components and their percentage weights (numbers, e.g. 40 for %40). If the weights do not add up to 100, add a Turkish warning.
 
@@ -144,6 +153,17 @@ export function sanitize(raw) {
       }))
       .filter((x) => x.title)
       .slice(0, 60),
+    weeks: arr(r.weeks)
+      .map((w) => ({
+        n: Number.isInteger(w?.n) && w.n > 0 && w.n <= 30 ? w.n : null,
+        date: DATE.test(w?.date) ? w.date : null,
+        topic: s(w?.topic, 200),
+        note: s(w?.note, 200) || null,
+      }))
+      .filter((w) => w.n !== null && w.topic)
+      .filter((w, i, all) => all.findIndex((x) => x.n === w.n) === i)
+      .sort((a, b) => a.n - b.n)
+      .slice(0, 20),
     grading: arr(r.grading)
       .map((g) => ({ name: s(g?.name, 40), weight: n(g?.weight, 0, 100) }))
       .filter((g) => g.name && g.weight !== null)
