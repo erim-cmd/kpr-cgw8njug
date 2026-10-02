@@ -1,8 +1,8 @@
 import { store } from "./store.js";
 import { esc } from "./ui.js";
 import { icon } from "./icons.js";
-import { todayIdx, todayISO, nowMin, daysUntil, fmtLong, fmtShort, greeting, byDue, relLabel } from "./dates.js";
-import { TASK_TYPES } from "./store.js";
+import { todayIdx, todayISO, toISO, toMin, nowMin, daysUntil, fmtLong, fmtShort, greeting, byDue, relLabel } from "./dates.js";
+import { TASK_TYPES, isExam } from "./store.js";
 import { density } from "./density.js";
 import { sessionsOn, sessionItem, taskItem, emptyState, installCard } from "./components.js";
 import { buildAlerts } from "./alerts.js";
@@ -77,7 +77,7 @@ function heroBlock(open, courses) {
   const next = open.filter((t) => daysUntil(t.due) >= 0).sort(byDue)[0];
   if (!next) return "";
   const c = courses.find((x) => x.id === next.courseId);
-  const exam = open.filter((t) => t.type === "sinav" && t.id !== next.id && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 30).sort(byDue)[0];
+  const exam = open.filter((t) => isExam(t) && t.id !== next.id && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 30).sort(byDue)[0];
   const ec = exam && courses.find((x) => x.id === exam.courseId);
   const urgent = daysUntil(next.due) <= 1;
   return `<section class="hero ${urgent ? "urgent" : ""}" style="--c:${c?.color || "var(--cyan)"}">
@@ -92,17 +92,35 @@ function heroBlock(open, courses) {
   </section>`;
 }
 
-/** Bu hafta ve gelecek hafta tek satırda (Dönem akışıyla aynı hesap). */
+let weekOpen = false; // hafta satırının altındaki liste açık mı
+
+/**
+ * Bu hafta ve gelecek hafta tek satırda (Dönem akışıyla aynı hesap).
+ * Haftada teslim varsa dokununca o haftanın teslimleri satırın altında açılır; sakin hafta düz metin.
+ */
 function weekLine(state, open) {
   const d = density(open, state.settings);
   if (d.current === null) return "";
   const cur = d.weeks[d.current];
   const nxt = d.weeks[d.current + 1];
   const tag = (w) => (w.final ? "final haftası" : w.vize ? "vize haftası" : w.busy ? "yoğun" : "sakin");
-  return `<a class="week-line" href="#/donem">
-    <span><b>${d.current + 1}. hafta</b> · ${cur.items.length} teslim</span>
-    ${nxt ? `<span>Gelecek hafta: <b class="${nxt.busy || nxt.vize || nxt.final ? "warn-text" : ""}">${tag(nxt)}</b></span>` : ""}
-  </a>`;
+  const text = `<span><b>${d.current + 1}. hafta</b> · ${cur.items.length ? `${cur.items.length} teslim` : "sakin"}</span>
+    ${nxt ? `<span>Gelecek hafta: <b class="${nxt.busy || nxt.vize || nxt.final ? "warn-text" : ""}">${tag(nxt)}</b></span>` : ""}`;
+  if (!cur.items.length) return `<div class="week-line calm">${text}</div>`;
+  const list = [...cur.items].sort(byDue).map((t) => taskItem(t, state.courses)).join("");
+  return `<button type="button" class="week-line" data-action="toggle-week" aria-expanded="${weekOpen}">${text}<span class="chev" aria-hidden="true">${weekOpen ? "▴" : "▾"}</span></button>
+    ${weekOpen ? `<ul class="list week-list">${list}</ul>` : ""}`;
+}
+
+/** Dünkü dersler: bitişinin üstünden 24 saat geçmediyse "Gitmedim" için listede kalır. */
+function yesterdayBlock(courses, now) {
+  const y = new Date();
+  y.setDate(y.getDate() - 1);
+  const list = sessionsOn(courses, (todayIdx() + 6) % 7).filter((s) => now < toMin(s.end));
+  if (!list.length) return "";
+  const iso = toISO(y);
+  return `<p class="mini-title gap-t">Dün</p>
+    <ul class="list">${list.map((s) => sessionItem(s, 24 * 60, iso)).join("")}</ul>`;
 }
 
 export function view() {
@@ -170,6 +188,7 @@ export function view() {
     <section class="section">
       <div class="section-head"><h2>Bugünkü dersler</h2><button type="button" class="link" data-action="today-view" data-view="hafta">Haftalık program</button></div>
       ${todayBlock}
+      ${courses.length ? yesterdayBlock(courses, now) : ""}
     </section>
 
     <section class="section">
@@ -187,6 +206,10 @@ export const actions = {
     if (el.dataset.view === "hafta") resetDay();
     store.setSettings({ todayView: el.dataset.view });
     window.scrollTo(0, 0);
+  },
+  "toggle-week"(_el, { render }) {
+    weekOpen = !weekOpen;
+    render();
   },
   "toggle-alerts"(_el, { render }) {
     expanded = !expanded;

@@ -8,7 +8,16 @@
 const KEY = "kpr:data:v1";
 
 export const COLORS = ["#4CC9F0", "#8B5CF6", "#F472B6", "#F5B84C", "#4ADE80", "#F0607A", "#60A5FA", "#2DD4BF"];
-export const TASK_TYPES = { sinav: "Sınav", odev: "Ödev", proje: "Proje", diger: "Diğer" };
+// sinav/proje/diger syllabus'tan gelir (eski kayıtlar da bu türlerde); diğerleri öğrencinin elle eklediği işler
+export const TASK_TYPES = {
+  sinav: "Sınav", odev: "Ödev", proje: "Proje", quiz: "Quiz", okuma: "Okuma", lab: "Lab raporu",
+  sunum: "Sunum hazırlığı", kisisel: "Kişisel", diger: "Diğer",
+};
+// Elle eklemede öne çıkan türler (sıra = formdaki sıra)
+export const QUICK_TYPES = ["odev", "quiz", "okuma", "lab", "sunum", "kisisel"];
+// Sınav gibi yaklaşan uyarı alanlar; yoğunluğa/not ağırlığına katılmayanlar
+export const isExam = (t) => t.type === "sinav" || t.type === "quiz";
+export const isLight = (t) => t.type === "okuma" || t.type === "kisisel";
 // BAU harf notları (Yönetmelik Md. 26). Katsayılar gpa.js'te.
 // UMIS not hesaplama ekranındaki liste + yönetmelikteki NI, PR (eski yedekler için)
 export const GRADE_CODES = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "E", "F", "NA", "S", "U", "EX", "W", "I", "R", "NI", "PR"];
@@ -38,7 +47,9 @@ export const uid = () =>
 // todayView: Bugün ekranındaki [Bugün | Hafta] anahtarının son konumu (arayüz tercihi)
 // interests: Seçmeli Keşfi'nde seçilen ilgi alanları (INTERESTS anahtarları)
 const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false, todayView: "bugun", interests: [] });
-const empty = () => ({ version: 1, profile: { name: "" }, courses: [], tasks: [], transcript: [], gpaBase: null, settings: defaultSettings() });
+// version: veri şeması sürümü (göçler migrate.js'te; v2 = geçmiş dönemler gpaBase'e çevrildi)
+// archive: göçte arayüzden kaldırılan ama silinmeyen veri (geri dönüş için)
+const empty = () => ({ version: 1, profile: { name: "" }, courses: [], tasks: [], transcript: [], gpaBase: null, settings: defaultSettings(), archive: { transcript: [] } });
 
 function normSession(s) {
   if (!s || !Number.isInteger(s.day) || s.day < 0 || s.day > 6) return null;
@@ -91,6 +102,21 @@ function normAbsence(a) {
   return { id: str(a.id, 64) || uid(), date: a.date, start: TIME.test(a.start) ? a.start : "" };
 }
 
+// Haftalık plan (syllabus'tan): en fazla 20 hafta, konu en fazla 200 karakter
+function normWeeks(list) {
+  const seen = new Set();
+  return arr(list)
+    .map((w) => ({
+      n: Number.isInteger(w?.n) && w.n > 0 && w.n <= 30 ? w.n : null,
+      date: DATE.test(w?.date) ? w.date : null,
+      topic: str(w?.topic, 200),
+      note: str(w?.note, 200) || null,
+    }))
+    .filter((w) => w.n !== null && w.topic && !seen.has(w.n) && seen.add(w.n))
+    .sort((a, b) => a.n - b.n)
+    .slice(0, 20);
+}
+
 function normCourse(c) {
   const name = str(c?.name, 80);
   if (!name) return null;
@@ -106,6 +132,8 @@ function normCourse(c) {
     sessions: arr(c.sessions).map(normSession).filter(Boolean),
     grading: arr(c.grading).map(normGrade).filter(Boolean).slice(0, 12),
     target: num(c.target, 0, 100) ?? 50,
+    // Hedef harf (ders ekranı): hocanın tablosundaki bir harf; seçilince eşiği target olur
+    targetLetter: /^[A-F][+-]?$/.test(c.targetLetter) ? c.targetLetter : "",
     // GNO: ulusal (yerel) kredi, beklenen harf notu, tekrar alınıyorsa önceki not
     credit: num(c.credit, 0, 30),
     ects: num(c.ects, 0, 60),
@@ -120,6 +148,7 @@ function normCourse(c) {
     attendPct: num(c.attendPct, 0, 100),
     absLimit: Number.isInteger(c.absLimit) && c.absLimit >= 0 && c.absLimit <= 200 ? c.absLimit : null,
     absences: arr(c.absences).map(normAbsence).filter(Boolean).slice(0, 300),
+    weeks: normWeeks(c.weeks),
   };
 }
 
@@ -159,6 +188,8 @@ function normSettings(s) {
     notify: s.notify === true,
     notifyClasses: s.notifyClasses === true,
     todayView: s.todayView === "hafta" ? "hafta" : "bugun",
+    // Dönem → GNO kartındaki bir kerelik "Şu anki GNO'n?" sorusu atlandı mı
+    gnoSkip: s.gnoSkip === true,
     interests: Array.isArray(s.interests) ? [...new Set(s.interests.filter((k) => typeof k === "string" && Object.hasOwn(INTERESTS, k)))] : [],
   };
 }
@@ -179,6 +210,8 @@ export function normalize(data) {
   out.transcript = arr(data.transcript).map(normEntry).filter(Boolean).slice(0, 400);
   out.gpaBase = normBase(data.gpaBase);
   out.settings = normSettings(data.settings);
+  out.version = Number.isInteger(data.version) && data.version >= 1 && data.version <= 99 ? data.version : 1;
+  out.archive = { transcript: arr(data.archive?.transcript).map(normEntry).filter(Boolean).slice(0, 400) };
   return out;
 }
 
@@ -246,7 +279,13 @@ export const store = {
     const course = normCourse(courseInput);
     if (!course) return null;
     const ids = new Set([...state.courses.map((c) => c.id), course.id]);
-    const tasks = taskInputs.map((t) => normTask({ ...t, courseId: course.id }, ids)).filter(Boolean);
+    // Aynı syllabus'u tekrar yüklemek aynı tarihleri ikinci kez eklemesin (ders + başlık + tarih aynıysa atla)
+    const key = (t) => `${t.courseId}|${t.title.toLocaleLowerCase("tr-TR")}|${t.due}`;
+    const have = new Set(state.tasks.map(key));
+    const tasks = taskInputs
+      .map((t) => normTask({ ...t, courseId: course.id }, ids))
+      .filter(Boolean)
+      .filter((t) => !have.has(key(t)) && have.add(key(t)));
     commit({ ...state, courses: upsert(state.courses, course), tasks: [...state.tasks, ...tasks] });
     return { course, count: tasks.length };
   },

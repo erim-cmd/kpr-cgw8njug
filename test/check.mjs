@@ -44,6 +44,11 @@ for (const [name, e] of Object.entries(exp)) {
       const kr = [...new Set(r.policies.filter((p) => p.severity === "kritik").map((p) => p.kind))].sort();
       ok(JSON.stringify(kr) === JSON.stringify([...e.policies_kritik].sort()), `kritik kurallar: ${kr} ≠ ${[...e.policies_kritik].sort()}`);
     }
+    // Haftalık konular: [hafta, tarih|null, konu]; yanlış konu göstermektense boş olmalı
+    if ("weeks" in e) {
+      const wk = r.weeks.map((w) => [w.n, w.date, w.topic]);
+      ok(JSON.stringify(wk) === JSON.stringify(e.weeks), `weeks: ${JSON.stringify(wk)} ≠ ${JSON.stringify(e.weeks)}`);
+    }
     const kinds = [...new Set(r.policies.map((p) => p.kind))].sort();
     ok(JSON.stringify(kinds) === JSON.stringify([...e.policies].sort()), `policies: ${kinds} ≠ ${[...e.policies].sort()}`);
   }

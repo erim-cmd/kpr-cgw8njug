@@ -1,13 +1,10 @@
 /** KPR — Ders ve görev ekleme/düzenleme formları, ders detayı ve not hesaplayıcı (alttan açılan sayfa). */
 
-import { store, COLORS, TASK_TYPES } from "./store.js";
+import { store, COLORS, TASK_TYPES, QUICK_TYPES } from "./store.js";
 import { esc, openSheet, closeSheet, toast, armDelete } from "./ui.js";
-import { DAYS, todayIdx, todayISO, toMin, daysUntil, fmtShort, relLabel, byDue } from "./dates.js";
+import { DAYS, todayIdx, todayISO, toMin } from "./dates.js";
 import { icon } from "./icons.js";
-import { attendance, attendanceText } from "./attendance.js";
 import { canAsk, enableNotifications } from "./notify.js";
-import { flagItem, sortFlags } from "./components.js";
-import { SAMPLE_SCALE, letterFor, neededByLetter, COEF } from "./gpa.js";
 
 const head = (title) => `<header class="sheet-head">
   <h2>${title}</h2>
@@ -209,290 +206,51 @@ export function openCourseForm(course = null) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Ders detayı + not hesaplayıcı                                       */
+/* Not hesabı (ders ekranı: ders.js)                                   */
 /* ------------------------------------------------------------------ */
 
-const fmtNum = (n) => (Math.round(n * 10) / 10).toLocaleString("tr-TR");
+// Not hesabı ders-calc.js'te (DOM'suz; Asistan ve testler de kullanıyor)
+export { calcGrades } from "./ders-calc.js";
 
-/** Girilen notlara göre ağırlıklı ortalama ve hedef için gereken ortalama. */
-export function calcGrades(grading, target) {
-  const total = grading.reduce((s, g) => s + g.weight, 0);
-  const done = grading.filter((g) => g.score !== null);
-  const doneWeight = done.reduce((s, g) => s + g.weight, 0);
-  const earned = done.reduce((s, g) => s + (g.score * g.weight) / 100, 0);
-  const remaining = total - doneWeight;
-  return {
-    total,
-    doneWeight,
-    average: doneWeight ? (earned / doneWeight) * 100 : null,
-    earned,
-    remaining,
-    needed: remaining > 0 ? ((target - earned) / remaining) * 100 : null,
-  };
-}
-
-function calcSummary(course) {
-  if (!course.grading.length) {
-    return `<p class="calc-note">Not dağılımı eklenmemiş. <b>Düzenle</b>'ye dokunup vize, final gibi bileşenleri ve yüzdelerini ekle.</p>`;
-  }
-  const r = calcGrades(course.grading, course.target);
-  const lines = [];
-  if (r.average !== null) lines.push(`Şu ana kadarki ortalaman <b>${fmtNum(r.average)}</b> (notların %${fmtNum(r.doneWeight)}'lik kısmı girildi).`);
-  if (r.needed === null) {
-    lines.push(r.earned >= course.target ? `Dönem sonu notun <b>${fmtNum(r.earned)}</b>. Hedefine ulaştın 🎉` : `Dönem sonu notun <b>${fmtNum(r.earned)}</b>.`);
-  } else if (r.needed <= 0) {
-    lines.push(`Hedefin olan <b>${fmtNum(course.target)}</b>'a zaten ulaştın 🎉`);
-  } else if (r.needed > 100) {
-    lines.push(`Kalan bileşenlerden 100 alsan da <b>${fmtNum(course.target)}</b>'a ulaşmak mümkün görünmüyor.`);
-  } else {
-    lines.push(`<b>${fmtNum(course.target)}</b> ile bitirmek için kalanlardan ortalama <b class="need">${fmtNum(r.needed)}</b> alman gerekiyor.`);
-  }
-  if (Math.abs(r.total - 100) > 0.01) lines.push(`<span class="warn-text">Ağırlıkların toplamı %${fmtNum(r.total)}, 100 değil. Düzenle'den kontrol et.</span>`);
-  return lines.map((l) => `<p>${l}</p>`).join("");
-}
-
-/** Final bileşeni: adında final/bütünleme geçen ilk bileşen. */
-const finalIndex = (grading) => grading.findIndex((g) => /final|bütünleme|butunleme|yarıyıl sonu/i.test(g.name));
-
-/** Harf tahmini sonucu (sadece metin; girişler ayrı çizilir ki odak bozulmasın). */
-function letterResult(c) {
-  if (!c.grading.length) return "";
-  if (!c.scale.length) return `<p class="calc-note">BAU'da harf eşikleri hocaya göre değişir. Hocanın açıkladığı tabloyu gir ya da örnek tabloyla başlayıp düzelt.</p>`;
-  const r = calcGrades(c.grading, c.target);
-  const lines = [];
-  const fi = finalIndex(c.grading);
-  const fin = fi >= 0 ? c.grading[fi] : null;
-  const underBar = c.finalMin !== null && fin && fin.score !== null && fin.score < c.finalMin;
-
-  if (r.remaining <= 0.01 && r.doneWeight > 0) {
-    const letter = underBar ? "F" : letterFor(r.earned, c.scale);
-    lines.push(`<p>Ders puanın <b>${fmtNum(r.earned)}</b> → tahmini harfin <b class="need">${letter}</b>${letter in COEF ? ` (${COEF[letter].toFixed(2)})` : ""}.</p>`);
-    if (letter !== c.letter) lines.push(`<p><button type="button" class="btn btn-ghost" data-apply-letter="${letter}">Ortalama tablosuna ${letter} olarak aktar</button></p>`);
-    else lines.push(`<p class="fine">Ortalama tablosunda bu ders ${letter} olarak kayıtlı.</p>`);
-  } else {
-    const rows = neededByLetter(c.scale, r.earned, r.remaining);
-    const best = rows.find((x) => x.status !== "no");
-    const shown = rows.filter((x) => x.status === "need").slice(0, 5);
-    if (!best) lines.push(`<p>Kalanlardan 100 alsan da tablodaki en düşük harfe (${rows[rows.length - 1].letter}) ulaşmak zor görünüyor.</p>`);
-    else {
-      const ok = rows.find((x) => x.status === "ok");
-      if (ok) lines.push(`<p>Şimdiden en az <b>${ok.letter}</b> garanti.</p>`);
-      if (shown.length) lines.push(`<ul class="kv need-list">${shown.map((x) => `<li><b>${x.letter}</b><span>kalanlardan ort. <b class="need">${fmtNum(Math.max(0, x.need))}</b></span></li>`).join("")}</ul>`);
-      if (rows[0].status === "no") lines.push(`<p class="fine">${rows[0].letter} bu noktadan sonra mümkün görünmüyor.</p>`);
-    }
-    if (c.finalMin !== null && fin && fin.score === null) lines.push(`<p class="fine">Finalden en az <b>${fmtNum(c.finalMin)}</b> alman şart; altında kalırsan diğer notlardan bağımsız F olabilir.</p>`);
-  }
-  if (underBar) lines.push(`<p class="warn-text">Final notun (${fmtNum(fin.score)}) barajın (${fmtNum(c.finalMin)}) altında. Bütünlemeye girersen final satırına bütünleme notunu yaz.</p>`);
-  return lines.join("");
-}
-
-function letterBlock(c) {
-  if (!c.grading.length) return "";
-  const inputs = c.scale.length
-    ? `<div class="scale-grid">${c.scale.map((x, i) => `<label><span>${x.letter}</span>
-        <input type="number" min="0" max="100" step="any" inputmode="decimal" data-scale-i="${i}" value="${x.min}" aria-label="${x.letter} için en düşük puan"></label>`).join("")}
-        <label><span>Final barajı</span><input type="number" min="0" max="100" step="any" inputmode="decimal" data-final-min value="${c.finalMin ?? ""}" placeholder="yok" aria-label="Final barajı"></label>
-      </div>
-      <p class="fine gap-t">Kutular o harf için gereken en düşük ders puanı. Hocanın tablosuyla aynı olduğundan emin ol. <button type="button" class="link" data-scale-clear>Tabloyu kaldır</button></p>`
-    : `<div class="empty-actions"><button type="button" class="btn btn-ghost" data-scale-sample>Örnek tabloyla başla</button></div>`;
-  return `<div data-letter-block>${inputs}<div class="calc-result" data-letter-result aria-live="polite">${letterResult(c)}</div></div>`;
-}
-
-/** Ders sayfasının en üstü: syllabus'taki kurallar, kritik olan önce. */
-function flagsBlock(c) {
-  if (!c.policies.length) return "";
-  const shown = sortFlags(c.policies.filter((p) => !p.hidden));
-  const hidden = c.policies.length - shown.length;
-  return `<section data-flags-block><h3 class="mini-title">Dikkat edilecekler</h3>
-    ${shown.length ? `<ul class="flags">${shown.map((p) => flagItem(p, true)).join("")}</ul>` : ""}
-    ${hidden ? `<button type="button" class="link gap-t" data-show-policies>Gizlenen ${hidden} kuralı göster</button>` : ""}
-  </section>`;
-}
-
-function absenceBlock(c) {
-  const a = attendance(c, store.get().settings.termWeeks);
-  const pct = a.limit ? Math.min(100, (a.used / a.limit) * 100) : a.used ? 100 : 0;
-  const list = [...c.absences].sort((x, y) => y.date.localeCompare(x.date));
-  const times = [...new Set(c.sessions.map((s) => s.start))].sort();
-  return `<div class="abs" data-abs-block>
-    <p class="abs-text ${a.level}">${attendanceText(a)}</p>
-    ${a.limit !== null ? `<div class="bar ${a.level}" role="img" aria-label="${a.used} / ${a.limit} devamsızlık"><i style="width:${pct}%"></i></div>` : ""}
-    ${a.limit === null ? '<p class="calc-note">Devam şartını <b>Düzenle → Kredi ve devam şartı</b>\'ndan gir; kalan hakkını hesaplayayım.</p>' : ""}
-    <div class="abs-add">
-      <input type="date" data-abs-date value="${todayISO()}" max="${todayISO()}" aria-label="Devamsızlık tarihi">
-      ${times.length > 1 ? `<select data-abs-start aria-label="Ders saati">${times.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("")}</select>` : times.length ? `<input type="hidden" data-abs-start value="${esc(times[0])}">` : ""}
-      <button type="button" class="btn btn-ghost" data-add-abs>${icon.plus}Ekle</button>
-    </div>
-    ${list.length ? `<ul class="kv abs-list">${list.map((x) => `<li><b>${fmtShort(x.date)}${x.start ? ` · ${esc(x.start)}` : ""}</b>
-      <button type="button" class="link" data-remove-abs="${esc(x.id)}">Kaldır</button></li>`).join("")}</ul>` : ""}
-  </div>`;
-}
-
-export function openCourseDetail(courseId) {
-  const render = () => {
-    const { courses, tasks } = store.get();
-    const c = courses.find((x) => x.id === courseId);
-    if (!c) return closeSheet();
-    const open = tasks.filter((t) => t.courseId === c.id && !t.done).sort(byDue);
-    const times = [...c.sessions]
-      .sort((a, b) => a.day - b.day || toMin(a.start) - toMin(b.start))
-      .map((s) => `<li><b>${DAYS[s.day]}</b><span>${esc(s.start)}–${esc(s.end)}${s.room ? ` · ${esc(s.room)}` : ""}</span></li>`)
-      .join("");
-    const info = [
-      c.instructor && `<li><b>Hoca</b><span>${esc(c.instructor)}</span></li>`,
-      c.email && `<li><b>E-posta</b><a href="mailto:${esc(c.email)}">${esc(c.email)}</a></li>`,
-      c.office && `<li><b>Ofis</b><span>${esc(c.office)}</span></li>`,
-      c.officeHours && `<li><b>Ofis saatleri</b><span>${esc(c.officeHours)}</span></li>`,
-      c.credit !== null && `<li><b>Kredi</b><span>${c.credit.toLocaleString("tr-TR")}</span></li>`,
-    ].filter(Boolean).join("");
-
-    return `<div class="sheet-form">
-      <header class="sheet-head detail-head" style="--c:${c.color}">
-        <div><h2>${esc(c.name)}</h2>${c.code ? `<p class="detail-code">${esc(c.code)}</p>` : ""}</div>
-        <button type="button" class="icon-btn sm" data-close aria-label="Kapat">${icon.close}</button>
-      </header>
-      <div class="sheet-body">
-        ${flagsBlock(c)}
-        ${info ? `<ul class="kv">${info}</ul>` : ""}
-        <section><h3 class="mini-title">Haftalık saatler</h3>
-          ${times ? `<ul class="kv">${times}</ul>` : '<p class="calc-note">Ders saati eklenmemiş.</p>'}
-        </section>
-        <section><h3 class="mini-title">Not hesaplayıcı</h3>
-          ${c.grading.length ? `<form class="calc" data-calc>
-            ${c.grading.map((g, i) => `<label class="calc-row">
-              <span>${esc(g.name)} <small>%${fmtNum(g.weight)}</small></span>
-              <input type="number" min="0" max="100" step="any" inputmode="decimal" data-i="${i}" value="${g.score ?? ""}" placeholder="—" aria-label="${esc(g.name)} notun">
-            </label>`).join("")}
-            <label class="calc-row target"><span>Hedef not</span>
-              <input type="number" min="0" max="100" step="any" inputmode="decimal" name="target" value="${c.target}" aria-label="Hedef not">
-            </label>
-          </form>` : ""}
-          <div class="calc-result" data-calc-result aria-live="polite">${calcSummary(c)}</div>
-        </section>
-        ${c.grading.length ? `<section><h3 class="mini-title">Harf tahmini</h3>${letterBlock(c)}</section>` : ""}
-        <section><h3 class="mini-title">Devamsızlık</h3>
-          ${absenceBlock(c)}
-        </section>
-        <section><h3 class="mini-title">Açık görevler</h3>
-          ${open.length ? `<ul class="kv">${open.map((t) => `<li><b>${esc(t.title)}</b><span>${relLabel(daysUntil(t.due))} · ${fmtShort(t.due)}</span></li>`).join("")}</ul>` : '<p class="calc-note">Bu derse ait açık görev yok.</p>'}
-        </section>
-      </div>
-      <footer class="sheet-foot">
-        <button type="button" class="btn btn-ghost" data-edit>Düzenle</button>
-        <button type="button" class="btn btn-primary" data-new-task>${icon.plus}Görev ekle</button>
-      </footer>
-    </div>`;
-  };
-
-  openSheet(render(), (d) => {
-    // Dinleyicileri dialog'a değil içeriğe bağla: dialog diğer formlarca da kullanılıyor
-    const root = d.firstElementChild;
-    root.addEventListener("click", (e) => {
-      const course = store.get().courses.find((x) => x.id === courseId);
-      if (e.target.closest("[data-edit]")) openCourseForm(course);
-      const hide = e.target.closest("[data-hide-policy]");
-      if (hide || e.target.closest("[data-show-policies]")) {
-        const policies = course.policies.map((p) => (hide ? (p.id === hide.dataset.hidePolicy ? { ...p, hidden: true } : p) : { ...p, hidden: false }));
-        const saved = store.saveCourse({ ...course, policies });
-        const blk = root.querySelector("[data-flags-block]");
-        if (blk) blk.outerHTML = flagsBlock(saved) || "<span data-flags-block hidden></span>";
-      }
-      if (e.target.closest("[data-scale-sample]")) {
-        store.saveCourse({ ...course, scale: SAMPLE_SCALE });
-        refreshLetter(true);
-      }
-      if (e.target.closest("[data-scale-clear]")) {
-        store.saveCourse({ ...course, scale: [], finalMin: null });
-        refreshLetter(true);
-      }
-      const apply = e.target.closest("[data-apply-letter]");
-      if (apply) {
-        store.saveCourse({ ...course, letter: apply.dataset.applyLetter });
-        toast(`${course.code || course.name}: ${apply.dataset.applyLetter} olarak Ortalama'ya aktarıldı`, {
-          label: "Tabloda gör",
-          onClick: () => {
-            closeSheet();
-            location.hash = "#/donem?bolum=ortalama";
-          },
-        });
-        refreshLetter(false);
-      }
-      if (e.target.closest("[data-new-task]")) openTaskForm(null, { courseId });
-      const rm = e.target.closest("[data-remove-abs]");
-      if (rm) {
-        store.removeAbsence(courseId, rm.dataset.removeAbs);
-        refreshDetail();
-      }
-      if (e.target.closest("[data-add-abs]")) {
-        const date = root.querySelector("[data-abs-date]").value;
-        const start = root.querySelector("[data-abs-start]")?.value || "";
-        if (!date) return;
-        if (!store.addAbsence(courseId, date, start)) return toast("Bu ders için o gün zaten kayıtlı");
-        toast("Devamsızlık kaydedildi");
-        refreshDetail();
-      }
-    });
-    // Devamsızlık eklenince/silinince sadece o bölümü yenile (not girişi odağı bozulmasın)
-    const refreshDetail = () => {
-      const c = store.get().courses.find((x) => x.id === courseId);
-      if (c) root.querySelector("[data-abs-block]").outerHTML = absenceBlock(c);
-    };
-    // Harf bloğu: full=true ise girişler de yeniden çizilir, değilse sadece sonuç
-    const refreshLetter = (full) => {
-      const c = store.get().courses.find((x) => x.id === courseId);
-      const block = root.querySelector("[data-letter-block]");
-      if (!c || !block) return;
-      if (full) block.outerHTML = letterBlock(c);
-      else block.querySelector("[data-letter-result]").innerHTML = letterResult(c);
-    };
-    // Notlar yazıldıkça kaydet ve sadece sonuç kutusunu güncelle (odak kaybolmasın)
-    root.addEventListener("input", (e) => {
-      const lb = e.target.closest("[data-letter-block]");
-      if (lb) {
-        const course = store.get().courses.find((x) => x.id === courseId);
-        const v = (el) => (el.value === "" ? null : Math.min(100, Math.max(0, Number(el.value))));
-        const scale = course.scale.map((x, i) => ({ ...x, min: v(lb.querySelector(`[data-scale-i="${i}"]`)) ?? x.min }));
-        store.saveCourse({ ...course, scale, finalMin: v(lb.querySelector("[data-final-min]")) });
-        refreshLetter(false);
-        return;
-      }
-      const form = e.target.closest("[data-calc]");
-      if (!form) return;
-      const course = store.get().courses.find((x) => x.id === courseId);
-      const val = (el) => (el.value === "" ? null : Math.min(100, Math.max(0, Number(el.value))));
-      const grading = course.grading.map((g, i) => ({ ...g, score: val(form.querySelector(`[data-i="${i}"]`)) }));
-      const target = val(form.elements.namedItem("target")) ?? 50;
-      const saved = store.saveCourse({ ...course, grading, target });
-      root.querySelector("[data-calc-result]").innerHTML = calcSummary(saved);
-      refreshLetter(false);
-    });
-  });
-}
+// Ders ekranı ve devamsızlık kayıtları ders.js'te (v2.11); eski içe aktarmalar bozulmasın diye buradan da verilir
+export { openCourseDetail, openAbsences } from "./ders.js";
 
 /* ------------------------------------------------------------------ */
-/* Görev formu (sınav / ödev / proje)                                  */
+/* Görev formu                                                         */
 /* ------------------------------------------------------------------ */
 
+const NOTE_HINT = {
+  quiz: "Hoca derste duyurdu… (konular, süre)",
+  okuma: "Hangi bölüm, kaç sayfa…",
+  lab: "Deney adı, yükleme yeri…",
+  sunum: "Grup, süre, konu…",
+  kisisel: "Ne yapacaksın…",
+};
+const noteHint = (type) => NOTE_HINT[type] || "Konular, sınıf, getirilecekler…";
+
+/**
+ * Görev formu: üstte tür, altında en fazla 3 alan (ders, tarih + saat, not).
+ * Başlık, diğer türler (Sınav/Proje/Diğer; syllabus bunları üretir) ve kaynak "Daha fazla"da.
+ * Başlık boş bırakılırsa türden ve dersten üretilir ("Quiz · MCH 2016").
+ */
 export function openTaskForm(task = null, defaults = {}) {
   const { courses } = store.get();
-  const t = task || { title: "", type: "sinav", courseId: null, due: todayISO(), time: "", note: "", source: "", ...defaults };
+  const t = task || { title: "", type: "odev", courseId: null, due: todayISO(), time: "", note: "", source: "", ...defaults };
+  const quick = QUICK_TYPES.includes(t.type) ? QUICK_TYPES : [t.type, ...QUICK_TYPES];
+  const others = Object.keys(TASK_TYPES).filter((k) => !quick.includes(k));
+  const chip = (k) => `<div class="seg-item">
+      <input type="radio" id="type-${k}" name="type" value="${k}" ${k === t.type ? "checked" : ""}>
+      <label for="type-${k}">${TASK_TYPES[k]}</label>
+    </div>`;
 
   openSheet(
-    `<form class="sheet-form">
+    `<form class="sheet-form task-form">
       ${head(task ? "Görevi düzenle" : "Yeni görev")}
       <div class="sheet-body">
         <fieldset class="field"><legend>Tür</legend>
-          <div class="seg in-form">
-            ${Object.entries(TASK_TYPES).map(([k, label]) => `<div class="seg-item">
-              <input type="radio" id="type-${k}" name="type" value="${k}" ${k === t.type ? "checked" : ""}>
-              <label for="type-${k}">${label}</label>
-            </div>`).join("")}
-          </div>
+          <div class="type-chips">${quick.map(chip).join("")}</div>
         </fieldset>
-        <label class="field"><span>Başlık</span>
-          <input name="title" value="${esc(t.title)}" required maxlength="120" placeholder="ör. Vize sınavı" ${task ? "" : "autofocus"}>
-        </label>
-        <label class="field"><span>Ders</span>
+        <label class="field"><span>Ders <span class="hint">(isteğe bağlı)</span></span>
           <select name="courseId">
             <option value="">Derse bağlı değil</option>
             ${courses.map((c) => `<option value="${esc(c.id)}" ${c.id === t.courseId ? "selected" : ""}>${esc(c.code ? `${c.code} — ${c.name}` : c.name)}</option>`).join("")}
@@ -507,30 +265,46 @@ export function openTaskForm(task = null, defaults = {}) {
           </label>
         </div>
         <label class="field"><span>Not <span class="hint">(isteğe bağlı)</span></span>
-          <textarea name="note" maxlength="500" placeholder="Konular, sınıf, getirilecekler…">${esc(t.note)}</textarea>
+          <textarea name="note" maxlength="500" placeholder="${esc(noteHint(t.type))}">${esc(t.note)}</textarea>
         </label>
-        ${t.source ? `<p class="source-quote"><b>Syllabus'taki kaynağı</b>“${esc(t.source)}”</p>` : ""}
+        <details class="more-fields" ${task ? "open" : ""}>
+          <summary>Daha fazla</summary>
+          <label class="field"><span>Başlık <span class="hint">(boşsa türden)</span></span>
+            <input name="title" value="${esc(t.title)}" maxlength="120" placeholder="ör. Ödev 2">
+          </label>
+          <fieldset class="field"><legend>Diğer türler</legend>
+            <div class="type-chips">${others.map(chip).join("")}</div>
+          </fieldset>
+          ${t.source ? `<p class="source-quote"><b>Syllabus'taki kaynağı</b>“${esc(t.source)}”</p>` : ""}
+        </details>
       </div>
       ${foot(!!task)}
     </form>`,
     (d) => {
       const form = d.querySelector("form");
+      // Tür değişince not ipucu da değişsin (ör. Quiz → "Hoca derste duyurdu…")
+      form.addEventListener("change", (e) => {
+        if (e.target.name === "type") form.elements.note.placeholder = noteHint(e.target.value);
+      });
       form.addEventListener("submit", (e) => {
         e.preventDefault();
         const fd = new FormData(form);
+        const type = fd.get("type") || "odev";
+        const course = courses.find((c) => c.id === fd.get("courseId"));
+        const title = fd.get("title").trim() || `${TASK_TYPES[type]}${course ? ` · ${course.code || course.name}` : ""}`;
         store.saveTask({
           ...task,
           done: task?.done ?? false,
-          title: fd.get("title"),
-          type: fd.get("type"),
+          title,
+          type,
           courseId: fd.get("courseId") || null,
           due: fd.get("due"),
           time: fd.get("time"),
           note: fd.get("note"),
         });
         closeSheet();
-        if (!task && fd.get("type") === "sinav" && canAsk()) {
-          toast("Sınav eklendi. Önceden hatırlatayım mı?", { label: "Evet", onClick: () => enableNotifications() });
+        if (!task && (type === "sinav" || type === "quiz") && canAsk()) {
+          toast(`${TASK_TYPES[type]} eklendi. Önceden hatırlatayım mı?`, { label: "Evet", onClick: () => enableNotifications() });
         } else {
           toast(task ? "Görev güncellendi" : "Görev eklendi");
         }
