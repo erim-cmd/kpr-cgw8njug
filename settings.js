@@ -8,7 +8,7 @@ import { installMode, isStandalone, promptInstall } from "./install.js";
 import { permissionState, enableNotifications, disableNotifications, testNotification } from "./notify.js";
 import { buildICS, deliverICS, countExportable } from "./ics.js";
 
-export const APP_VERSION = "2.13.2";
+export const APP_VERSION = "2.14.0";
 
 let icsClasses = true;
 
