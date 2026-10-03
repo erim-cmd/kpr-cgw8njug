@@ -1,9 +1,9 @@
 /**
- * KPR — "Dönem" ekranı. Bölümler (üstte yapışkan gezinme şeridi):
- *   Özet        — tek GNO kartı: bu dönem YNO, yeni GNO tahmini, Hedef GNO → gereken YNO
- *   Ortalama    — UMIS tablosu, harf seçimi, HESAPLA (gpa-view.js → section())
- *   Devamsızlık — derslerin devam durumu; geçmiş gün ekleme/silme (ders.js → openAbsences)
- *   Akış        — haftalık not ağırlığı grafiği (density.js; inline SVG, kütüphane yok)
+ * KPR — "Dönem" ekranı: tek sayfada üç bölüm.
+ *   Hedef GNO   — hedef → bu dönem gereken YNO; tahmini YNO/GNO küçük satırda
+ *   Devamsızlık — ders başına kalan hak; derse dokununca kayıtlar (ders.js → openAbsences)
+ *   Dönem akışı — hafta hafta sınav/teslimler, yoğun haftalar belirgin (density.js)
+ * UMIS tablosu (harf, kredi, HESAPLA) ikincil sayfa: #/ortalama (gpa-view.js → section()).
  *
  * Kendi hesabı yok: GNO/YNO ve hedef gpa.js → projection() / needed(),
  * devamsızlık attendance.js → attendance(), akış density.js. Okulun verisine erişim yok:
@@ -14,9 +14,9 @@ import { store } from "./store.js";
 import { esc, openSheet, closeSheet, toast } from "./ui.js";
 import { icon } from "./icons.js";
 import { projection, standing, fmtGpa } from "./gpa.js";
-import { attendance, attendanceText } from "./attendance.js";
+import { attendance } from "./attendance.js";
 import { readTarget, saveTarget, targetText, openBaseForm, section as gpaSection, actions as gpaActions, changes as gpaChanges } from "./gpa-view.js";
-import { emptyState, infoNote } from "./components.js";
+import { startCard, infoNote } from "./components.js";
 import { openNumberSheet } from "./grade-sheet.js";
 import { density } from "./density.js";
 import { fmtShort, parseISO, toISO, todayISO } from "./dates.js";
@@ -42,76 +42,84 @@ const riskShort = (a) =>
 const pct = (x) => `%${(Math.round(x * 10) / 10).toLocaleString("tr-TR")}`;
 
 /* ------------------------------------------------------------------ */
-/* Özet: tek GNO kartı                                                 */
+/* Hedef GNO                                                           */
 /* ------------------------------------------------------------------ */
 
-function gnoCard(state, p) {
+/**
+ * Hedef GNO kartı: hedef → bu dönem gereken YNO (gpa.js projection().needed()).
+ * Tahmini YNO / yeni GNO küçük satırda; harf ve kredi girişi ikincil sayfada (#/ortalama).
+ */
+function targetCard(state, p) {
   const base = state.gpaBase;
-  // Bir kerelik soru: geçmiş GNO (UMIS transkriptinde yazar). İsteğe bağlı, "Atla" var.
-  const ask = !base && !state.settings.gnoSkip
-    ? `<div class="gno-ask">
-        <p><b>Şu anki GNO'n?</b> <b>Tamamladığın kredi?</b><br><small>UMIS transkriptinin en altında yazar. Girersen dönem sonu GNO'nu da hesaplarım.</small></p>
-        <div class="empty-actions"><button type="button" class="btn btn-primary btn-sm" data-action="edit-base">Gir</button>
-          <button type="button" class="btn btn-ghost btn-sm" data-action="skip-gno">Atla</button></div>
-      </div>`
-    : "";
-  const yno = p.term.graded ? fmtGpa(p.term.avg) : "—";
-  const ynoSub = p.term.total ? `${p.term.graded}/${p.term.total} derste harf seçildi` : "derslerine kredi gir";
-  const rows = [`<div class="gno-row"><span>Bu dönem tahmini YNO</span><b>${yno}</b><small>${ynoSub}</small></div>`];
-  if (base) {
-    const st = standing(p.after ?? base.gno);
-    rows.push(`<div class="gno-row main"><span>Yeni GNO tahmini</span><b>${fmtGpa(p.after ?? base.gno)}</b>
-      <small>şu an ${fmtGpa(base.gno)} · ${base.credits.toLocaleString("tr-TR")} kredi${st ? ` · <em class="standing ${st.level}">${st.label}</em>` : ""}</small></div>`);
+  const head = `<div class="section-head"><h2>Hedef GNO</h2></div>`;
+  // Hedef hesabı geçmiş GNO'ya bağlı: önce o sorulur (UMIS transkriptinde yazar). İsteğe bağlı, "Atla" var.
+  if (!base) {
+    return `<section class="section" id="hedef">${head}<div class="card-box tgt-card">
+      ${state.settings.gnoSkip
+        ? `<p class="calc-note">Hedefine ulaşmak için bu dönem ne gerektiğini görmek istersen şu anki GNO'nu gir.</p>
+          <div><button type="button" class="btn btn-ghost btn-sm" data-action="edit-base">GNO'nu gir</button></div>`
+        : `<p class="tgt-ask"><b>Şu anki GNO'n ve tamamladığın kredi?</b><small>UMIS transkriptinin en altında yazar. Girersen hedefin için bu dönem ne gerektiğini hesaplarım.</small></p>
+          <div class="empty-actions"><button type="button" class="btn btn-primary btn-sm" data-action="edit-base">Gir</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-action="skip-gno">Atla</button></div>`}
+      ${p.term.graded ? `<p class="tgt-stats">Bu dönem tahmini YNO <b>${fmtGpa(p.term.avg)}</b></p>` : ""}
+      <p class="gno-foot"><a class="link" href="#/ortalama">Ders harfleri ve kredi</a></p>
+    </div></section>`;
   }
-  let target = "";
-  if (base && p.term.total) {
-    const t = readTarget();
-    const text = targetText(p, t);
-    target = `<label class="target-row gno-target"><span>Hedef GNO</span>
-        <button type="button" class="u-pick tgt-pick" data-action="pick-target" aria-label="Hedef GNO ${t.toFixed(2)}">${t.toFixed(2).replace(".", ",")}</button></label>
-      ${text ? `<p class="target-res">${text.replace("ortalama gerekiyor", "YNO gerekiyor")}</p>` : ""}`;
-  }
-  const foot = base
-    ? `<button type="button" class="link" data-action="edit-base">GNO'nu düzenle</button>`
-    : ask ? "" : `<button type="button" class="link" data-action="edit-base">GNO'nu ekle</button>`;
+  const t = readTarget();
+  const text = p.term.total ? targetText(p, t) : "";
+  const st = standing(p.after ?? base.gno);
   const hints = [];
   if (p.missingCredit) hints.push(`${p.missingCredit} dersin kredisi girilmemiş`);
   if (p.term.total && p.term.graded < p.term.total) hints.push(`${p.term.total - p.term.graded} dersin harfi seçilmemiş`);
-  return `${ask}<div class="card-box gno-card">
-      ${rows.join("")}
-      ${target}
-      <p class="gno-foot">${hints.length ? `${hints.join(", ")} · <button type="button" class="link" data-action="scroll-to" data-to="ortalama">Ortalama'da tamamla</button>` : ""}${hints.length && foot ? " · " : ""}${foot}</p>
-    </div>`;
+  return `<section class="section" id="hedef">${head}<div class="card-box tgt-card">
+      <div class="tgt-row"><span>Dönem sonunda</span>
+        <button type="button" class="u-pick tgt-pick" data-action="pick-target" aria-label="Hedef GNO ${t.toFixed(2)}">${t.toFixed(2).replace(".", ",")}</button></div>
+      ${text ? `<p class="target-res">${text.replace("ortalama gerekiyor", "YNO gerekiyor")}</p>` : `<p class="calc-note">Hesap için derslerine kredi gir.</p>`}
+      <p class="tgt-stats">Şu an <b>${fmtGpa(base.gno)}</b> · ${base.credits.toLocaleString("tr-TR")} kredi${st ? ` · <em class="standing ${st.level}">${st.label}</em>` : ""}
+        ${p.term.graded ? `<br>Seçtiğin harflerle: YNO <b>${fmtGpa(p.term.avg)}</b> → GNO <b>${fmtGpa(p.after ?? base.gno)}</b>` : ""}</p>
+      <p class="gno-foot">${hints.length ? `${hints.join(", ")} · ` : ""}<a class="link" href="#/ortalama">${hints.length ? "Tamamla" : "Ders harfleri ve kredi"}</a> · <button type="button" class="link" data-action="edit-base">GNO'nu düzenle</button></p>
+    </div></section>`;
 }
 
 /* ------------------------------------------------------------------ */
 /* Devamsızlık                                                         */
 /* ------------------------------------------------------------------ */
 
-function absenceCard(c, weeks) {
+/** Ders başına tek satır: ad, kalan hak, çubuk. Dokununca kayıtlar (geçmiş gün ekle/sil) açılır. */
+function absenceRow(c, weeks) {
   const a = attendance(c, weeks);
-  const fill = a.limit ? Math.min(100, (a.used / a.limit) * 100) : a.used ? 100 : 0;
+  const fill = a.limit ? Math.min(100, (a.used / a.limit) * 100) : 0;
   const basis = a.basis === "oran" ? `devam şartı %${c.attendPct}` : a.basis === "elle" ? "elle girilen hak" : "";
-  return `<li class="abs-card lv-${a.level}" style="--c:${c.color}">
-    <div class="abs-top">
-      <span class="gr-name">${esc(c.code || c.name)}</span>
-      <span class="abs-text ${a.level}">${a.limit === null ? "Devam şartı girilmedi" : riskShort(a)}</span>
-    </div>
-    ${a.limit !== null ? `<div class="bar ${a.level}" role="img" aria-label="${a.used} / ${a.limit} devamsızlık"><i style="width:${fill}%"></i></div>
-    <p class="abs-meta">${esc(attendanceText(a))}${basis ? ` · ${basis}` : ""}</p>` : `<p class="abs-meta">${a.used ? `${a.used} devamsızlık kaydı var. ` : ""}Kalan hakkını hesaplamam için devam şartını gir.</p>`}
-    <div class="abs-actions">
-      ${a.limit === null ? `<button type="button" class="btn btn-ghost btn-sm" data-action="attend-rule" data-id="${esc(c.id)}">Devam şartını gir</button>` : ""}
-      <button type="button" class="btn btn-ghost btn-sm" data-action="absences" data-id="${esc(c.id)}">${c.absences.length ? `Kayıtlar (${c.absences.length})` : "Geçmiş gün ekle"}</button>
-    </div>
-  </li>`;
+  return `<li><button type="button" class="att-row" data-action="absences" data-id="${esc(c.id)}" style="--c:${c.color}">
+    <span class="att-top"><span class="att-name"><i></i>${esc(c.code || c.name)}</span>
+      <span class="abs-text ${a.limit === null ? "none" : a.level}">${a.limit === null ? `${a.used} kayıt · şart girilmedi` : riskShort(a)}</span></span>
+    ${a.limit !== null ? `<span class="bar ${a.level}" role="img" aria-label="${a.used} / ${a.limit} devamsızlık"><i style="width:${fill}%"></i></span>
+    <small class="abs-meta">${a.used}/${a.limit} kullanıldı${basis ? ` · ${basis}` : ""}</small>` : ""}
+  </button></li>`;
+}
+
+/** Devamsızlık: şartı girilmemiş dersler tek satırda toplanır. */
+function devamBlock(state, weeks) {
+  const risk = riskiest(state.courses, weeks);
+  const set = state.courses.filter((c) => attendance(c, weeks).limit !== null || c.absences.length);
+  const unset = state.courses.filter((c) => attendance(c, weeks).limit === null);
+  return `<section class="section" id="devamsizlik">
+      <div class="section-head"><h2>Devamsızlık</h2>${risk && risk.a.level !== "ok" ? `<span class="u-term warn-text">${esc(risk.c.code || risk.c.name)}: ${riskShort(risk.a)}</span>` : ""}</div>
+      ${set.length ? `<ul class="list att-list">${set.map((c) => absenceRow(c, weeks)).join("")}</ul>` : ""}
+      ${unset.length ? `<div class="att-unset">
+        <p><b>Devam şartı girilmemiş</b><small>Kalan hakkını hesaplamak için şartı gir.</small></p>
+        <div class="att-unset-list">${unset.map((c) => `<button type="button" class="chip-btn" data-action="attend-rule" data-id="${esc(c.id)}"><i style="--c:${c.color}"></i>${esc(c.code || c.name)}</button>`).join("")}</div>
+      </div>` : ""}
+      ${infoNote("Devamsızlık nasıl sayılır?", "Derse gittiğin varsayılır; gitmediğin dersi Bugün'de ders bitince \"Gitmedim\" ile işaretle. Geçmiş bir günü eklemek için derse dokun. Devam şartını sağlamayan öğrenci NA alır ve finale giremez (BAU Yönetmeliği Md. 19).")}
+    </section>`;
 }
 
 /* ------------------------------------------------------------------ */
-/* Akış: haftalık not ağırlığı grafiği                                 */
+/* Dönem akışı: haftalar, her haftanın sınav/teslimleri                */
 /* ------------------------------------------------------------------ */
 
 const MONTH = (iso) => parseISO(iso).toLocaleDateString("tr-TR", { month: "long" });
-/** Haftanın iş günleri: "10–14 Kasım" (ay değişiyorsa "28 Eki – 1 Kas"). */
+/** Haftanın iş günleri: "10–14 Kasım" (ay değişiyorsa "28 Eylül – 2 Ekim"). */
 const range = (w) => {
   const a = parseISO(w.start);
   const b = parseISO(w.start);
@@ -120,37 +128,40 @@ const range = (w) => {
 };
 const ahead = (k) => (k === 0 ? "bu hafta" : k === 1 ? "gelecek hafta" : `${k} hafta sonra`);
 
-/** Bir hafta "önemli": içinde ağırlığı olan ya da sınav/teslim türünde (okuma/kişisel değil) bir iş var. */
+/** Bir hafta "önemli": içinde sınav/teslim türünde (okuma/kişisel değil) bir iş var. */
 const important = (w) => w.items.some((t) => !isLight(t));
 
-/** Kartın maddesi: "MCH 2016 · Ara sınav · %40" (o dersin içindeki ağırlık; bilinmiyorsa %?). */
+/** Haftanın maddesi: "MCH 2016 · Ara sınav · 16 Kasım   %40" (o dersin içindeki ağırlık; bilinmiyorsa %?). */
 function itemLine(t, byId) {
   const c = byId.get(t.courseId);
   const kind = labelOf(t) || TASK_TYPES[t.type];
   const w = t.weight !== null && t.weight !== undefined ? pct(t.weight) : "%?";
   return `<li><button type="button" class="fw-item" ${c ? `data-action="course-detail" data-id="${esc(c.id)}"` : `data-action="edit-task" data-id="${esc(t.id)}"`}>
-      <span>${c ? `<b>${esc(c.code || c.name)}</b> · ` : ""}${esc(kind)}${t.done ? " ✓" : ""}<small>${esc(t.title)} · ${fmtShort(t.due)}</small></span>
+      <span>${c ? `<i style="--c:${c.color}"></i><b>${esc(c.code || c.name)}</b> · ` : ""}${esc(kind)}${t.done ? " ✓" : ""}<small>${esc(t.title)} · ${fmtShort(t.due)}</small></span>
       <em>${w}</em></button></li>`;
 }
 
-function weekCard(w, cur, byId, hot) {
-  const tag = w.final ? " · Final" : w.vize ? " · Vize" : "";
-  const share = w.share > 0 ? `notunun ${pct(w.share)}'i` : "notunun %?'i";
+/** Hafta satırı. Yoğun hafta (density.js → busy: notun ≥%10'u, 2 sınav ya da 3+ teslim) çerçeveli ve etiketli. */
+function weekRow(w, cur, byId) {
   const k = cur === null ? null : w.n - 1 - cur;
-  return `<li class="fw-card ${hot ? "hot" : ""}">
-    <div class="fw-head">
-      <div><b>${w.n}. hafta${tag}</b><small>${range(w)}${k !== null && k >= 0 ? ` · ${ahead(k)}` : ""}</small></div>
-      <span class="fw-badge">${share}</span>
+  const tag = w.label ? `<span class="tl-tag ${w.vize || w.final ? "exam" : "busy"}">${w.label}</span>` : "";
+  return `<li class="tl-week${w.busy ? " busy" : ""}${w.current ? " now" : ""}">
+    <div class="tl-head">
+      <div><b>${w.n}. hafta</b>${tag}<small>${range(w)}${k !== null && k >= 0 ? ` · ${ahead(k)}` : ""}</small></div>
+      ${w.share > 0 ? `<span class="tl-share" title="Dönem notunun bu haftada belirlenen kısmı">${pct(w.share)}</span>` : ""}
     </div>
     <ul class="fw-items">${[...w.items].filter((t) => !isLight(t)).sort((a, b) => a.due.localeCompare(b.due)).map((t) => itemLine(t, byId)).join("")}</ul>
   </li>`;
 }
 
+/** Ardışık boş haftalar tek satır: "4–6. hafta · sakin". */
+const calmRow = (run) => `<li class="tl-calm">${run.length > 1 ? `${run[0].n}–${run[run.length - 1].n}` : run[0].n}. hafta · sakin</li>`;
+
 let pastOpen = false; // "Geçen haftalar" varsayılan kapalı
 
 /**
- * Dönem akışı: 6. hafta / 14 → "Notunun %18'i belli oldu" + ince çubuk → "%82'si önünde · sonraki 2 hafta sakin"
- * → önündeki önemli haftalar (sadece değerlendirme olan; payı en büyük olan vurgulu) → geçen haftalar (kapalı).
+ * Dönem akışı: bu haftadan dönem sonuna her hafta; değerlendirmesi olan hafta maddeleriyle,
+ * boş haftalar birleşik "sakin" satırı. Geçen haftalar katlı. Üstte "Notunun %X'i belli oldu".
  * Pay: weights.taskWeight / tüm derslerin toplamı (density.js). Ağırlığı bilinmeyen "%?" ve paya katılmaz.
  */
 function flowBlock(state) {
@@ -161,8 +172,7 @@ function flowBlock(state) {
   const head = `<div class="section-head"><h2>Dönem akışı</h2>${cur !== null ? `<span class="u-term">${cur + 1}. hafta / ${d.weeks.length}</span>` : ""}</div>`;
   const start = `<label class="flow-start">Dönem başlangıcı${d.guessed ? ' <small>(tahmini, ilk teslimden)</small>' : ""}
       <input type="date" value="${d.guessed ? "" : state.settings.termStart}" data-change="term-start" aria-label="Dönem başlangıç tarihi"></label>`;
-  const withItems = d.weeks.filter(important);
-  if (!withItems.length) {
+  if (!d.weeks.some(important)) {
     return `<section class="section" id="akis">${head}
       <p class="calc-note">Henüz değerlendirme tarihi yok. Syllabus yükleyince haftaların burada sıralanır.</p>${start}</section>`;
   }
@@ -170,27 +180,26 @@ function flowBlock(state) {
   const doneShare = d.termTotal
     ? (d.weeks.flatMap((w) => w.items).filter((t) => t.due < today && t.weight !== null).reduce((s, t) => s + t.weight, 0) / d.termTotal) * 100
     : 0;
-  const nowIdx = cur ?? -1;
-  const upcoming = withItems.filter((w) => w.n - 1 >= Math.max(0, nowIdx) && w.items.some((t) => t.due >= today && !isLight(t)));
-  const past = withItems.filter((w) => !upcoming.includes(w));
-  const hot = upcoming.reduce((m, w) => (w.share > (m?.share ?? 0) ? w : m), null);
-  // Bir sonraki önemli haftaya kadar kaç sakin hafta var
-  const next = upcoming[0];
-  const calm = next && cur !== null ? Math.max(0, next.n - 1 - cur - 1) : null;
-  const calmText = !next ? "önünde değerlendirme kalmadı"
-    : cur === null ? `ilk değerlendirme ${next.n}. hafta`
-    : next.n - 1 === cur ? "bu hafta değerlendirme var"
-    : calm === 0 ? "gelecek hafta değerlendirme var"
-    : `sonraki ${calm} hafta sakin`;
+  // Dönem başlamadıysa hepsi önde, bittiyse hepsi geride
+  const from = cur !== null ? cur : d.weeks[0].start > today ? 0 : d.weeks.length;
+  const past = d.weeks.slice(0, from).filter(important);
+  const rows = [];
+  let run = [];
+  for (const w of d.weeks.slice(from)) {
+    if (important(w)) {
+      if (run.length) rows.push(calmRow(run));
+      run = [];
+      rows.push(weekRow(w, cur, byId));
+    } else run.push(w);
+  }
+  if (run.length) rows.push(calmRow(run));
   return `<section class="section" id="akis">${head}
-    <p class="fw-title">${doneShare < 0.5 ? "Notunun henüz hiçbir kısmı belli değil" : `Notunun <b>${pct(doneShare)}</b>'i belli oldu`}</p>
+    <p class="fw-sub">${doneShare < 0.5 ? "Notunun henüz hiçbir kısmı belli değil" : `Notunun <b>${pct(doneShare)}</b>'i belli oldu`}</p>
     <div class="fw-bar" role="img" aria-label="Dönem notunun yüzde ${Math.round(doneShare)}'i belli oldu"><i style="width:${Math.min(100, doneShare)}%"></i></div>
-    <p class="fw-sub">${pct(Math.max(0, 100 - doneShare))}'si önünde · ${calmText}</p>
-    ${upcoming.length ? `<h3 class="mini-title fw-h">Önündeki önemli haftalar</h3>
-      <ul class="fw-list">${upcoming.map((w) => weekCard(w, cur, byId, w === hot && w.share > 0)).join("")}</ul>` : ""}
     ${past.length ? `<button type="button" class="fw-past-btn" data-action="toggle-past" aria-expanded="${pastOpen}">Geçen haftalar (${past.length}) ${pastOpen ? "▴" : "▾"}</button>
-      ${pastOpen ? `<ul class="fw-list past">${[...past].reverse().map((w) => weekCard(w, null, byId, false)).join("")}</ul>` : ""}` : ""}
-    <p class="fine">Pay: o haftadaki değerlendirmelerin ağırlığı ÷ tüm derslerin toplamı. Ağırlığı bilinmeyen teslim "%?" ile görünür, paya katılmaz.</p>
+      ${pastOpen ? `<ol class="tl past">${past.map((w) => weekRow(w, null, byId)).join("")}</ol>` : ""}` : ""}
+    ${rows.length ? `<ol class="tl">${rows.join("")}</ol>` : '<p class="calc-note gap-t">Önünde değerlendirme kalmadı.</p>'}
+    ${infoNote("Yüzdeler ne demek?", "Haftanın yanındaki yüzde: o haftadaki değerlendirmelerin ağırlığı ÷ tüm derslerinin toplamı, yani dönem notunun o hafta belirlenen kısmı. Maddelerdeki yüzde, o dersin notu içindeki ağırlık. Ağırlığı bilinmeyen teslim \"%?\" ile görünür, hesaba katılmaz. Yoğun hafta: dönem notunun en az %10'u, iki sınav ya da üç teslim.")}
     ${start}
   </section>`;
 }
@@ -199,52 +208,36 @@ function flowBlock(state) {
 /* Ekran                                                               */
 /* ------------------------------------------------------------------ */
 
-// Dönem bölümleri gerçek sekme: aynı anda tek bölüm görünür (telefonda 3,5 ekran boyu yerine 1)
-let tab = "ozet";
-const NAV = [
-  ["ozet", "Özet"],
-  ["ortalama", "Ortalama"],
-  ["devamsizlik", "Devamsızlık"],
-  ["akis", "Akış"],
-];
-
+/** Dönem: üç bölüm, tek sayfa — hedef GNO, devamsızlık, dönem akışı. UMIS tablosu ikincil sayfada (#/ortalama). */
 export function view() {
   const state = store.get();
-  const p = projection(state);
   const head = `<header class="page-head">
     <h1 class="page-title">Dönem</h1>
-    <p class="page-sub">Ortalaman, devamsızlığın ve dönemin akışı</p>
+    <p class="page-sub">Hedefin, devamsızlığın ve dönemin akışı</p>
   </header>`;
   if (!state.courses.length) {
-    return head + emptyState("Önce derslerini ekle", "Dönem ortalaması ve devamsızlık takibi derslerine göre hesaplanır.", "import-syllabus", "Syllabus yükle", ["new-course", "Elle ekle"])
-      + `<section class="section" id="ozet">${gnoCard(state, p)}</section>`;
+    return head + startCard("Hedef GNO hesabı, devamsızlık hakların ve dönemin hafta hafta akışı derslerinden çıkar.");
   }
-  const weeks = state.settings.termWeeks;
-  const risk = riskiest(state.courses, weeks);
   return `${head}
-    <nav class="seg sec-tabs" role="tablist" aria-label="Dönem bölümleri">${NAV.map(([id, label]) => `<button type="button" role="tab" data-action="scroll-to" data-to="${id}" aria-pressed="${id === tab}" aria-selected="${id === tab}">${label}</button>`).join("")}</nav>
-    ${tab === "ozet" ? `<section class="section" id="ozet">
-      ${gnoCard(state, p)}
-    </section>` : ""}
-    ${tab === "ortalama" ? gpaSection(state, p) : ""}
-    ${tab === "devamsizlik" ? devamBlock(state, weeks, risk) : ""}
-    ${tab === "akis" ? flowBlock(state) : ""}`;
+    ${targetCard(state, projection(state))}
+    ${devamBlock(state, state.settings.termWeeks)}
+    ${flowBlock(state)}`;
 }
 
-/** Devamsızlık: şartı girilmemiş dersler tek tek boş kart değil, tek satırda toplanır. */
-function devamBlock(state, weeks, risk) {
-  const set = state.courses.filter((c) => attendance(c, weeks).limit !== null || c.absences.length);
-  const unset = state.courses.filter((c) => !set.includes(c));
-  return `<section class="section" id="devamsizlik">
-      <div class="section-head"><h2>Devamsızlık</h2>${risk && risk.a.level !== "ok" ? `<span class="u-term warn-text">${esc(risk.c.code || risk.c.name)}: ${riskShort(risk.a)}</span>` : ""}</div>
-      ${set.length ? `<ul class="list">${set.map((c) => absenceCard(c, weeks)).join("")}</ul>` : ""}
-      ${unset.length ? `<div class="att-unset">
-        <p><b>Devam şartı girilmemiş</b><small>Kalan hakkını hesaplamak için şartı gir.</small></p>
-        <div class="att-unset-list">${unset.map((c) => `<button type="button" class="chip-btn" data-action="attend-rule" data-id="${esc(c.id)}"><i style="--c:${c.color}"></i>${esc(c.code || c.name)}</button>`).join("")}</div>
-      </div>` : ""}
-      ${infoNote("Devamsızlık nasıl sayılır?", "Derse gittiğin varsayılır; gitmediğin dersi Bugün'de ders bitince \"Gitmedim\" ile işaretle. Devam şartını sağlamayan öğrenci NA alır ve finale giremez (BAU Yönetmeliği Md. 19).")}
-    </section>`;
-}
+/** Ortalama (UMIS tablosu): Dönem'in ikincil sayfası; alt menüde Dönem seçili kalır (app.js TAB_OF). */
+export const ortalama = {
+  view() {
+    const state = store.get();
+    return `<header class="page-head">
+        <a class="link back-link" href="#/donem">← Dönem</a>
+        <h1 class="page-title">Ortalama</h1>
+        <p class="page-sub">Ders harfleri ve kredi · BAU, A–F, 4,00 üzerinden</p>
+      </header>
+      ${gpaSection(state, projection(state))}`;
+  },
+  actions: gpaActions,
+  changes: gpaChanges,
+};
 
 /**
  * Devam şartı: "Derslerin %X'ine katılım zorunlu" ya da "En fazla N devamsızlık hakkı".
@@ -283,19 +276,16 @@ function openAttendRule(c) {
   });
 }
 
-/** Bölüm sekmesini aç (adres parametresi ?bolum=ortalama ve "Ortalama'da tamamla" bağlantısı da bunu kullanır). */
+/**
+ * Eski adresler (?bolum=ozet|devamsizlik|akis) ve bildirimler için: Dönem'de o bölüme kaydır.
+ * "ortalama" artık ayrı sayfa (#/ortalama); app.js yönlendirir.
+ */
+const SECTION_OF = { ozet: "hedef", hedef: "hedef", devamsizlik: "devamsizlik", akis: "akis" };
 export function scrollToSection(id) {
-  if (!NAV.some(([k]) => k === id) || id === tab) return;
-  tab = id;
-  // Yeniden çiz (app.js hashchange dinleyicisi) ve sayfanın başına dön
-  window.dispatchEvent(new HashChangeEvent("hashchange"));
+  document.getElementById(SECTION_OF[id] || "")?.scrollIntoView({ block: "start" });
 }
 
 export const actions = {
-  ...gpaActions,
-  "scroll-to"(el) {
-    scrollToSection(el.dataset.to);
-  },
   "toggle-past"(_el, { render }) {
     pastOpen = !pastOpen;
     render();
@@ -337,13 +327,8 @@ export const actions = {
 };
 
 export const changes = {
-  ...gpaChanges,
   "term-start"(el, { render }) {
     store.setSettings({ termStart: el.value });
-    render();
-  },
-  target(el, { render }) {
-    saveTarget(el.value);
     render();
   },
 };

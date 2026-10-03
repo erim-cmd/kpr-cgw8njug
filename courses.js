@@ -1,7 +1,7 @@
 import { store } from "./store.js";
 import { esc } from "./ui.js";
 import { DAYS_SHORT, toMin } from "./dates.js";
-import { emptyState, importCard } from "./components.js";
+import { startCard } from "./components.js";
 
 function courseCard(c, tasks) {
   const openCount = tasks.filter((t) => t.courseId === c.id && !t.done).length;
@@ -36,11 +36,6 @@ export function view() {
       ${courses.length ? "" : '<p class="page-sub">Bu dönemki derslerin</p>'}
     </header>
     ${courses.length
-      ? `${importCard(true)}<ul class="list">${courses.map((c) => courseCard(c, tasks)).join("")}</ul>`
-      : emptyState(
-          "Dönemine başla",
-          "Her dersin syllabus'unu yükle ya da dersleri elle ekle. Programın ve görevlerin bunlara bağlanır.",
-          "import-syllabus", "Syllabus yükle",
-          ["new-course", "Elle ekle"]
-        )}`;
+      ? `<ul class="list">${courses.map((c) => courseCard(c, tasks)).join("")}</ul>`
+      : startCard()}`;
 }
