@@ -1,0 +1,9 @@
+Ders Bilgi Formu
+Ders Kodu: IKT 302  Ders Adı: Para Teorisi
+Değerlendirme
+Ara sınav %30, Dönem ödevi %20, Proje raporu %10, Final %40
+Proje raporu finaller bitmeden 7 gün önce teslim edilmelidir.
+Final sınavından 1 hafta önce dönem ödevi teslim edilir.
+Notlar finalden bir hafta sonra ilan edilir.
+Mazeret belgesi sınavdan sonra 3 gün içinde verilir.
+Derslerin en az %70'ine devam zorunludur.

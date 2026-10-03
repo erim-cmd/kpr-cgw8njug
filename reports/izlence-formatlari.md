@@ -112,9 +112,10 @@ Cihaz içi ayrıştırıcı (`syllabus-local.js`) bu kalıplarla test edildi. Ka
 - Devam oranı, not satırıyla birleşmiş cümleden de okunuyor; "en fazla üç hafta" gibi yazıyla sayılar (#16)
 - "Sağlık raporu devamsızlığı silmez" artık devam uyarısı (önceden yanlışlıkla mazeret sınavı kuralı sayılıyordu)
 - Ders adı bir sonraki başlığı yutmuyor ("Thermodynamics Grading" → "Thermodynamics")
+- v2.16.1: Göreli tarih ("finaller bitmeden 7 gün önce", "one week before the final exam") tarihsiz öğe + kaynak cümlesi; tarih hesaplanmaz (#8). Bozuk kodlamalı dosyada tek uyarı.
 
 **Açık:**
-- Göreli tarih ("finaller bitmeden 7 gün önce") öğe olarak çıkmıyor (#8)
+- Göreli tarihi akademik takvimle tarihe çevirme (#8'in ikinci yarısı; takvim verisi yok)
 - Tıp ders kurulu ızgarasında ders saatleri oturum olarak okunmuyor (#14, D türü)
 - Taranmış/fotoğraf syllabus: cihaz içi okuyucu metin katmanı olmayan dosyayı okuyamaz; bu yol AI sunucusuna bağlı (#27)
 - AI sunucusu (`functions/api/syllabus.js`) gerçek API ile hiç ölçülmedi

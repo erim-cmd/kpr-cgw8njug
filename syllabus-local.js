@@ -425,6 +425,36 @@ function titleFrom(orig, fk, kind, datesInCell) {
   return seg.charAt(0).toLocaleUpperCase("tr-TR") + seg.slice(1);
 }
 
+// Başka bir tarihe göre verilen teslim: "Proje raporu finaller bitmeden 7 gün önce", "Term paper due one week
+// before the final exam". Tarih hesaplanmaz (sınav tarihi çoğu zaman belli değil); tarihsiz öğe + kaynak cümlesi.
+const NUMW = String.raw`(?:\d{1,2}|bir|iki|uc|dort|bes|alti|yedi|sekiz|dokuz|on|a|an|one|two|three|four|five|six|seven|eight|nine|ten|fourteen)`;
+const REL_TR = new RegExp(String.raw`\b(?:final|vize|ara ?sinav|midterm|sinav|donem sonu|son ders|derslerin bitimi)\w*(?:\s+[a-z]+){0,2}?\s+${NUMW}\s*(?:is\s+)?(?:gun|hafta)\w*\s+(?:once|sonra)\w*`);
+const REL_EN = new RegExp(String.raw`\b${NUMW}\s+(?:\(\d{1,2}\)\s+)?(?:business\s+|working\s+)?(?:days?|weeks?)\s+(?:before|prior to|after)\s+(?:the\s+)?(?:[a-z]+\s+){0,2}?(?:final|midterm|mid-term|exam|last (?:class|lecture|day)|end of)\w*`);
+// Teslim değil, idari süre ("mazeret belgesi sınavdan 3 gün sonra", "notlar finalden 1 hafta sonra ilan edilir")
+const REL_STOP = /mazeret|make-?up|itiraz|appeal|request|talep|dilekce|saglik raporu|medical|excuse|withdraw|cekil|kayit|registration|announce|ilan|duyur|\bgrades?\b|\bnotlar/;
+const DELIVER = /\b(teslim|due|submit|submitted|submission|deadline|paper)\b/;
+const REL_TAIL = /\s+(?:en gec|no later than|at the latest|must be submitted|must be|should be submitted|should be|is due|are due|due|submitted|teslim edilmelidir|teslim edilmeli|teslim edilir|teslim edilecek|teslim)\s*[.:,–-]?\s*$/;
+
+/** Hücrede göreli teslim varsa { kind, title } döner; yoksa null. */
+function relativeItem(cell, fc) {
+  const m = REL_TR.exec(fc) || REL_EN.exec(fc);
+  if (!m || REL_STOP.test(fc)) return null;
+  // Teslim edilen şey göreli ifadenin önünde ("Proje raporu … 7 gün önce") ya da ardında ("… 7 gün önce proje raporu teslim edilir")
+  const parts = [[cell.slice(0, m.index), fc.slice(0, m.index)], [cell.slice(m.index + m[0].length), fc.slice(m.index + m[0].length)]];
+  for (let [orig, f] of parts) {
+    for (let t; (t = REL_TAIL.exec(f)); ) [orig, f] = [orig.slice(0, t.index), f.slice(0, t.index)];
+    const kind = ITEM_KINDS.find((k) => k.group !== "vize" && k.group !== "final" && k.re.test(f)) || (DELIVER.test(fc) && /[a-z]{3}/.test(f) ? ITEM_KINDS.find((k) => k.group === "odev") : null);
+    if (!kind) continue;
+    orig = orig.replace(/^\s*(the|a|an)\s+/i, "");
+    let title = titleFrom(orig, f.replace(/^\s*(the|a|an)\s+/, ""), kind, []);
+    // "dönem ödevi", "term paper": ek yüzünden genel ada ("Ödev") düşmesin, kısa ifade olduğu gibi kalsın
+    const own = clean(orig.replace(/[.:;,]+\s*$/, ""));
+    if (title === kind.tr && own.length >= 3 && own.length <= 40) title = own.charAt(0).toLocaleUpperCase("tr-TR") + own.slice(1);
+    return { kind, title };
+  }
+  return null;
+}
+
 function parseItems(lines, flines, termYear, warnings) {
   const items = [];
   let weekCol = -1;
@@ -501,6 +531,15 @@ function parseItems(lines, flines, termYear, warnings) {
     }
     const rowWeek = weekCol >= 0 && cells.length >= 2 ? weekCellNum(cells[weekCol]) : NaN;
     const rowDates = dateCol >= 0 && cells[dateCol] ? findDates(fcells[dateCol], termYear) : [];
+
+    // Göreli teslim (tarihi olmayan hücrede): tarihsiz öğe, uyarı; satırın geri kalanı normal işlenmez
+    // (yoksa "final sınavından 1 hafta önce" yanlışlıkla tarihsiz bir final sınavı üretirdi)
+    const rel = cells.map((c, ci) => (findDates(fcells[ci], termYear).length ? null : relativeItem(c, fcells[ci]))).find(Boolean);
+    if (rel) {
+      items.push({ type: rel.kind.type, group: rel.kind.group, title: rel.title, date: "", time: "", week: null, source: cut(clean(lines[i].replace(/\t/g, " · ")), 150) });
+      warnings.add("Bazı teslimler başka bir tarihe göre verilmiş (ör. \"finalden 1 hafta önce\"); tarihini sen hesaplayıp gir.");
+      continue;
+    }
 
     // Satırdaki her hücre için: anahtar kelime var mı?
     const rowFound = [];
@@ -1366,7 +1405,7 @@ export function parseSyllabus(text, now = new Date()) {
   }).length;
   const letterToks = norm.split(/\s+/).filter((t) => /[A-Za-zÇĞİÖŞÜçğıöşü]/.test(t)).length;
   const garbled = garbledToks >= 3 && garbledToks / Math.max(1, letterToks) >= 0.1;
-  if (garbled) warnings.add("Bu dosyanın metni bozuk okunuyor (yazı tipi kodlaması); bulunanlara güvenme. Syllabus'un başka bir sürümünü (ör. Word) yükle veya bilgileri elle gir.");
+  const GARBLED = "Bu dosyanın metni bozuk okunuyor (yazı tipi kodlaması); bulunanlara güvenme. Syllabus'un başka bir sürümünü (ör. Word) yükle veya bilgileri elle gir.";
 
   const pairsBy = {};
   lines.forEach((l, i) => {
@@ -1452,7 +1491,8 @@ export function parseSyllabus(text, now = new Date()) {
     attendance: { percent: att.percent, max_absences: att.max_absences, source: att.source },
     final_min: finalMin ? finalMin.value : null,
     policies,
-    warnings: [...warnings].slice(0, 8),
+    // Metin bozuksa "… bulunamadı" uyarıları gürültü: nedeni söyleyen tek uyarı kalır
+    warnings: garbled ? [GARBLED] : [...warnings].slice(0, 8),
     term,
   };
 }

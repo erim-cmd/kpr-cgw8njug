@@ -1333,8 +1333,11 @@
       "bozuk okunuyor"
     ],
     "warnings_exclude": [
-      "benzemiyor"
-    ]
+      "benzemiyor",
+      "bulunamadı",
+      "tarihi"
+    ],
+    "warnings_count": 1
   },
   "web_finale_giris": {
     "code": "CS 202",
@@ -1466,6 +1469,124 @@
     "policies": [],
     "weeks": [],
     "warnings_exclude": [
+      "bozuk okunuyor"
+    ]
+  },
+  "web_goreli_tarih": {
+    "code": "IKT 302",
+    "name": "Para Teorisi",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "sessions": [],
+    "max_absences": null,
+    "final_min": null,
+    "weeks": [],
+    "grading": {
+      "Ara sınav": 30,
+      "Dönem ödevi": 20,
+      "Proje raporu": 10,
+      "Final": 40
+    },
+    "attendance": 70,
+    "items": [
+      [
+        "Proje raporu",
+        "",
+        ""
+      ],
+      [
+        "Dönem ödevi",
+        "",
+        ""
+      ],
+      [
+        "Ara sınav",
+        "",
+        ""
+      ],
+      [
+        "Final",
+        "",
+        ""
+      ]
+    ],
+    "items_source": [
+      [
+        "Proje raporu",
+        "finaller bitmeden 7 gün önce"
+      ],
+      [
+        "Dönem ödevi",
+        "Final sınavından 1 hafta önce"
+      ]
+    ],
+    "policies": [
+      "devam",
+      "telafi"
+    ],
+    "warnings_include": [
+      "başka bir tarihe göre verilmiş"
+    ],
+    "warnings_exclude": [
+      "Notlar:",
+      "Mazeret",
+      "bozuk okunuyor"
+    ]
+  },
+  "web_goreli_en": {
+    "code": "ECON 310",
+    "name": "Monetary Economics",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "sessions": [],
+    "max_absences": null,
+    "final_min": null,
+    "weeks": [],
+    "grading": {
+      "Midterm Exam": 30,
+      "Term Paper": 30,
+      "Final Exam": 40
+    },
+    "attendance": 70,
+    "items": [
+      [
+        "Term paper",
+        "",
+        ""
+      ],
+      [
+        "Midterm Exam",
+        "",
+        ""
+      ],
+      [
+        "Final Exam",
+        "",
+        ""
+      ]
+    ],
+    "items_source": [
+      [
+        "Term paper",
+        "one week before the final exam"
+      ]
+    ],
+    "policies": [
+      "devam",
+      "telafi"
+    ],
+    "warnings_include": [
+      "başka bir tarihe göre verilmiş"
+    ],
+    "warnings_exclude": [
+      "requests",
+      "grades",
       "bozuk okunuyor"
     ]
   }
