@@ -573,8 +573,7 @@
     ],
     "policies": [
       "devam",
-      "durustluk",
-      "telafi"
+      "durustluk"
     ],
     "weeks": []
   },
@@ -963,5 +962,423 @@
         "Propaganda"
       ]
     ]
+  },
+  "web_bologna_katki": {
+    "code": "HUK 1043",
+    "name": "Medeni Hukuk",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": 10,
+    "sessions": [],
+    "grading": {
+      "Ara Sınav": 40,
+      "Yarıyıl Sonu Sınavı": 60
+    },
+    "attendance": null,
+    "max_absences": null,
+    "final_min": null,
+    "items": [
+      [
+        "Ara Sınav",
+        "",
+        "",
+        8
+      ],
+      [
+        "Yıl sonu sınavı",
+        "",
+        "",
+        28
+      ]
+    ],
+    "policies": [],
+    "weeks": [
+      [
+        1,
+        null,
+        "Giriş"
+      ],
+      [
+        8,
+        null,
+        "Ara Sınav"
+      ],
+      [
+        28,
+        null,
+        "Yıl sonu sınavı"
+      ]
+    ]
+  },
+  "web_toplam_130": {
+    "code": "BIL 101",
+    "name": "Temel Bilgisayar",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "sessions": [],
+    "grading": {
+      "Vize": 40,
+      "Final": 60,
+      "Derse devam": 10,
+      "Ödevler ve sunumlar": 10,
+      "Derse aktif katılım": 10
+    },
+    "attendance": 70,
+    "max_absences": 3,
+    "final_min": null,
+    "items": [
+      [
+        "Vize",
+        "",
+        ""
+      ],
+      [
+        "Final",
+        "",
+        ""
+      ]
+    ],
+    "policies": [
+      "devam"
+    ],
+    "weeks": [],
+    "warnings_include": [
+      "%130"
+    ],
+    "warnings_exclude": [
+      "benzemiyor"
+    ]
+  },
+  "web_ic_ice_agirlik": {
+    "code": "DHF 201",
+    "name": "Diş Hastalıkları",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "sessions": [],
+    "grading": {
+      "1. Ara Sınav": 18,
+      "2. Ara Sınav": 18,
+      "Pratik": 4,
+      "Yıl sonu sınavı": 60
+    },
+    "attendance": null,
+    "max_absences": null,
+    "final_min": null,
+    "items": [
+      [
+        "1. Ara Sınav",
+        "",
+        ""
+      ],
+      [
+        "2. Ara Sınav",
+        "",
+        ""
+      ],
+      [
+        "Yıl sonu sınavı",
+        "",
+        ""
+      ]
+    ],
+    "policies": [],
+    "weeks": [],
+    "warnings_exclude": [
+      "100 değil"
+    ]
+  },
+  "web_tarih_araligi": {
+    "code": "ILH 104",
+    "name": "Kur'an Okuma ve Tecvid II",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": 2,
+    "ects": 3,
+    "sessions": [],
+    "grading": {
+      "Ara Sınav": 40,
+      "Final": 60
+    },
+    "attendance": 70,
+    "max_absences": null,
+    "final_min": null,
+    "items": [
+      [
+        "Ara Sınav",
+        "2025-03-28",
+        ""
+      ],
+      [
+        "Final",
+        "",
+        ""
+      ]
+    ],
+    "policies": [
+      "devam"
+    ],
+    "weeks": [
+      [
+        1,
+        "2025-02-07",
+        "Giriş"
+      ],
+      [
+        8,
+        "2025-03-28",
+        "Ara Sınav"
+      ],
+      [
+        15,
+        "2025-05-16",
+        "Genel tekrar"
+      ]
+    ]
+  },
+  "web_ara_sinav_baraji": {
+    "code": "MAK 210E",
+    "name": "Engineering Mathematics",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "sessions": [
+      [
+        2,
+        "13:30",
+        "15:30",
+        "MKB-A501"
+      ]
+    ],
+    "grading": {
+      "Midterm 1": 25,
+      "Midterm 2": 25,
+      "Final": 50
+    },
+    "attendance": 70,
+    "max_absences": null,
+    "final_min": null,
+    "items": [
+      [
+        "Midterm 1",
+        "2018-11-01",
+        ""
+      ],
+      [
+        "Midterm 2",
+        "2018-12-06",
+        ""
+      ],
+      [
+        "Final",
+        "",
+        ""
+      ]
+    ],
+    "policies": [
+      "baraj",
+      "devam"
+    ],
+    "weeks": [],
+    "policies_kritik": [
+      "baraj",
+      "devam"
+    ]
+  },
+  "web_sifir_agirlik": {
+    "code": "GE 308",
+    "name": "Thermodynamics",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "sessions": [],
+    "grading": {
+      "Quizzes": 17,
+      "Homework": 0,
+      "Midterm": 33,
+      "Final": 50
+    },
+    "attendance": null,
+    "max_absences": null,
+    "final_min": null,
+    "items": [
+      [
+        "Midterm",
+        "",
+        ""
+      ],
+      [
+        "Final",
+        "",
+        ""
+      ]
+    ],
+    "policies": [
+      "not_kurali",
+      "telafi"
+    ],
+    "weeks": []
+  },
+  "web_coklu_ders": {
+    "code": "BES 101",
+    "name": "Beslenme İlkeleri",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": 3,
+    "ects": 4,
+    "sessions": [],
+    "grading": {
+      "Ara Sınav": 40,
+      "Final": 60
+    },
+    "attendance": null,
+    "max_absences": null,
+    "final_min": null,
+    "items": [
+      [
+        "Ara Sınav",
+        "",
+        ""
+      ],
+      [
+        "Final",
+        "",
+        ""
+      ]
+    ],
+    "policies": [],
+    "weeks": [],
+    "warnings_include": [
+      "2 ders var"
+    ],
+    "warnings_exclude": [
+      "100 değil"
+    ]
+  },
+  "web_bozuk_kodlama": {
+    "code": "",
+    "name": "",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "sessions": [],
+    "grading": {},
+    "attendance": null,
+    "max_absences": null,
+    "final_min": null,
+    "items": [],
+    "policies": [],
+    "weeks": [],
+    "warnings_include": [
+      "bozuk okunuyor"
+    ],
+    "warnings_exclude": [
+      "benzemiyor"
+    ]
+  },
+  "web_finale_giris": {
+    "code": "CS 202",
+    "name": "Data Structures",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "sessions": [],
+    "grading": {
+      "Homework": 20,
+      "Midterm": 35,
+      "Final": 45
+    },
+    "attendance": null,
+    "max_absences": null,
+    "final_min": null,
+    "items": [
+      [
+        "Midterm",
+        "",
+        ""
+      ],
+      [
+        "Final",
+        "",
+        ""
+      ]
+    ],
+    "policies": [
+      "baraj",
+      "devam"
+    ],
+    "weeks": [],
+    "policies_kritik": [
+      "baraj"
+    ]
+  },
+  "web_paper": {
+    "code": "POLS 246",
+    "name": "Comparative Politics",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "sessions": [],
+    "grading": {
+      "Midterm": 30,
+      "Paper": 40,
+      "Participation": 30
+    },
+    "attendance": null,
+    "max_absences": null,
+    "final_min": null,
+    "items": [
+      [
+        "Midterm",
+        "2027-03-30",
+        ""
+      ],
+      [
+        "Final paper",
+        "2027-05-25",
+        ""
+      ]
+    ],
+    "policies": [],
+    "weeks": [],
+    "warnings_exclude": [
+      "100 değil"
+    ]
+  },
+  "web_bos_sablon": {
+    "code": "",
+    "name": "",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "sessions": [],
+    "grading": {},
+    "attendance": null,
+    "max_absences": null,
+    "final_min": null,
+    "items": [],
+    "policies": [],
+    "weeks": []
   }
 }

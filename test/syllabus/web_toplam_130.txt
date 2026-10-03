@@ -1,0 +1,7 @@
+Ders Bilgi Formu
+Ders Kodu: BIL 101  Ders Adı: Temel Bilgisayar
+Değerlendirme
+Sınav notu: Vize %40 - Final %60
+Sınav dışı değerlendirme: Derse devam %10, Ödevler ve sunumlar %10, Derse aktif katılım %10
+Derslere devam zorunluluğu teorik derslerde %70, uygulamalı derslerde %80'dir.
+Öğrenciler en fazla üç hafta mazeretli devamsızlık yapabilir. Dört haftadan fazla derse katılmama dersin tekrarı anlamına gelir.
