@@ -1,6 +1,6 @@
 /**
  * KPR — Ortalama: BAU kurallarıyla bu dönemin UMIS tablosu (harf, kredi, AKTS, HESAPLA).
- * Dönem ekranının "Ortalama" bölümü (term.js → section()). GNO kartı Dönem → Özet'te.
+ * Dönem'in ikincil sayfası #/ortalama (term.js → ortalama). Hedef GNO kartı Dönem'de.
  * Geçmiş GNO iki sayıdan: gpaBase = { credits, gno } (openBaseForm). v2.11'den beri ders ders
  * geçmiş dönem girişi arayüzde yok; eski kayıtlar migrate.js ile gpaBase'e çevrildi.
  */
@@ -12,7 +12,7 @@ import { icon } from "./icons.js";
 import { infoNote } from "./components.js";
 import { COEF, UMIS_GRADES, UNVERIFIED, fmtGpa, nearestLetter, currentTerm } from "./gpa.js";
 
-// Hedef GNO: hesap projection().needed() ile; kart Dönem → Özet'te
+// Hedef GNO: hesap projection().needed() ile; kart Dönem'de
 const TARGET_KEY = "kpr:target-gno";
 export const readTarget = () => {
   try {
@@ -51,7 +51,7 @@ function currentBlock(state, p) {
       <div class="empty">
         <strong>Derslerin burada listelenecek</strong>
         <p>Syllabus'larını yükle; ders kodu, adı, kredisi ve AKTS'si bu tabloya gelsin. Sonra her derse beklediğin harfi seç.</p>
-        <div class="empty-actions"><button class="btn btn-primary" type="button" data-action="import-syllabus">${icon.upload}Syllabus yükle</button></div>
+        <div class="empty-actions"><button class="btn btn-primary" type="button" data-action="import-syllabus">${icon.upload}Syllabus ekle</button></div>
       </div></div>`;
   }
   const base = p.source === "base";
@@ -74,7 +74,7 @@ function currentBlock(state, p) {
         ${p.term.graded ? `<p>Dönem ortalaması (YNO): <b class="need">${fmtGpa(p.term.avg)}</b> · ${fmt1(p.term.credits)} kredi</p>` : "<p>Önce derslere harf notu seç.</p>"}
         ${p.after !== null && p.term.graded ? `<p>Genel not ortalaması (GNO): <b class="need">${fmtGpa(p.after)}</b></p>` : ""}
         ${p.term.graded && p.term.graded < p.term.total ? `<p class="warn-text">${p.term.total - p.term.graded} ders hesaba katılmadı: harfi seçilmedi ya da seçilen not ortalamaya girmiyor.</p>` : ""}
-        ${p.source === "none" ? `<p class="fine">Özet'teki GNO kartına şu anki GNO'nu ve kredini girersen genel ortalama da hesaplanır.</p>` : ""}
+        ${p.source === "none" ? `<p class="fine">Dönem'deki Hedef GNO kartına şu anki GNO'nu ve kredini girersen genel ortalama da hesaplanır.</p>` : ""}
       </div>`
     : "";
 
@@ -96,10 +96,9 @@ function currentBlock(state, p) {
   </div>`;
 }
 
-/** Dönem ekranının "Ortalama" bölümü. */
+/** Ortalama sayfasının içeriği (#/ortalama; başlık term.js → ortalama.view()). */
 export function section(state, p) {
   return `<section class="section" id="ortalama">
-    <div class="section-head"><h2>Ortalama</h2><span class="u-term">BAU · A–F, 4.00 üzerinden</span></div>
     ${currentBlock(state, p)}
     ${infoNote("Bu hesap nasıl yapılıyor?", "Hesap BAU Eğitim-Öğretim ve Sınav Yönetmeliği'ne göre (Md. 26, 28): ders puanı = ulusal kredi × katsayı, tekrar edilen derste son not geçerli, sonuç iki haneye yuvarlanır. NA ve F ortalamaya 0,00 girer; S, U, EX, W ortalamaya girmez. BAU bağıl değerlendirme kullandığı için harfi sen seçersin. Sonucu UMIS'teki ile karşılaştır.")}
   </section>`;

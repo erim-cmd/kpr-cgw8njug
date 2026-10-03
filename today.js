@@ -3,13 +3,13 @@ import { esc } from "./ui.js";
 import { icon } from "./icons.js";
 import { todayIdx, todayISO, toISO, toMin, nowMin, daysUntil, fmtLong, fmtShort, greeting, byDue, relLabel, parseISO, DAYS } from "./dates.js";
 import { TASK_TYPES, isExam, isLight } from "./store.js";
-import { sessionsOn, sessionItem, taskItem, emptyState, installCard, weekStripHtml } from "./components.js";
+import { sessionsOn, sessionItem, taskItem, emptyState, installCard, weekStripHtml, startCard } from "./components.js";
 import { buildAlerts } from "./alerts.js";
 import { permissionState } from "./notify.js";
 import { weekView, resetDay, setDay, actions as weekActions } from "./schedule.js";
 
 const DISMISS_KEY = "kpr:dismissed";
-const SHOW = 3; // aynı anda en fazla bu kadar uyarı; gerisi katlanır
+// Uyarılar varsayılan katlı: ekranda öne çıkan tek şey "Sıradaki" kartı
 let expanded = false;
 
 export function dismissed() {
@@ -39,6 +39,20 @@ function alertCard(a) {
     </button>
     <button type="button" class="icon-btn sm" data-action="dismiss-alert" data-id="${esc(a.id)}" aria-label="Uyarıyı kapat">${icon.close}</button>
   </li>`;
+}
+
+/** Katlı "Dikkat" satırı: sayı + ilk uyarının başlığı; dokununca liste açılır. */
+function alertsBlock(alerts) {
+  if (!alerts.length) return "";
+  const danger = alerts.some((a) => a.level === "danger");
+  return `<section class="section">
+    <button type="button" class="alerts-fold${danger ? " danger" : ""}" data-action="toggle-alerts" aria-expanded="${expanded}">
+      <span class="alert-icon">${icon.alert}</span>
+      <span><strong>Dikkat · ${alerts.length} uyarı</strong>${expanded ? "" : `<small>${esc(alerts[0].title)}</small>`}</span>
+      <span class="fold-caret" aria-hidden="true">${expanded ? "▴" : "▾"}</span>
+    </button>
+    ${expanded ? `<ul class="list alerts-open">${alerts.map(alertCard).join("")}</ul>` : ""}
+  </section>`;
 }
 
 /** Bildirimleri açmaya davet: sadece görev varsa ve kullanıcı kapatmadıysa. */
@@ -169,29 +183,29 @@ export function view() {
       <button type="button" data-action="today-view" data-view="bugun" aria-pressed="${mode === "bugun"}">Bugün</button>
       <button type="button" data-action="today-view" data-view="hafta" aria-pressed="${mode === "hafta"}">Hafta</button>
     </div>`;
-  const startEmpty = () => emptyState(
-      "Dönemine başla",
-      "Bir dersin syllabus'unu yükle; ders saatleri, sınav tarihleri ve not dağılımı otomatik gelsin.",
-      "import-syllabus", "Syllabus yükle",
-      ["new-course", "Elle ekle"]
-    );
   const head = `<header class="page-head">
       <p class="eyebrow">${fmtLong(new Date())}</p>
       <h1 class="page-title">${greeting()}, ${esc(profile.name)}</h1>
       ${mode === "bugun" ? summary(state, open, sessions, now) : ""}
     </header>`;
 
-  // Hafta: eski "Program" sekmesi (gün çipleri + seçilen günün dersleri). Programı boşsa tek boş durum.
+  // İlk açılış: ders yokken tek eylem "Syllabus ekle" (görünüm düğmesi, boş listeler yok)
+  if (!courses.length) {
+    return `${head}${startCard()}
+      ${upcoming.length || heroId ? `${heroBlock(open, courses)}<section class="section">
+        <div class="section-head"><h2>Bu hafta</h2><a class="link" href="#/gorevler">Tümü</a></div>
+        <ul class="list">${upcoming.map((t) => taskItem(t, courses)).join("")}</ul></section>` : ""}`;
+  }
+
+  // Hafta: eski "Program" sekmesi (gün çipleri + seçilen günün dersleri)
   if (mode === "hafta") {
     return `${head}${seg}
-      ${courses.length ? `<section class="section week-view">${weekView()}</section>` : startEmpty()}
+      <section class="section week-view">${weekView()}</section>
       <p class="week-more"><a class="link" href="#/gorevler">Tüm görevleri gör</a></p>`;
   }
 
   let todayBlock;
-  if (!courses.length) {
-    todayBlock = startEmpty();
-  } else if (!sessions.length) {
+  if (!sessions.length) {
     todayBlock = nextClassNote(courses);
   } else {
     todayBlock = `<ul class="list">${sessions.map((s) => sessionItem(s, now, todayISO())).join("")}</ul>`;
@@ -201,17 +215,9 @@ export function view() {
     ${head}
     ${seg}
 
-    ${installCard()}
-    ${notifyCard(state)}
-
-    ${courses.length || tasks.length ? weekStrip(state, open) : ""}
     ${heroBlock(open, courses)}
-
-    ${alerts.length ? `<section class="section">
-      <div class="section-head"><h2>Dikkat</h2></div>
-      <ul class="list">${(expanded ? alerts : alerts.slice(0, SHOW)).map(alertCard).join("")}</ul>
-      ${alerts.length > SHOW ? `<button type="button" class="link more-link" data-action="toggle-alerts">${expanded ? "Daha az göster" : `${alerts.length - SHOW} uyarı daha`}</button>` : ""}
-    </section>` : ""}
+    ${weekStrip(state, open)}
+    ${alertsBlock(alerts)}
 
     <section class="section">
       <div class="section-head"><h2>Bugünkü dersler</h2><button type="button" class="link" data-action="today-view" data-view="hafta">Haftalık program</button></div>
@@ -225,7 +231,10 @@ export function view() {
         ? `<ul class="list">${upcoming.map((t) => taskItem(t, courses)).join("")}</ul>`
         : heroId ? '<p class="muted-note">Bu hafta başka teslim yok.</p>'
         : emptyState("Yaklaşan bir şey yok", "Sınav ve ödevlerini ekle, geri sayımı Köprü tutsun.", "new-task", "Görev ekle")}
-    </section>`;
+    </section>
+
+    ${installCard()}
+    ${notifyCard(state)}`;
 }
 
 export const actions = {

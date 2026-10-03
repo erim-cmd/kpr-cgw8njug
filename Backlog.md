@@ -16,6 +16,10 @@ Yarım kalan ve sıradaki işler. Bitenler en alta "Yapıldı"ya taşınır.
 - [ ] **Onur/yüksek onur eşikleri** ve yönetmeliğin 1.4.2026 değişikliği doğrulanmadı.
 
 ## Yapıldı
+- [x] v2.15 (3 Eki 2026) — ilk açılış ve sadelik (öğrenci testi: Dönem karışık, syllabus ekleme bulunamadı). Hesap mantığı değişmedi.
+  - **Syllabus ekle:** ders yokken Bugün/Dersler/Dönem'de tek büyük kart (`components.js` → `startCard`), + düğmesi gizli. Ders varken üst çubukta her ekranda "Syllabus ekle". Tanıtım sitesi bağlantısı sadece karşılamada (Ayarlar'da "Köprü hakkında" var). Dersler'deki + ve "Syllabus'tan ders ekle" satırı kalktı (üst çubuk aynı işi yapıyor).
+  - **Bugün:** sıra Sıradaki → hafta şeridi → "Dikkat · N uyarı" (katlı) → dersler → bu hafta → kurulum/bildirim daveti.
+  - **Dönem:** sekmeler kalktı; tek sayfa Hedef GNO · Devamsızlık (ders başına tek satır, dokununca kayıtlar) · Dönem akışı (bu haftadan dönem sonuna her hafta; boş haftalar "sakin" satırında birleşik, yoğun hafta çerçeveli, vize/final etiketli). UMIS tablosu ikincil sayfa `#/ortalama` (eski `?bolum=ortalama` adresi oraya gider).
 - [x] v2.12 (2 Eki 2026) — kurucu testi düzeltmeleri (sunucu, ağ, yapay zekâ yok):
   - **Ortak not girişi** (`grade-sheet.js`): alttan açılan pencere, büyük rakam, canlı etki satırı ("Hedef B için finalden 64 yeter"), hızlı çipler (tek dokunuşta kaydeder), kendi tuş takımı (telefon klavyesi açılmaz), harf ızgarası; Esc/arka plan/aşağı çekme kapatır. Bileşen notları, hedef harf, harf eşikleri, final barajı, GNO + kredi, hedef GNO, UMIS harf ve önceki not hep bu pencerede. `test/grade-sheet.mjs`.
   - **Görev formu:** tek satır tür (Ödev · Quiz · Lab · Sunum · Kişisel), Başlık → Ders çipleri → Tarih çipleri (Bugün · Yarın · gün adları · Tarih seç) → Not; "Daha fazla" yok; sınav/proje/diğer formda seçilmez (düzenlerken etiket). Okuma formdan kalktı (eski kayıtlar bozulmaz).

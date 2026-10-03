@@ -334,7 +334,7 @@ export function openCourseDetail(courseId) {
           label: "Tabloda gör",
           onClick: () => {
             closeSheet();
-            location.hash = "#/donem?bolum=ortalama";
+            location.hash = "#/ortalama";
           },
         });
         refreshTarget();
