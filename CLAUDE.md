@@ -40,3 +40,4 @@ AGENTS.md eklenirse: biri güncellenince diğeri de güncellenir.
 - Flex çocuğunda `overflow: hidden` öğeyi sıfıra büzer → `flex: none`.
 - Port 8090 Windows'ta ayrılmış; önizleme 8092'de.
 - Tarihe bağlı ekran görüntüleri gün değişince farklılaşır → önce/sonra aynı gün çekilir.
+- Bu bilgisayarda Python yok; dosya düzenlemesini Edit aracıyla ya da Node ile yap ve commit'ten önce git diff ile sonucu kontrol et.
