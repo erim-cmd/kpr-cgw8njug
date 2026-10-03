@@ -7,8 +7,8 @@ AGENTS.md eklenirse: biri güncellenince diğeri de güncellenir.
 - Deploy, Cloudflare, alan adı yok. `robots.txt` ve sayfalardaki `noindex` olduğu gibi kalır.
 - `test-syllabus/`: gerçek syllabus'lar (hoca adı, e-posta). Commit'lenmez, ekran görüntüsüne girmez; PR görselleri sentetik veriyle.
 - `functions/api/syllabus.js` `DAILY_LIMIT` (5) düşürülmez/kaldırılmaz; test için gerekirse yalnızca yerelde, söyleyerek.
-- GNO, devamsızlık, bildirim mantığı istenmeden değişmez; yanlış görürsen bildir. `gpa.js`'e doğrulanmamış katsayı girmez (D-, E, R doğrulanana kadar).
-- BAU verisi kazınmaz (site, UMIS vb.); veri öğrenciden ya da onun yüklediği dosyadan gelir.
+- GNO, devamsızlık ve bildirim mantığını değiştirirken önce o davranışı yakalayan bir test ekle; test geçmeden commit yok. `gpa.js`'e doğrulanmamış katsayı girmez (D-, E, R doğrulanana kadar).
+- BAU sistemlerinden ve sitesinden veri kazınmaz (AKTS kataloğu dahil). Öğrencinin kendi yüklediği veri serbest.
 - Logo: `logo-mark.svg` ve `docs/marka/` kullanılır, elle yeniden çizilmez. "AI STUDY COMPANION" alt yazısı kalır.
 - Gerçek API çağrısı (ücretli) yapılmaz; sahte cevapla test edilir.
 
