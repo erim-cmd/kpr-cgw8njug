@@ -11,7 +11,7 @@
  * Uygulamada "Yeni sürüm hazır → Yenile" uyarısı çıkar (bkz. js/app.js).
  */
 
-const VERSION = "2.14.1";
+const VERSION = "2.15.0";
 const SHELL_CACHE = `kpr-shell-${VERSION}`;
 
 const SHELL = [

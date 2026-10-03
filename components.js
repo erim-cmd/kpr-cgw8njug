@@ -75,14 +75,18 @@ export function emptyState(title, text, action, label, secondary) {
   </div>`;
 }
 
-/** Syllabus yükleme çağrısı: ders ekleme noktalarında gösterilir. */
-export function importCard(compact = false) {
-  // Ders varken büyük kart yerine ince satır: sağ alttaki + düğmesi de aynı işi yapıyor
-  if (compact) return `<button class="import-row" type="button" data-action="import-syllabus">${icon.upload}<span>Syllabus'tan ders ekle</span></button>`;
-  return `<button class="import-card" type="button" data-action="import-syllabus">
-    <span class="import-icon">${icon.upload}</span>
-    <span><strong>Syllabus'tan ekle</strong><small>PDF ya da fotoğraf yükle, ders saatleri ve sınav tarihleri otomatik gelsin.</small></span>
-  </button>`;
+/**
+ * Ders yokken ekranın tek eylemi: ilk syllabus'u ekle (Bugün, Dersler, Dönem aynı kartı gösterir).
+ * Elle ekleme ikincil bir bağlantı; + düğmesi ve üstteki "Syllabus ekle" bu sırada gizli (app.js).
+ */
+export function startCard(text = "PDF ya da Word dosyasını seç; ders saatleri, sınav tarihleri ve not dağılımı dönem planına dönüşsün.") {
+  return `<section class="start">
+    <span class="start-icon">${icon.upload}</span>
+    <h2>İlk syllabus'unu ekle</h2>
+    <p>${text}</p>
+    <button class="btn btn-primary btn-block start-btn" type="button" data-action="import-syllabus">${icon.upload}Syllabus ekle</button>
+    <button class="link start-alt" type="button" data-action="new-course">Syllabus'um yok, dersi elle ekleyeceğim</button>
+  </section>`;
 }
 
 export function installCard() {

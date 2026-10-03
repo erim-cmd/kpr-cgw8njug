@@ -30,36 +30,43 @@ runMigrations();
 const ROUTES = {
   bugun: { mod: today, title: "Bugün", icon: "home", fab: "new-task" },
   gorevler: { mod: tasks, title: "Görevler", icon: "tasks", fab: "new-task" },
-  dersler: { mod: courses, title: "Dersler", icon: "book", fab: "import-syllabus" },
+  // Syllabus ekleme her ekranda üst çubukta (#add-syllabus); Dersler'de ayrıca + yok
+  dersler: { mod: courses, title: "Dersler", icon: "book", fab: null },
   asistan: { mod: asistan, title: "Asistan", icon: "chat", fab: null, accent: true },
   donem: { mod: term, title: "Dönem", icon: "gauge", fab: null },
+  ortalama: { mod: term.ortalama, title: "Ortalama", fab: null },
   secmeli: { mod: secmeli, title: "Seçmeli", icon: "compass", fab: null },
   ayarlar: { mod: settings, title: "Ayarlar", fab: null },
 };
 // Alt menü 5 sekme: 6'sı telefonda göz yoruyor. Program Bugün'ün "Hafta" görünümünde,
-// Ortalama Dönem'in bir bölümünde; Görevler Bugün'ün altında ("Tümü" bağlantısı).
+// Ortalama Dönem'in ikincil sayfası; Görevler Bugün'ün altında ("Tümü" bağlantısı).
 const TABS = ["bugun", "dersler", "asistan", "donem", "secmeli"];
-const TAB_OF = { gorevler: "bugun" };
+const TAB_OF = { gorevler: "bugun", ortalama: "donem" };
 // v2.10 öncesi adresler (bildirimler, yer imleri): sorgu korunarak yeni yere
 const REDIRECTS = {
   program: ["bugun", "gorunum", "hafta"],
-  ortalama: ["donem", "bolum", "ortalama"],
 };
 
 const $view = document.getElementById("view");
 const $tabbar = document.getElementById("tabbar");
 const $fab = document.getElementById("fab");
 const $settings = document.getElementById("settings-link");
+const $add = document.getElementById("add-syllabus");
+// Ders yokken bu ekranlarda ortada büyük "Syllabus ekle" var; üstteki düğme ikinci bir çağrı olmasın
+const OWN_START = ["bugun", "dersler", "donem"];
 
 $tabbar.innerHTML = `<div class="tabbar-inner">${TABS.map(
   (r) => `<a class="tab${ROUTES[r].accent ? " tab-accent" : ""}" href="#/${r}" data-route="${r}"><span class="tab-ic">${icon[ROUTES[r].icon]}</span><span>${ROUTES[r].title}</span></a>`
 ).join("")}</div>`;
 $fab.innerHTML = icon.plus;
 $settings.innerHTML = icon.settings;
+$add.innerHTML = `${icon.upload}<span>Syllabus ekle</span>`;
 
 /** Eski adresi yenisine çevirir; bilinmeyen rota Bugün'e düşmeden ÖNCE çalışır, sorgu korunur. */
 function redirectOld() {
   const [path, query = ""] = location.hash.replace(/^#\/?/, "").split("?");
+  // v2.15: Ortalama Dönem'in sekmesi değil, ayrı sayfa
+  if (path === "donem" && new URLSearchParams(query).get("bolum") === "ortalama") return history.replaceState(null, "", "#/ortalama");
   const to = REDIRECTS[path];
   if (!to) return;
   const params = new URLSearchParams(query);
@@ -74,7 +81,7 @@ function parseHash() {
 }
 
 /**
- * Tek seferlik adres parametreleri: ?gorunum=hafta (Bugün → Hafta), ?bolum=ortalama (Dönem'de bölüme kaydır).
+ * Tek seferlik adres parametreleri: ?gorunum=hafta (Bugün → Hafta), ?bolum=akis (Dönem'de bölüme kaydır).
  * Uygulanınca adresten silinir; yoksa her yeniden çizimde tekrar kaydırırdı.
  */
 function applyParams() {
@@ -118,9 +125,12 @@ function render() {
   $tabbar.querySelectorAll(".tab").forEach((a) => markCurrent(a, a.dataset.route === (TAB_OF[name] || name)));
   markCurrent($settings, name === "ayarlar");
 
-  $fab.hidden = !route.fab;
+  // Ders yokken tek eylem "Syllabus ekle": + düğmesi (görev ekle) gizli
+  const hasCourses = store.get().courses.length > 0;
+  $add.hidden = !hasCourses && OWN_START.includes(name);
+  $fab.hidden = !route.fab || !hasCourses;
   $fab.dataset.action = route.fab || "";
-  $fab.setAttribute("aria-label", route.fab === "import-syllabus" ? "Ders ekle" : "Görev ekle");
+  $fab.setAttribute("aria-label", "Görev ekle");
   // Onboarding sonrası ilk çizim dahil: eski adresten gelen ?gorunum / ?bolum burada uygulanır
   applyParams();
 }
