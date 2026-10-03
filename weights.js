@@ -12,11 +12,11 @@ import { fold } from "./syllabus-local.js";
 // Sıra önemli: "Final Project" bir projedir, final sınavı değil
 const GROUPS = [
   ["proje", /\b(proje|project|sunum|presentation|poster)/],
-  ["final", /\b(final|yariyil sonu|donem ?sonu|butunleme)\b/],
+  ["final", /\b(final|yariyil sonu|yil sonu|genel sinav|donem ?sonu|butunleme)\b/],
   ["vize", /\b(vize|ara ?sinav|midterm|mid-term|mid term)\b/],
   ["quiz", /\b(quiz|quizler|quizzes|kisa sinav)/],
   ["lab", /\b(lab|laboratuvar|deney)/],
-  ["odev", /\b(odev|homework|assignment|hw|rapor|report|essay|problem set)/],
+  ["odev", /\b(odev|homework|assignment|hw|rapor|report|essay|paper|makale|problem set)/],
   ["katilim", /\b(katilim|participation|attendance|devam)/],
 ];
 // Görev türünden grup (başlık bir şey söylemiyorsa)
