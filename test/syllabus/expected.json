@@ -105,6 +105,9 @@
         "2027-01-05",
         "Final"
       ]
+    ],
+    "warnings_exclude": [
+      "bozuk okunuyor"
     ]
   },
   "en_paragraf": {
@@ -156,7 +159,10 @@
       "not_kurali",
       "durustluk"
     ],
-    "weeks": []
+    "weeks": [],
+    "warnings_exclude": [
+      "bozuk okunuyor"
+    ]
   },
   "tr_hafta": {
     "code": "EEE 2101",
@@ -210,7 +216,10 @@
       "devam",
       "butunleme"
     ],
-    "weeks": []
+    "weeks": [],
+    "warnings_exclude": [
+      "bozuk okunuyor"
+    ]
   },
   "en_bologna": {
     "code": "ME 3201",
@@ -300,6 +309,9 @@
         null,
         "Review"
       ]
+    ],
+    "warnings_exclude": [
+      "bozuk okunuyor"
     ]
   },
   "tr_ikivize": {
@@ -346,7 +358,10 @@
       "not_kurali",
       "telafi"
     ],
-    "weeks": []
+    "weeks": [],
+    "warnings_exclude": [
+      "bozuk okunuyor"
+    ]
   },
   "tr_bologna": {
     "code": "MAT 1001",
@@ -432,6 +447,9 @@
         null,
         "Genel tekrar"
       ]
+    ],
+    "warnings_exclude": [
+      "bozuk okunuyor"
     ]
   },
   "en_bau_real1": {
@@ -525,7 +543,10 @@
       "not_kurali",
       "telafi"
     ],
-    "weeks": []
+    "weeks": [],
+    "warnings_exclude": [
+      "bozuk okunuyor"
+    ]
   },
   "tr_bau_real2": {
     "code": "GEP 1020",
@@ -575,7 +596,10 @@
       "devam",
       "durustluk"
     ],
-    "weeks": []
+    "weeks": [],
+    "warnings_exclude": [
+      "bozuk okunuyor"
+    ]
   },
   "en_bau_real3": {
     "code": "ENM 4116",
@@ -721,6 +745,9 @@
         "2026-12-09",
         "Term Project Student Presentations and Semester Overview"
       ]
+    ],
+    "warnings_exclude": [
+      "bozuk okunuyor"
     ]
   },
   "en_sube_tba": {
@@ -771,7 +798,8 @@
       "Devam şartı bulunamadı"
     ],
     "warnings_exclude": [
-      "Final tarihi bulunamadı"
+      "Final tarihi bulunamadı",
+      "bozuk okunuyor"
     ],
     "weeks": []
   },
@@ -849,7 +877,8 @@
     ],
     "warnings_exclude": [
       "Devam şartı bulunamadı",
-      "Birden fazla şube"
+      "Birden fazla şube",
+      "bozuk okunuyor"
     ],
     "weeks": [
       [
@@ -918,7 +947,8 @@
       "Arasınav tarihi"
     ],
     "warnings_exclude": [
-      "Sınav/ödevler sadece hafta"
+      "Sınav/ödevler sadece hafta",
+      "bozuk okunuyor"
     ],
     "weeks": [
       [
@@ -1010,6 +1040,9 @@
         null,
         "Yıl sonu sınavı"
       ]
+    ],
+    "warnings_exclude": [
+      "bozuk okunuyor"
     ]
   },
   "web_toplam_130": {
@@ -1051,7 +1084,8 @@
       "%130"
     ],
     "warnings_exclude": [
-      "benzemiyor"
+      "benzemiyor",
+      "bozuk okunuyor"
     ]
   },
   "web_ic_ice_agirlik": {
@@ -1092,7 +1126,8 @@
     "policies": [],
     "weeks": [],
     "warnings_exclude": [
-      "100 değil"
+      "100 değil",
+      "bozuk okunuyor"
     ]
   },
   "web_tarih_araligi": {
@@ -1142,6 +1177,9 @@
         "2025-05-16",
         "Genel tekrar"
       ]
+    ],
+    "warnings_exclude": [
+      "bozuk okunuyor"
     ]
   },
   "web_ara_sinav_baraji": {
@@ -1193,6 +1231,9 @@
     "policies_kritik": [
       "baraj",
       "devam"
+    ],
+    "warnings_exclude": [
+      "bozuk okunuyor"
     ]
   },
   "web_sifir_agirlik": {
@@ -1229,7 +1270,10 @@
       "not_kurali",
       "telafi"
     ],
-    "weeks": []
+    "weeks": [],
+    "warnings_exclude": [
+      "bozuk okunuyor"
+    ]
   },
   "web_coklu_ders": {
     "code": "BES 101",
@@ -1265,7 +1309,8 @@
       "2 ders var"
     ],
     "warnings_exclude": [
-      "100 değil"
+      "100 değil",
+      "bozuk okunuyor"
     ]
   },
   "web_bozuk_kodlama": {
@@ -1327,6 +1372,9 @@
     "weeks": [],
     "policies_kritik": [
       "baraj"
+    ],
+    "warnings_exclude": [
+      "bozuk okunuyor"
     ]
   },
   "web_paper": {
@@ -1361,7 +1409,8 @@
     "policies": [],
     "weeks": [],
     "warnings_exclude": [
-      "100 değil"
+      "100 değil",
+      "bozuk okunuyor"
     ]
   },
   "web_bos_sablon": {
@@ -1379,6 +1428,45 @@
     "final_min": null,
     "items": [],
     "policies": [],
-    "weeks": []
+    "weeks": [],
+    "warnings_exclude": [
+      "bozuk okunuyor"
+    ]
+  },
+  "web_normal_buyuk_harf": {
+    "code": "ELK 2207",
+    "name": "Circuit Analysis",
+    "instructor": "",
+    "email": "lecturer@uni.edu.tr",
+    "office": "",
+    "credit": 3,
+    "ects": 6,
+    "sessions": [],
+    "grading": {
+      "Mid-term Exam": 30,
+      "Homework": 20,
+      "PROJECT-REPORT": 10,
+      "FINAL EXAM": 40
+    },
+    "attendance": null,
+    "max_absences": null,
+    "final_min": null,
+    "items": [
+      [
+        "Mid-term Exam",
+        "",
+        ""
+      ],
+      [
+        "FINAL EXAM",
+        "",
+        ""
+      ]
+    ],
+    "policies": [],
+    "weeks": [],
+    "warnings_exclude": [
+      "bozuk okunuyor"
+    ]
   }
 }

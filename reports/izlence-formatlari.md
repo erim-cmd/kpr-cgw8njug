@@ -104,7 +104,9 @@ Cihaz içi ayrıştırıcı (`syllabus-local.js`) bu kalıplarla test edildi. Ka
 - İç içe ağırlıklar düzleştiriliyor: "Yıl içi %40: 1. Ara %45…" → 18 / 18 / 4 (#5); numaralı her sınav takvime ayrı düşüyor
 - Açık %0 ağırlık korunuyor; Bologna'nın kullanılmayan "0 | 0" satırları bileşen sayılmıyor (#4)
 - Tek PDF'te birden çok ders: ilki okunuyor, diğerleri uyarıyla adlandırılıyor (#12)
-- Bozuk karakter kodlaması tespit ediliyor ve öğrenciye söyleniyor; metin onarılmıyor (#1)
+- Bozuk karakter kodlaması tespit ediliyor ve öğrenciye söyleniyor; metin onarılmıyor (#1). İlk sürüm normal metinde yanlış alarm veriyordu (e-posta, tireli/parantezli sözcükler); imza daraltıldı, tüm örneklere "bu uyarı çıkmamalı" beklentisi ve zor normal metinli bir negatif örnek (`web_normal_buyuk_harf`) eklendi
+- Not bölümündeki "LAB-2", "Ödev-1" gibi adlar artık ağırlık sanılmıyor; parantez içindeki virgül bileşeni bölmüyor
+- "Kredi/AKTS: 3/6" birleşik etiketi
 - "24-Mar-26" tarih biçimi (#11); "Yıl sonu sınavı" final, "Paper/essay" bileşen olarak tanınıyor
 - Finale giriş şartı ("ara sınav ortalaması 35'in altındaysa finale giremez", "her ödevden en az %30") finalin barajıyla karıştırılmıyor (#20)
 - Devam oranı, not satırıyla birleşmiş cümleden de okunuyor; "en fazla üç hafta" gibi yazıyla sayılar (#16)

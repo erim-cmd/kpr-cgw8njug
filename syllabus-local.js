@@ -302,10 +302,11 @@ function parseGrading(lines, flines) {
 /** Tek satırdaki bileşenler: "Vize %40 - Final %60" · "Midterm 30% and Final 70%" · "Sınav dışı: Derse devam %10, Ödevler ve sunumlar %10". */
 function lineParts(line, inSection) {
   const out = [];
-  const parts = line.split(
+  const parts = line.replace(/\([^()]*\)/g, (m) => m.replace(/[,;]/g, "\u0001")).split(
     /[,;]|\s{2,}|(?<!\d)\.\s+(?=[A-ZÇĞİÖŞÜ])|(?<=[\d%])\s+(?:ve|and)\s+(?=[A-ZÇĞİÖŞÜa-zçğıöşü]+\s*[:(%-]?\s*%?\d)|(?<=\d\s*%|%\s*\d{1,3})\s+[-–—]\s+/
   );
   for (let part of parts) {
+    part = part.replace(/\u0001/g, ",");
     // "Sınav notu: Vize %40" → "Vize %40"; "Midterm Exam: 30%" olduğu gibi kalır (iki noktadan sonra bileşen yok)
     const ci = part.indexOf(":");
     if (ci > 0) {
@@ -365,7 +366,8 @@ const pctIn = (s) => {
   return n > 0 && n <= 100 ? n : null;
 };
 const tailNum = (s) => {
-  const m = /[:\-–]\s*(\d{1,3})\s*$/.exec(s || "");
+  // "Vize: 30" / "Vize - 30" ağırlıktır; "LAB-2" / "Ödev-1" sözcüğe yapışık tire bir addır, ağırlık değil
+  const m = /(?::|\s[-–])\s*(\d{1,3})\s*$/.exec(s || "");
   return m ? +m[1] : null;
 };
 const stripPct = (s) =>
@@ -1195,6 +1197,14 @@ function parseCourse(lines, flines, pairsBy, text) {
   course.credit = creditFrom(first("credit"));
   const ects = creditFrom(first("ects"));
   course.ects = ects !== null && ects <= 60 ? ects : null;
+  // Birleşik etiket: "Kredi/AKTS: 3/6" · "Credit / ECTS: 3 / 6" (tablo hali başka yoldan okunuyor)
+  if (course.credit === null && course.ects === null) {
+    const m = /(?:kredi|credits?)\s*\/\s*(?:akts|ects)\s*:?\s*(\d{1,2}(?:[.,]5)?)\s*\/\s*(\d{1,2})\b/.exec(fold(text.slice(0, 4000)));
+    if (m) {
+      course.credit = parseFloat(m[1].replace(",", "."));
+      course.ects = +m[2] <= 60 ? +m[2] : null;
+    }
+  }
   return course;
 }
 
@@ -1339,13 +1349,24 @@ export function parseSyllabus(text, now = new Date()) {
   // Bozuk yazı tipi kodlaması: PDF'in metin katmanı harfleri 29 kod geriye kaymış veriyor ("$UD" = "Ara",
   // ")LQDO" = "Final"). Bu durumda bulunanlar güvenilmez; öğrenciye nedenini söyle. Metni onarmaya çalışmıyoruz
   // (Türkçe harfler bu kaymayla geri gelmiyor, yarım onarım uydurma bilgi üretir).
-  const garbled = norm.split(/\s+/).filter((t) => {
-    if (t.length < 3 || !/[A-Za-z]/.test(t) || /^[A-Za-zÇĞİÖŞÜçğıöşü]+[.,;:]?$/.test(t)) return false;
+  // İmza: bozuk sözcük hiç küçük harf içermez, en az iki büyük harf ve bir sembol/rakam içerir; 29 kod ileri
+  // kaydırınca çoğu küçük harfli, sesli harfi olan bir sözcüğe döner. Normal metin (küçük harfli sözcükler,
+  // "(VİZE)", "MCH-2016", e-posta, link) bu imzaya uymaz.
+  const garbledToks = norm.split(/\s+/).filter((raw) => {
+    // Sondaki noktalama ("HOURS:", "EXAM,") ve sarmalayan parantez ("(FINAL)") sözcüğün parçası değil
+    let t = raw.replace(/[.,;:!?]+$/, "");
+    if (/^\(.*\)$/.test(t)) t = t.slice(1, -1);
+    if (t.length < 3 || /[a-zçğıöşü@]|:\/\//.test(t)) return false;
+    // Türkçe büyük harf ("İZLENCESİ") ya da tireyle birleşmiş büyük harfli sözcük/kod ("PROJECT-REPORT", "MCH-2016")
+    if (/[ÇĞİÖŞÜ]/.test(t) || /^[A-Z0-9]+(-[A-Z0-9]+)+$/.test(t)) return false;
+    if ((t.match(/[A-Z]/g) || []).length < 2 || !/[^A-Z]/.test(t)) return false;
     const sh = [...t].map((c) => { const k = c.charCodeAt(0); return k >= 33 && k <= 97 ? String.fromCharCode(k + 29) : c; }).join("").replace(/[^A-Za-z]/g, "");
     const lower = sh.replace(/[^a-z]/g, "").length;
-    return sh.length >= 3 && lower / sh.length >= 0.6 && /[aeiou]/.test(sh);
-  }).length >= 3;
-  if (garbled) warnings.add("Bu dosyanın metni bozuk okunuyor (yazı tipi kodlaması); bulunanlara güvenme. Syllabus'un Word ya da başka bir PDF sürümünü yükle veya bilgileri elle gir.");
+    return sh.length >= 3 && lower / sh.length >= 0.75 && /[aeiou]/.test(sh);
+  }).length;
+  const letterToks = norm.split(/\s+/).filter((t) => /[A-Za-zÇĞİÖŞÜçğıöşü]/.test(t)).length;
+  const garbled = garbledToks >= 3 && garbledToks / Math.max(1, letterToks) >= 0.1;
+  if (garbled) warnings.add("Bu dosyanın metni bozuk okunuyor (yazı tipi kodlaması); bulunanlara güvenme. Syllabus'un başka bir sürümünü (ör. Word) yükle veya bilgileri elle gir.");
 
   const pairsBy = {};
   lines.forEach((l, i) => {
