@@ -1,0 +1,8 @@
+DERS TANITIM FORMU
+Dersin Adı: Beslenme İlkeleri  Dersin Kodu: BES 101
+Kredi: 3  AKTS: 4
+Ara Sınav %40, Final %60
+DERS TANITIM FORMU
+Dersin Adı: Genel Kimya  Dersin Kodu: KIM 103
+Kredi: 2  AKTS: 3
+Ara Sınav %30, Ödev %20, Final %50

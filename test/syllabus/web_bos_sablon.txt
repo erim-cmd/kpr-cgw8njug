@@ -1,0 +1,11 @@
+DERS İZLENCE RAPORU
+Ders Kodu:
+Ders Adı:
+Kredi:
+AKTS:
+Değerlendirme
+Ara Sınav	%
+Final	%
+Hafta	Konu
+1	
+2	

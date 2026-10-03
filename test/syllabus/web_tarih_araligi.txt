@@ -1,0 +1,10 @@
+Ders Kodu	ILH 104
+Ders Adı	Kur'an Okuma ve Tecvid II
+Kredi / AKTS	2/3
+2024-2025 Bahar Yarıyılı
+Hafta	Tarih	Konu
+1	03-07 Şubat	Giriş
+8	24-28 Mart	Ara Sınav
+15	12-16 Mayıs	Genel tekrar
+Ara Sınav %40, Final %60
+Teorik ders çalışmalarının %70'ine devam etmek zorunludur.

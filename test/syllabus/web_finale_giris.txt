@@ -1,0 +1,5 @@
+CS 202 Data Structures
+Grading: Homework 20%, Midterm 35%, Final 45%
+Homework deadlines will be posted on Moodle.
+Attendance will be taken as required by YÖK but does not directly affect your grade.
+To be eligible for the final, you must get at least 30% from each homework and from the midterm.

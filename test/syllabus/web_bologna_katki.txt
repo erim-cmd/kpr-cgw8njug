@@ -1,0 +1,13 @@
+DERS BİLGİ PAKETİ
+Ders Kodu	Ders Adı	Yarıyıl	AKTS
+HUK1043	Medeni Hukuk	1-2	10.00
+Değerlendirme Sistemi
+Yarıyıl İçi Çalışmaları	Sayısı	Katkı Payı %
+Ara Sınav	1	40
+Yarıyıl Sonu Sınavı	1	60
+Toplam	2	100
+Haftalık Ders Konuları
+Hafta	Konu
+1	Giriş
+8	Ara Sınav
+28	Yıl sonu sınavı
