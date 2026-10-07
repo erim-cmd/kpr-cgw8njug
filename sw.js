@@ -11,7 +11,7 @@
  * Uygulamada "Yeni sürüm hazır → Yenile" uyarısı çıkar (bkz. js/app.js).
  */
 
-const VERSION = "2.21.1";
+const VERSION = "2.22.0";
 const SHELL_CACHE = `kpr-shell-${VERSION}`;
 
 const SHELL = [
@@ -96,7 +96,7 @@ self.addEventListener("install", (event) => {
       )
     )
   );
-  // skipWaiting burada yok: yeni sürüm, kullanıcı "Yenile"ye basınca devreye girer.
+  // skipWaiting burada yok: sayfa karar verir (app.js — açılışta hemen, kullanımda arka plana geçince ya da "Yenile" ile).
 });
 
 self.addEventListener("activate", (event) => {
