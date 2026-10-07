@@ -44,7 +44,7 @@ for (const fg of TEXT) {
   }
 }
 // Düğme yazıları kendi zeminlerinde
-for (const [fg, bg] of [["on-accent", "cyan"], ["on-violet", "violet"], ["on-danger", "danger"]]) {
+for (const [fg, bg] of [["on-accent", "cyan"], ["on-violet", "violet-solid"], ["on-danger", "danger"]]) {
   const r = ratio(tok[fg], tok[bg]);
   check(r >= 4.5, `--${fg} / --${bg} = ${r.toFixed(2)} < 4.5`);
 }

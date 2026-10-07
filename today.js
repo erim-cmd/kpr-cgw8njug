@@ -3,7 +3,7 @@ import { esc } from "./ui.js";
 import { icon } from "./icons.js";
 import { todayIdx, todayISO, toISO, toMin, nowMin, daysUntil, fmtLong, fmtShort, greeting, byDue, relLabel, parseISO, DAYS } from "./dates.js";
 import { TASK_TYPES, isExam, isLight } from "./store.js";
-import { sessionsOn, sessionItem, taskItem, emptyState, installCard, weekStripHtml, startCard } from "./components.js";
+import { sessionsOn, sessionItem, taskItem, emptyState, installCard, startCard } from "./components.js";
 import { buildAlerts } from "./alerts.js";
 import { permissionState } from "./notify.js";
 import { weekView, resetDay, setDay, actions as weekActions } from "./schedule.js";
@@ -124,7 +124,6 @@ function heroBlock(open, courses) {
  * Güne dokununca Hafta görünümü o günle açılır.
  */
 // Hafta şeridi components.js'te (Hafta görünümüyle ortak)
-const weekStrip = (state) => weekStripHtml({ state, action: "strip-day" });
 
 /** Selamın altındaki tek cümle: bugünün ve haftanın özeti. */
 function summary(state, open, sessions, now) {
@@ -175,7 +174,8 @@ export function view() {
   const hidden = dismissed();
   // Üstteki kartın gösterdiği görev için uyarıyı tekrarlama
   // Kartta görünen sınav da uyarı listesinde tekrar etmesin
-  const shown = new Set([heroTask?.id, heroExam?.id].filter(Boolean));
+  // "Bu hafta" listesindeki görevler de uyarıda tekrar etmez (aynı bilgi iki kez gösterilmez)
+  const shown = new Set([heroTask?.id, heroExam?.id, ...upcoming.map((t) => t.id)].filter(Boolean));
   // Yaklaşan ders uyarısı Bugün'de gereksiz: aynı bilgi ders satırında ("30 dk sonra") duruyor
   const alerts = buildAlerts(state).filter((a) => !hidden[a.id] && !shown.has(a.taskId) && !a.id.startsWith("class:"));
 
@@ -216,7 +216,6 @@ export function view() {
     ${seg}
 
     ${heroBlock(open, courses)}
-    ${weekStrip(state, open)}
     ${alertsBlock(alerts)}
 
     <section class="section">
