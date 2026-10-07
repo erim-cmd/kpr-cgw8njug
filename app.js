@@ -37,7 +37,7 @@ const ROUTES = {
   dersler: { mod: courses, title: "Dersler", icon: "book", fab: null },
   asistan: { mod: asistan, title: "Asistan", icon: "chat", fab: null, accent: true },
   donem: { mod: term, title: "Dönem", icon: "gauge", fab: null },
-  ortalama: { mod: term.ortalama, title: "Ortalama", fab: null },
+  ortalama: { mod: term.ortalama, title: "Ders harfleri", fab: null },
   secmeli: { mod: secmeli, title: "Seçmeli", icon: "compass", fab: null },
   ayarlar: { mod: settings, title: "Ayarlar", fab: null },
 };

@@ -230,8 +230,8 @@ export const ortalama = {
     const state = store.get();
     return `<header class="page-head">
         <a class="link back-link" href="#/donem">← Dönem</a>
-        <h1 class="page-title">Ortalama</h1>
-        <p class="page-sub">Ders harfleri ve kredi · BAU, A–F, 4,00 üzerinden</p>
+        <h1 class="page-title">Ders harfleri</h1>
+        <p class="page-sub">Harf, kredi ve ortalama · BAU, A–F, 4,00 üzerinden</p>
       </header>
       ${gpaSection(state, projection(state))}`;
   },
