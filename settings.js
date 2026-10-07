@@ -9,7 +9,7 @@ import { permissionState, enableNotifications, disableNotifications, testNotific
 import { buildICS, deliverICS, countExportable } from "./ics.js";
 import { THEMES, applyTheme } from "./theme.js";
 
-export const APP_VERSION = "2.18.0";
+export const APP_VERSION = "2.18.1";
 
 function themeSeg(current) {
   const items = Object.entries(THEMES).map(([k, label]) =>
