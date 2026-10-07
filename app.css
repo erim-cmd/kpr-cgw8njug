@@ -21,13 +21,10 @@
 }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
 .brand-name { font: 700 var(--fs-md) var(--font-display); letter-spacing: 0.02em; }
-.site-link { margin-left: auto; color: var(--text-muted); font-size: var(--fs-xs); font-weight: 500; text-decoration: none; padding: 6px 10px; border-radius: var(--r-sm); }
+.site-link { position: relative; margin-left: auto; white-space: nowrap; color: var(--text-muted); font-size: var(--fs-xs); font-weight: 500; text-decoration: none; padding: 6px 10px; border-radius: var(--r-sm); }
 .site-link:hover { color: var(--text); background: var(--surface); }
-/* Ana ekrana kurulu uygulamada tanıtım sitesine bağlantı gereksiz */
-@media (display-mode: standalone) { .site-link { display: none; } }
-body.onboarding .site-link { margin-left: auto; }
-/* Tanıtım sitesi bağlantısı sadece karşılamada; sonra Ayarlar'ın altında ("Köprü hakkında") */
-body:not(.onboarding) .site-link { display: none; }
+/* Tanıtım sayfası bağlantısı her ekranda ve ana ekrana kurulu uygulamada da görünür (Erim'in kararı, 7 Eki 2026) */
+.topbar .site-link ~ .icon-btn { margin-left: 0; }
 /* Syllabus ekle: her ekrandan tek dokunuş */
 .add-syllabus {
   margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
@@ -1053,9 +1050,9 @@ button.tl-row { width: 100%; padding: 10px 14px; border-radius: var(--r-md); bac
 /* ---- Dokunma alanı ≥ 44px (Apple HIG) ----
    Küçük denetimler aynı görünür; görünmez bir katman dokunulan alanı en az 44×44px'e büyütür.
    .abs-btn ve .flag-hide zaten konumlu (absolute); :where sayesinde onların konumu korunur. */
-:where(.brand, .add-syllabus, .icon-btn, .check, .pick-chip, .link, .u-pick, .focus-done, .chip-btn, .mini-add, .info-note summary, .flag-src summary, .footnote a, a[href^="mailto:"], .seg button) { position: relative; } /* :where — kendi konumu olan (ör. .flag-hide) bozulmaz */
+:where(.brand, .add-syllabus, .icon-btn, .check, .pick-chip, .link, .u-pick, .focus-done, .chip-btn, .mini-add, .site-link, .info-note summary, .flag-src summary, .footnote a, a[href^="mailto:"], .seg button) { position: relative; } /* :where — kendi konumu olan (ör. .flag-hide) bozulmaz */
 .focus-exam { position: relative; } /* all: unset sonrası */
-:is(.brand, .add-syllabus, .icon-btn, .check, .pick-chip, .link, .u-pick, .focus-done, .focus-exam, .abs-btn, .chip-btn, .mini-add, .info-note summary, .flag-src summary, .footnote a, a[href^="mailto:"], .seg button)::after {
+:is(.brand, .add-syllabus, .icon-btn, .check, .pick-chip, .link, .u-pick, .focus-done, .focus-exam, .abs-btn, .chip-btn, .mini-add, .site-link, .info-note summary, .flag-src summary, .footnote a, a[href^="mailto:"], .seg button)::after {
   content: ""; position: absolute; left: 50%; top: 50%;
   width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
 }
