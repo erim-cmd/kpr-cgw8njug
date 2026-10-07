@@ -24,23 +24,26 @@ import { dismiss } from "./today.js";
 import { todayISO } from "./dates.js";
 import { enableNotifications, checkReminders, sync, permissionState } from "./notify.js";
 import { applyTheme } from "./theme.js";
+import { setLang, getLang, t } from "./i18n.js";
 
 // Kayıtlı veri eski biçimdeyse ekran çizilmeden önce yeni biçime geçir (bir kez; migrate.js)
 runMigrations();
 // Görünüm (theme-boot.js ilk kararı verdi; burada tarayıcı çubuğu rengi ve "Sistem" takibi kurulur)
 applyTheme(store.get().settings.theme);
+// Dil: ilk çizimden önce (sabit etiketler ve <html lang> da buna göre; büyük harf İ/I doğru olsun)
+setLang(store.get().settings.lang);
 
 const ROUTES = {
   // Alttaki ana düğme: Bugün ve Dersler'de geniş "Syllabus ekle"; Görevler'de küçük + (görev). Görev ekleme
   // Bugün'de "Bu hafta" başlığındaki küçük düğmede (Erim geri bildirimi, 7 Eki: syllabus daha belirgin, görev daha küçük)
-  bugun: { mod: today, title: "Bugün", icon: "home", fab: "import-syllabus" },
-  gorevler: { mod: tasks, title: "Görevler", icon: "tasks", fab: "new-task" },
-  dersler: { mod: courses, title: "Dersler", icon: "book", fab: "import-syllabus" },
-  asistan: { mod: asistan, title: "Asistan", icon: "chat", fab: null, accent: true },
-  donem: { mod: term, title: "Dönem", icon: "gauge", fab: null },
-  ortalama: { mod: term.ortalama, title: "Ders harfleri", fab: null },
-  secmeli: { mod: secmeli, title: "Seçmeli", icon: "compass", fab: null },
-  ayarlar: { mod: settings, title: "Ayarlar", fab: null },
+  bugun: { mod: today, get title() { return t("Bugün"); }, icon: "home", fab: "import-syllabus" },
+  gorevler: { mod: tasks, get title() { return t("Görevler"); }, icon: "tasks", fab: "new-task" },
+  dersler: { mod: courses, get title() { return t("Dersler"); }, icon: "book", fab: "import-syllabus" },
+  asistan: { mod: asistan, get title() { return t("Asistan"); }, icon: "chat", fab: null, accent: true },
+  donem: { mod: term, get title() { return t("Dönem"); }, icon: "gauge", fab: null },
+  ortalama: { mod: term.ortalama, get title() { return t("Ders harfleri"); }, fab: null },
+  secmeli: { mod: secmeli, get title() { return t("Seçmeli"); }, icon: "compass", fab: null },
+  ayarlar: { mod: settings, get title() { return t("Ayarlar"); }, fab: null },
 };
 // Alt menü 5 sekme: 6'sı telefonda göz yoruyor. Program Bugün'ün "Hafta" görünümünde,
 // Ortalama Dönem'in ikincil sayfası; Görevler Bugün'ün altında ("Tümü" bağlantısı).
@@ -48,7 +51,7 @@ const TABS = ["bugun", "dersler", "asistan", "donem", "secmeli"];
 const TAB_OF = { gorevler: "bugun", ortalama: "donem" };
 // v2.10 öncesi adresler (bildirimler, yer imleri): sorgu korunarak yeni yere
 const REDIRECTS = {
-  program: ["bugun", "gorunum", "hafta"],
+  program: ["bugun", "gorunum", "hafta"], // i18n-ok
 };
 
 const $view = document.getElementById("view");
@@ -57,12 +60,19 @@ const $fab = document.getElementById("fab");
 const $settings = document.getElementById("settings-link");
 const $add = document.getElementById("add-syllabus");
 
-$tabbar.innerHTML = `<div class="tabbar-inner">${TABS.map(
-  (r) => `<a class="tab${ROUTES[r].accent ? " tab-accent" : ""}" href="#/${r}" data-route="${r}"><span class="tab-ic">${icon[ROUTES[r].icon]}</span><span>${ROUTES[r].title}</span></a>`
-).join("")}</div>`;
+// Sekme çubuğu ve üst çubuk metinleri: dil değişince render() yeniden çizer
+let chromeLang = null;
+function drawChrome() {
+  if (chromeLang === getLang()) return;
+  chromeLang = getLang();
+  $tabbar.innerHTML = `<div class="tabbar-inner">${TABS.map(
+    (r) => `<a class="tab${ROUTES[r].accent ? " tab-accent" : ""}" href="#/${r}" data-route="${r}"><span class="tab-ic">${icon[ROUTES[r].icon]}</span><span>${ROUTES[r].title}</span></a>`
+  ).join("")}</div>`;
+  $add.innerHTML = `${icon.upload}<span>${t("Syllabus ekle")}</span>`;
+}
 $fab.innerHTML = icon.plus;
 $settings.innerHTML = icon.settings;
-$add.innerHTML = `${icon.upload}<span>Syllabus ekle</span>`;
+drawChrome();
 
 /** Eski adresi yenisine çevirir; bilinmeyen rota Bugün'e düşmeden ÖNCE çalışır, sorgu korunur. */
 function redirectOld() {
@@ -96,7 +106,7 @@ function applyParams() {
   params.delete("bolum");
   const rest = params.toString();
   history.replaceState(null, "", `#/${name}${rest ? `?${rest}` : ""}`);
-  if (view === "hafta" || view === "bugun") store.setSettings({ todayView: view });
+  if (view === "hafta" || view === "bugun") store.setSettings({ todayView: view }); // i18n-ok
   // hashchange dinleyicisinin scrollTo(0, 0) çağrısından sonra çalışsın
   if (section) setTimeout(() => term.scrollToSection(section, false), 0);
 }
@@ -110,18 +120,19 @@ function currentModule() {
 // ------------------------------------------------------------------
 function render() {
   const isOnboarding = !store.get().profile.name;
+  drawChrome();
   document.body.classList.toggle("onboarding", isOnboarding);
 
   if (isOnboarding) {
     $view.innerHTML = onboarding.view();
-    document.title = "Köprü";
+    document.title = "Köprü"; // i18n-ok
     return;
   }
 
   const { name } = parseHash();
   const route = ROUTES[name];
   $view.innerHTML = route.mod.view();
-  document.title = `${route.title} · Köprü`;
+  document.title = `${route.title} · Köprü`; // i18n-ok
 
   const markCurrent = (el, on) => (on ? el.setAttribute("aria-current", "page") : el.removeAttribute("aria-current"));
   $tabbar.querySelectorAll(".tab").forEach((a) => markCurrent(a, a.dataset.route === (TAB_OF[name] || name)));
@@ -134,8 +145,8 @@ function render() {
   $fab.dataset.action = route.fab || "";
   const wide = route.fab === "import-syllabus";
   $fab.classList.toggle("fab-wide", wide);
-  $fab.innerHTML = wide ? `${icon.upload}<span>Syllabus ekle</span>` : icon.plus;
-  if (wide) $fab.removeAttribute("aria-label"); else $fab.setAttribute("aria-label", "Görev ekle");
+  $fab.innerHTML = wide ? `${icon.upload}<span>${t("Syllabus ekle")}</span>` : icon.plus;
+  if (wide) $fab.removeAttribute("aria-label"); else $fab.setAttribute("aria-label", t("Görev ekle"));
   // Onboarding sonrası ilk çizim dahil: eski adresten gelen ?gorunum / ?bolum burada uygulanır
   applyParams();
 }
@@ -153,8 +164,8 @@ const globalActions = {
   "course-detail": (el) => openCourseDetail(el.dataset.id),
   "import-syllabus": () => openImport(),
   "toggle-task": (el) => {
-    const t = store.toggleTask(el.dataset.id);
-    if (t?.done) toast("Tamamlandı 🎉", { label: "Geri al", onClick: () => store.toggleTask(t.id) });
+    const task = store.toggleTask(el.dataset.id);
+    if (task?.done) toast(t("Tamamlandı 🎉"), { label: t("Geri al"), onClick: () => store.toggleTask(task.id) });
   },
   install: () => promptInstall(),
 
@@ -171,9 +182,9 @@ const globalActions = {
   },
   "enable-notify": async (_el, { render }) => {
     const perm = permissionState();
-    if (perm === "denied") return toast("Bildirimler tarayıcı ayarlarında kapalı. Site ayarlarından izin ver.");
+    if (perm === "denied") return toast(t("Bildirimler tarayıcı ayarlarında kapalı. Site ayarlarından izin ver."));
     const ok = await enableNotifications();
-    toast(ok ? "Bildirimler açıldı" : "Bildirim izni verilmedi");
+    toast(ok ? t("Bildirimler açıldı") : t("Bildirim izni verilmedi"));
     render();
   },
 
@@ -186,18 +197,18 @@ const globalActions = {
     const existing = c.absences.find((a) => a.date === date && a.start === el.dataset.start);
     if (existing) {
       store.removeAbsence(c.id, existing.id);
-      toast("Devamsızlık geri alındı");
+      toast(t("Devamsızlık geri alındı"));
     } else {
       store.addAbsence(c.id, date, el.dataset.start);
       // Sınıra yaklaşıldıysa uygulama içinde hemen uyar
       const a = attendance(find(store.get().courses, c.id), store.get().settings.termWeeks);
       const name = c.code || c.name;
       const msg =
-        a.level === "over" ? `${name}: devamsızlık sınırı aşıldı`
-          : a.level === "last" ? `${name}: devamsızlık hakkın bitti`
-            : a.level === "warn" ? `${name}: 1 devamsızlık hakkın kaldı`
-              : "Devamsızlık kaydedildi";
-      toast(msg, { label: "Geri al", onClick: () => {
+        a.level === "over" ? t("{ders}: devamsızlık sınırı aşıldı", { ders: name })
+          : a.level === "last" ? t("{ders}: devamsızlık hakkın bitti", { ders: name })
+            : a.level === "warn" ? t("{ders}: 1 devamsızlık hakkın kaldı", { ders: name })
+              : t("Devamsızlık kaydedildi");
+      toast(msg, { label: t("Geri al"), onClick: () => {
         const again = find(store.get().courses, c.id)?.absences.find((a) => a.date === date && a.start === el.dataset.start);
         if (again) store.removeAbsence(c.id, again.id);
       } });
@@ -236,6 +247,8 @@ window.addEventListener("hashchange", () => {
   window.scrollTo(0, 0);
   handleShortcut();
 });
+// Dil, ekran çizilmeden önce güncellenir (yedekten yüklemede de dil uysun)
+store.subscribe(() => setLang(store.get().settings.lang));
 store.subscribe(render);
 // Yedekten yükleme / sıfırlama da tema tercihini değiştirebilir
 store.subscribe(() => applyTheme(store.get().settings.theme));
@@ -250,7 +263,7 @@ onInstallChange(render);
 
 // Uygulama ikonuna uzun basınca çıkan kısayol: #/gorevler?yeni=1
 function handleShortcut() {
-  if (!store.get().profile.name || !parseHash().params.has("yeni")) return;
+  if (!store.get().profile.name || !parseHash().params.has("yeni")) return; // i18n-ok
   history.replaceState(null, "", `#/${parseHash().name}`);
   openTaskForm();
 }
@@ -279,8 +292,8 @@ if ("serviceWorker" in navigator && !isNativeApp()) {
       const reg = await navigator.serviceWorker.register("sw.js", { scope: "./" });
 
       const offerUpdate = (worker) =>
-        toast("Yeni sürüm hazır", {
-          label: "Yenile",
+        toast(t("Yeni sürüm hazır"), {
+          label: t("Yenile"),
           sticky: true,
           onClick: () => worker.postMessage("SKIP_WAITING"),
         });

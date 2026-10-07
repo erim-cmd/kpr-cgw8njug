@@ -11,6 +11,7 @@
 import { parseISO, toISO, todayISO } from "./dates.js";
 import { isLight } from "./store.js";
 import { taskWeight, groupOf } from "./weights.js";
+import { t } from "./i18n.js";
 
 const DAY = 86400000;
 
@@ -78,7 +79,7 @@ export function density(tasks, { termStart = "", termWeeks = 14 } = {}, courses 
     w.busy = w.share >= 10 || w.exams >= 2 || heavy >= 3;
     w.current = i === cur;
     w.past = i < cur;
-    w.label = w.final ? "Final" : w.vize ? "Vize" : w.busy ? "Yoğun" : "";
+    w.label = w.final ? t("Final") : w.vize ? t("Vize") : w.busy ? t("Yoğun") : "";
   });
   const next = weeks.find((w, i) => i > cur && (w.busy || w.vize || w.final));
   // Bugünden itibaren en ağır hafta (özet cümlesi için)

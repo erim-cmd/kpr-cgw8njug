@@ -10,6 +10,7 @@ import { store } from "./store.js";
 import { esc } from "./ui.js";
 import { icon } from "./icons.js";
 import { answer, EXAMPLES } from "./asistan-core.js";
+import { t } from "./i18n.js";
 
 // Oturumluk sohbet: { q, text, source, chips } (sayfa yenilenince silinir)
 const chat = [];
@@ -26,7 +27,7 @@ function bubble(m) {
     <li class="msg a">
       <p>${esc(m.text)}</p>
       ${m.chips ? `<div class="msg-chips">${m.chips.map((c) => `<button type="button" class="pick-chip" data-action="ask-course" data-id="${esc(c.id)}">${esc(c.label)}</button>`).join("")}</div>` : ""}
-      ${m.source ? `<small class="msg-src">Kaynak: ${esc(m.source)}</small>` : ""}
+      ${m.source ? `<small class="msg-src">${t("Kaynak: {src}", { src: esc(m.source) })}</small>` : ""}
     </li>`;
 }
 
@@ -37,8 +38,8 @@ function sample() {
   const q = EXAMPLES[0];
   const m = answer(q, state, {});
   if (!m || m.chips || !m.text) return "";
-  return `<section class="section ask-sample" aria-label="Örnek cevap">
-    <div class="section-head"><h2>Örnek</h2></div>
+  return `<section class="section ask-sample" aria-label="${t("Örnek cevap")}">
+    <div class="section-head"><h2>${t("Örnek")}</h2></div>
     <ul class="chat">${bubble({ q, ...m, chips: null })}</ul>
   </section>`;
 }
@@ -46,29 +47,29 @@ function sample() {
 export function view() {
   return `
     <header class="page-head">
-      <h1 class="page-title">Asistan</h1>
-      <p class="page-sub">Derslerin hakkında sor: tarihler, kurallar, notlar</p>
+      <h1 class="page-title">${t("Asistan")}</h1>
+      <p class="page-sub">${t("Derslerin hakkında sor: tarihler, kurallar, notlar")}</p>
     </header>
 
     ${chat.length ? `<ul class="chat" aria-live="polite">${chat.map(bubble).join("")}</ul>` : ""}
 
     <form class="ask-box" data-submit="ask">
       <label class="ask-field">
-        <span class="visually-hidden">Sorunu yaz</span>
-        <input name="q" maxlength="200" placeholder="Örn. finalden kaç almam lazım?" autocomplete="off" enterkeyhint="send">
+        <span class="visually-hidden">${t("Sorunu yaz")}</span>
+        <input name="q" maxlength="200" placeholder="${t("Örn. finalden kaç almam lazım?")}" autocomplete="off" enterkeyhint="send">
       </label>
-      <button type="submit" class="btn btn-violet" aria-label="Sor">${icon.chat}Sor</button>
+      <button type="submit" class="btn btn-violet" aria-label="${t("Sor")}">${icon.chat}${t("Sor")}</button>
     </form>
 
     ${chat.length ? "" : sample()}
 
     ${chat.length ? "" : `<section class="section">
-      <div class="section-head"><h2>Örnek sorular</h2></div>
+      <div class="section-head"><h2>${t("Örnek sorular")}</h2></div>
       <ul class="list ask-examples">${EXAMPLES.map(
         (q) => `<li><button type="button" class="ask-example" data-action="ask-example" data-q="${esc(q)}">${icon.chat}<span>${esc(q)}</span></button></li>`
       ).join("")}</ul>
     </section>`}
-    <p class="fine">Cevaplar sadece senin derslerinden (syllabus, görevler, notlar) gelir; internete bağlanmaz. Bulamazsa bulamadığını söyler.${chat.length ? ` <button type="button" class="link" data-action="clear-chat">Sohbeti temizle</button>` : ""}</p>`;
+    <p class="fine">${t("Cevaplar sadece senin derslerinden (syllabus, görevler, notlar) gelir; internete bağlanmaz. Bulamazsa bulamadığını söyler.")}${chat.length ? ` <button type="button" class="link" data-action="clear-chat">${t("Sohbeti temizle")}</button>` : ""}</p>`;
 }
 
 const focusInput = () => requestAnimationFrame(() => document.querySelector(".ask-box input")?.focus());

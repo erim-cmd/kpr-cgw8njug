@@ -11,6 +11,7 @@
  */
 
 import { esc } from "./ui.js";
+import { t, localize } from "./i18n.js";
 
 /* ------------------------------------------------------------------ */
 /* Tuş takımı mantığı (saf)                                            */
@@ -89,7 +90,7 @@ function bindDrag(d) {
 function open(html, setup) {
   const d = host();
   d.innerHTML = `<div class="gs-panel" role="document">
-      <button type="button" class="gs-grip" aria-label="Kapat (aşağı çek)"><i></i></button>
+      <button type="button" class="gs-grip" aria-label="${t("Kapat (aşağı çek)")}"><i></i></button>
       ${html}
     </div>`;
   bindDrag(d);
@@ -101,13 +102,13 @@ function open(html, setup) {
 }
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0", "del"];
-const KEY_LABEL = { ",": "Virgül", del: "Sil" };
+const KEY_LABEL = localize({ ",": "Virgül", del: "Sil" }, { ",": "Comma", del: "Delete" });
 
 /**
  * Sayı girişi. unit: "/ 100", "/ 4,00", "kredi"… impact(v) → kısa canlı etki metni ya da "".
  * onSave(v): v sayı ya da (Notu temizle ile) null.
  */
-export function openNumberSheet({ context, value = null, min = 0, max = 100, decimals = 1, unit = "/ 100", quick = [], impact = null, clearLabel = "Notu temizle", saveLabel = "Kaydet", onSave }) {
+export function openNumberSheet({ context, value = null, min = 0, max = 100, decimals = 1, unit = "/ 100", quick = [], impact = null, clearLabel = t("Notu temizle"), saveLabel = t("Kaydet"), onSave }) {
   let buf = value === null || value === undefined ? "" : formatValue(value, decimals);
   const opts = { max, decimals };
   return open(
@@ -115,7 +116,7 @@ export function openNumberSheet({ context, value = null, min = 0, max = 100, dec
     <p class="gs-value" aria-live="polite"><b data-v>${esc(buf || "—")}</b>${unit ? ` <span>${esc(unit)}</span>` : ""}</p>
     <p class="gs-impact" data-impact aria-live="polite" hidden></p>
     ${quick.length ? `<div class="gs-quick">${quick.map((q) => `<button type="button" data-quick="${q}">${esc(formatValue(q, decimals))}</button>`).join("")}</div>` : ""}
-    <div class="gs-keys" role="group" aria-label="Sayı tuşları">
+    <div class="gs-keys" role="group" aria-label="${t("Sayı tuşları")}">
       ${KEYS.map((k) => `<button type="button" data-key="${k}" aria-label="${KEY_LABEL[k] || k}" ${k === "," && !decimals ? "disabled" : ""}>${k === "del" ? "⌫" : k}</button>`).join("")}
     </div>
     <button type="button" class="btn btn-primary gs-save" data-save data-autofocus>${esc(saveLabel)}</button>
@@ -170,7 +171,7 @@ export function openLetterSheet({ context, letters, value = "", impact = null, c
   return open(
     `<p class="gs-ctx">${esc(context)}</p>
     <p class="gs-impact" data-impact aria-live="polite" hidden></p>
-    <div class="gs-letters" role="group" aria-label="Harf seç">
+    <div class="gs-letters" role="group" aria-label="${t("Harf seç")}">
       ${letters.map((l, i) => `<button type="button" data-letter="${esc(l)}" aria-pressed="${l === value}" ${l === value || (!value && i === 0) ? "data-autofocus" : ""}>${esc(l)}</button>`).join("")}
     </div>
     ${clearLabel && value ? `<button type="button" class="link gs-clear" data-clear>${esc(clearLabel)}</button>` : ""}`,

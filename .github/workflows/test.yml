@@ -53,3 +53,6 @@ jobs:
 
       - name: Yazı dili (docs/yazi-dili.md)
         run: node test/copy.mjs
+
+      - name: Dil desteği (İngilizce sözlük, çevrilmemiş metin)
+        run: node test/i18n.mjs

@@ -25,6 +25,7 @@ import { openCourseForm, openTaskForm } from "./forms.js";
 import { calcGrades, targetResult, currentWeekOf, fmtNum, impactLine, letterNeedLine } from "./ders-calc.js";
 import { openNumberSheet, openLetterSheet } from "./grade-sheet.js";
 import { taskWeight, labelOf } from "./weights.js";
+import { t, pct, locale } from "./i18n.js";
 
 const ONLINE = /teams|zoom|online|cevrimici|çevrimiçi|uzaktan|meet\b/i;
 
@@ -45,13 +46,13 @@ function nextBlock(c, tasks) {
   if (!next) return "";
   const w = taskWeight(next, c, mine);
   const n = daysUntil(next.due);
-  const when = n === 0 ? "bugün" : n === 1 ? "yarın" : `${n} gün`;
-  const kind = labelOf(next) || TASK_TYPES[next.type] || "Teslim";
+  const when = n === 0 ? t("bugün") : n === 1 ? t("yarın") : t("{n} gün", { n });
+  const kind = labelOf(next) || TASK_TYPES[next.type] || t("Teslim");
   // Tür adı başlıkta zaten geçiyorsa ("Ödev 2") ikinci kez yazılmaz
-  const tr = (s) => s.toLocaleLowerCase("tr-TR");
-  const label = tr(next.title).includes(tr(kind)) ? "Sıradaki" : kind;
+  const tr = (s) => s.toLocaleLowerCase(locale());
+  const label = tr(next.title).includes(tr(kind)) ? t("Sıradaki") : kind;
   return `<section class="cd-next" style="--c:${c.color}">
-    <p class="cd-next-line"><b>${esc(label)}</b> · ${when}${w !== null ? ` · %${fmtNum(w)}` : ""}</p>
+    <p class="cd-next-line"><b>${esc(label)}</b> · ${when}${w !== null ? ` · ${pct(fmtNum(w))}` : ""}</p>
     <p class="cd-next-title">${esc(next.title)} <small>${fmtShort(next.due)}${next.time ? ` ${esc(next.time)}` : ""}</small></p>
   </section>`;
 }
@@ -66,10 +67,10 @@ function infoBlock(c) {
     .map((s) => `<span>${DAYS_SHORT[s.day]} ${esc(s.start)}–${esc(s.end)}${s.room ? ` · ${ONLINE.test(s.room) ? '<em class="tag-online">Online</em>' : esc(s.room)}` : ""}</span>`)
     .join("");
   const cells = [
-    times && `<div class="cd-cell"><small>Ders saati</small>${times}</div>`,
-    (c.credit !== null || c.ects !== null) && `<div class="cd-cell"><small>Kredi / AKTS</small><span>${c.credit ?? "—"} / ${c.ects ?? "—"}</span></div>`,
-    c.email && `<div class="cd-cell"><small>E-posta</small><a href="mailto:${esc(c.email)}">${esc(c.email)}</a></div>`,
-    (c.office || c.officeHours) && `<div class="cd-cell"><small>Ofis</small>${c.office ? `<span>${esc(c.office)}</span>` : ""}${c.officeHours ? `<span class="muted">${esc(c.officeHours)}</span>` : ""}</div>`,
+    times && `<div class="cd-cell"><small>${t("Ders saati")}</small>${times}</div>`,
+    (c.credit !== null || c.ects !== null) && `<div class="cd-cell"><small>${t("Kredi / AKTS")}</small><span>${c.credit ?? "—"} / ${c.ects ?? "—"}</span></div>`,
+    c.email && `<div class="cd-cell"><small>${t("E-posta")}</small><a href="mailto:${esc(c.email)}">${esc(c.email)}</a></div>`,
+    (c.office || c.officeHours) && `<div class="cd-cell"><small>${t("Ofis")}</small>${c.office ? `<span>${esc(c.office)}</span>` : ""}${c.officeHours ? `<span class="muted">${esc(c.officeHours)}</span>` : ""}</div>`,
   ].filter(Boolean);
   return cells.length ? `<section class="cd-info">${cells.join("")}</section>` : "";
 }
@@ -87,14 +88,14 @@ function flagsBlock(c, st) {
       <span class="flag-tag">${SEV_LABEL[p.severity]} · ${POLICY_KINDS[p.kind]}</span>
       <p class="flag-rule">${esc(p.rule)}</p>
       ${p.consequence ? `<p class="flag-cons">→ ${esc(p.consequence)}</p>` : ""}
-      ${p.source ? `<details class="flag-src"><summary>Syllabus'ta ne yazıyor?</summary><small class="irow-src">“${esc(p.source)}”</small></details>` : ""}
-      <button type="button" class="link flag-hide" data-hide-policy="${esc(p.id)}">Gizle</button>
+      ${p.source ? `<details class="flag-src"><summary>${t("Syllabus'ta ne yazıyor?")}</summary><small class="irow-src">“${esc(p.source)}”</small></details>` : ""}
+      <button type="button" class="link flag-hide" data-hide-policy="${esc(p.id)}">${t("Gizle")}</button>
     </li>`;
   // "Tümü (N)" başlık satırında: ilk görünümde "Bu hafta" satırına yer kalsın
-  return `<section class="cd-sec"><div class="section-head cd-flags-head"><h3 class="mini-title">Dikkat edilecekler</h3>
-      ${shown.length > 2 ? `<button type="button" class="link" data-toggle="allFlags">${st.allFlags ? "Daha az" : `Tümü (${shown.length})`}</button>` : ""}</div>
+  return `<section class="cd-sec"><div class="section-head cd-flags-head"><h3 class="mini-title">${t("Dikkat edilecekler")}</h3>
+      ${shown.length > 2 ? `<button type="button" class="link" data-toggle="allFlags">${st.allFlags ? t("Daha az") : t("Tümü ({n})", { n: shown.length })}</button>` : ""}</div>
     ${list.length ? `<ul class="flags">${list.map(item).join("")}</ul>` : ""}
-    ${hidden ? `<button type="button" class="link" data-show-policies>Gizlenen ${hidden} kuralı göster</button>` : ""}
+    ${hidden ? `<button type="button" class="link" data-show-policies>${t("Gizlenen {n} kuralı göster", { n: hidden })}</button>` : ""}
   </section>`;
 }
 
@@ -104,8 +105,8 @@ function flagsBlock(c, st) {
 
 function gradingBlock(c, tasks) {
   if (!c.grading.length) {
-    return `<section class="cd-sec"><h3 class="mini-title">Değerlendirme</h3>
-      <p class="calc-note">Not dağılımı eklenmemiş. Alttaki <b>Düzenle</b>'den vize, final gibi bileşenleri ekle.</p></section>`;
+    return `<section class="cd-sec"><h3 class="mini-title">${t("Değerlendirme")}</h3>
+      <p class="calc-note">${t("Not dağılımı eklenmemiş. Alttaki <b>Düzenle</b>'den vize, final gibi bileşenleri ekle.")}</p></section>`;
   }
   const total = c.grading.reduce((s, g) => s + g.weight, 0) || 1;
   const r = calcGrades(c.grading, c.target);
@@ -114,15 +115,15 @@ function gradingBlock(c, tasks) {
   const mine = tasks.filter((t) => t.courseId === c.id && !t.done && daysUntil(t.due) >= 0 && t.id !== top?.id).sort(byDue);
   // Her bileşen bir satır: ad · ağırlık rozeti · (varsa) not. Dokununca ortak not girişi açılır.
   const rows = c.grading.map((g, i) => `<li><button type="button" class="grade-row ${g.score !== null ? "has" : ""}" data-grade-i="${i}"
-      aria-label="${esc(g.name)}, ağırlık yüzde ${fmtNum(g.weight)}, ${g.score !== null ? `notun ${fmtNum(g.score)}` : "not girilmedi"}">
+      aria-label="${g.score !== null ? t("{name}, ağırlık yüzde {w}, notun {score}", { name: esc(g.name), w: fmtNum(g.weight), score: fmtNum(g.score) }) : t("{name}, ağırlık yüzde {w}, not girilmedi", { name: esc(g.name), w: fmtNum(g.weight) })}">
       <span class="gr-n">${esc(g.name)}</span>
-      ${g.score !== null ? `<b class="gr-score">${fmtNum(g.score)}</b>` : '<span class="gr-add">not gir</span>'}
-      <b class="gr-w">%${fmtNum(g.weight)}</b>
+      ${g.score !== null ? `<b class="gr-score">${fmtNum(g.score)}</b>` : `<span class="gr-add">${t("not gir")}</span>`}
+      <b class="gr-w">${pct(fmtNum(g.weight))}</b>
     </button></li>`).join("");
-  return `<section class="cd-sec"><h3 class="mini-title">Değerlendirme</h3>
+  return `<section class="cd-sec"><h3 class="mini-title">${t("Değerlendirme")}</h3>
     <ul class="grade-rows">${rows}</ul>
-    <p class="cd-note">${r.average !== null ? `Şu ana kadarki ortalaman <b>${fmtNum(r.average)}</b> (notunun %${fmtNum(r.doneWeight)} kadarı girildi).` : "Aldığın notu girmek için satıra dokun; hedef harf hesabı buna göre güncellenir."}</p>
-    ${Math.abs(total - 100) > 0.01 ? `<p class="cd-note warn-text">Ağırlıkların toplamı %${fmtNum(total)}, 100 değil. Düzenle'den kontrol et.</p>` : ""}
+    <p class="cd-note">${r.average !== null ? t("Şu ana kadarki ortalaman {avg} (notunun {p} kadarı girildi).", { avg: `<b>${fmtNum(r.average)}</b>`, p: pct(fmtNum(r.doneWeight)) }) : t("Aldığın notu girmek için satıra dokun; hedef harf hesabı buna göre güncellenir.")}</p>
+    ${Math.abs(total - 100) > 0.01 ? `<p class="cd-note warn-text">${t("Ağırlıkların toplamı {p}, 100 değil. Düzenle'den kontrol et.", { p: pct(fmtNum(total)) })}</p>` : ""}
     ${mine.length ? `<ul class="kv">${mine.map((t) => `<li><b>${esc(t.title)}</b><span>${relLabel(daysUntil(t.due))} · ${fmtShort(t.due)}</span></li>`).join("")}</ul>` : ""}
   </section>`;
 }
@@ -137,18 +138,22 @@ function planBlock(c, st, state) {
   // Plan yoksa bölüm gizlenmez: yeniden yükleme çağrısı (sadece eksikler eklenir, girdiler ezilmez)
   if (!c.weeks.length) {
     return `<section class="cd-sec cd-noplan">
-      <p class="calc-note">Haftalık plan yok. Syllabus'u yeniden yükle, her haftanın konusu eklensin.</p>
-      <button type="button" class="btn btn-ghost btn-sm" data-reimport>${icon.upload}Syllabus yükle</button>
+      <p class="calc-note">${t("Haftalık plan yok. Syllabus'u yeniden yükle, her haftanın konusu eklensin.")}</p>
+      <button type="button" class="btn btn-ghost btn-sm" data-reimport>${icon.upload}${t("Syllabus yükle")}</button>
     </section>`;
   }
   const cur = currentWeekOf(c, state);
   const now = c.weeks.find((w) => w.n === cur);
-  const summary = now ? `<b>Bu hafta:</b> H${now.n} · ${esc(now.topic)}` : cur && cur > c.weeks[c.weeks.length - 1].n ? "Haftalık plan bitti" : `<b>Haftalık plan</b> · ${c.weeks.length} hafta`;
+  const summary = now
+    ? `<b>${t("Bu hafta:")}</b> ${t("H{n}", { n: now.n })} · ${esc(now.topic)}`
+    : cur && cur > c.weeks[c.weeks.length - 1].n
+      ? t("Haftalık plan bitti")
+      : `<b>${t("Haftalık plan")}</b> · ${t("{n} hafta", { n: c.weeks.length })}`;
   const rows = c.weeks.map((w) => {
     const exam = EXAM_RE.test(w.topic) || EXAM_RE.test(w.note || "");
-    return `<li class="${w.n === cur ? "now" : ""}"><b>H${w.n}</b>
+    return `<li class="${w.n === cur ? "now" : ""}"><b>${t("H{n}", { n: w.n })}</b>
       <span>${esc(w.topic)}${w.date || w.note ? `<small>${[w.date && fmtShort(w.date), w.note && esc(w.note)].filter(Boolean).join(" · ")}</small>` : ""}</span>
-      ${exam ? '<em class="tag-exam">Sınav</em>' : ""}</li>`;
+      ${exam ? `<em class="tag-exam">${t("Sınav")}</em>` : ""}</li>`;
   }).join("");
   return `<section class="cd-sec">
     <button type="button" class="cd-plan-sum" data-toggle="plan" aria-expanded="${st.plan}"><span>${summary}</span>${st.plan ? "▴" : "▾"}</button>
@@ -161,39 +166,39 @@ function planBlock(c, st, state) {
 /* ------------------------------------------------------------------ */
 
 function targetInner(c) {
-  if (!c.grading.length) return '<p class="calc-note">Önce not dağılımını ekle.</p>';
+  if (!c.grading.length) return `<p class="calc-note">${t("Önce not dağılımını ekle.")}</p>`;
   if (!c.scale.length) {
-    return `<p class="calc-note">Hocanın harf tablosunu gir ya da örnekle başlayıp düzelt.</p>
-      ${infoNote("Neden tablo gerekiyor?", "BAU'da harf eşikleri hocaya göre değişir; hedef harf hesabı hocanın açıkladığı tabloya göre yapılır.")}
-      <div class="empty-actions"><button type="button" class="btn btn-ghost" data-scale-sample>Örnek tabloyla başla</button></div>`;
+    return `<p class="calc-note">${t("Hocanın harf tablosunu gir ya da örnekle başlayıp düzelt.")}</p>
+      ${infoNote(t("Neden tablo gerekiyor?"), t("BAU'da harf eşikleri hocaya göre değişir; hedef harf hesabı hocanın açıkladığı tabloya göre yapılır."))}
+      <div class="empty-actions"><button type="button" class="btn btn-ghost" data-scale-sample>${t("Örnek tabloyla başla")}</button></div>`;
   }
   const res = targetResult(c);
   const pick = res.done
     ? ""
-    : `<button type="button" class="tl-row" data-target-letter><span>Hedef harfin</span><b class="tl-letter">${esc(res.letter)} ▾</b></button>`;
-  const apply = res.done && res.letter !== c.letter ? `<button type="button" class="btn btn-ghost gap-t" data-apply-letter="${esc(res.letter)}">Ders harfleri tablosuna ${esc(res.letter)} olarak aktar</button>` : "";
-  const applied = res.done && res.letter === c.letter ? `<p class="fine">Ders harfleri tablosunda bu ders ${esc(res.letter)} olarak kayıtlı.</p>` : "";
+    : `<button type="button" class="tl-row" data-target-letter><span>${t("Hedef harfin")}</span><b class="tl-letter">${esc(res.letter)} ▾</b></button>`;
+  const apply = res.done && res.letter !== c.letter ? `<button type="button" class="btn btn-ghost gap-t" data-apply-letter="${esc(res.letter)}">${t("Ders harfleri tablosuna {letter} olarak aktar", { letter: esc(res.letter) })}</button>` : "";
+  const applied = res.done && res.letter === c.letter ? `<p class="fine">${t("Ders harfleri tablosunda bu ders {letter} olarak kayıtlı.", { letter: esc(res.letter) })}</p>` : "";
   return `${pick}<div class="calc-result tl-res" aria-live="polite">${res.lines.map((l, i) => `<p class="${i ? "fine" : ""}">${esc(l)}</p>`).join("")}${applied}${apply}</div>`;
 }
 
 function allLettersBlock(c, st) {
   if (!c.scale.length || !c.grading.length) return "";
-  if (!st.allLetters) return `<button type="button" class="link" data-toggle="allLetters">Tüm harfleri gör</button>`;
+  if (!st.allLetters) return `<button type="button" class="link" data-toggle="allLetters">${t("Tüm harfleri gör")}</button>`;
   const r = calcGrades(c.grading, c.target);
   const rows = neededByLetter(c.scale, r.earned, r.remaining);
   return `<div>
-    <ul class="kv need-list">${rows.map((x) => `<li><b>${esc(x.letter)}</b><span>${x.status === "ok" ? "garanti" : x.status === "no" ? "mümkün değil" : `kalanlardan ort. ${fmtNum(Math.max(0, x.need))}`}</span></li>`).join("")}</ul>
-    <p class="mini-title gap-t">Harf eşikleri <small>(dokun, düzelt)</small></p>
-    <div class="scale-grid">${c.scale.map((x, i) => `<button type="button" class="scale-cell" data-scale-i="${i}" aria-label="${esc(x.letter)} için en düşük puan ${fmtNum(x.min)}"><span>${esc(x.letter)}</span><b>${fmtNum(x.min)}</b></button>`).join("")}
-      <button type="button" class="scale-cell" data-final-min aria-label="Final barajı"><span>Final barajı</span><b>${c.finalMin !== null ? fmtNum(c.finalMin) : "yok"}</b></button>
+    <ul class="kv need-list">${rows.map((x) => `<li><b>${esc(x.letter)}</b><span>${x.status === "ok" ? t("garanti") : x.status === "no" ? t("mümkün değil") : t("kalanlardan ort. {n}", { n: fmtNum(Math.max(0, x.need)) })}</span></li>`).join("")}</ul>
+    <p class="mini-title gap-t">${t("Harf eşikleri")} <small>${t("(dokun, düzelt)")}</small></p>
+    <div class="scale-grid">${c.scale.map((x, i) => `<button type="button" class="scale-cell" data-scale-i="${i}" aria-label="${t("{letter} için en düşük puan {n}", { letter: esc(x.letter), n: fmtNum(x.min) })}"><span>${esc(x.letter)}</span><b>${fmtNum(x.min)}</b></button>`).join("")}
+      <button type="button" class="scale-cell" data-final-min aria-label="${t("Final barajı")}"><span>${t("Final barajı")}</span><b>${c.finalMin !== null ? fmtNum(c.finalMin) : t("yok")}</b></button>
     </div>
-    ${infoNote("Harf eşikleri nedir?", "Kutular o harf için gereken en düşük ders puanı; hocanın tablosuyla aynı olmalı.")}
-    <p class="cd-note gap-t"><button type="button" class="link" data-scale-clear>Tabloyu kaldır</button> · <button type="button" class="link" data-toggle="allLetters">Kapat</button></p>
+    ${infoNote(t("Harf eşikleri nedir?"), t("Kutular o harf için gereken en düşük ders puanı; hocanın tablosuyla aynı olmalı."))}
+    <p class="cd-note gap-t"><button type="button" class="link" data-scale-clear>${t("Tabloyu kaldır")}</button> · <button type="button" class="link" data-toggle="allLetters">${t("Kapat")}</button></p>
   </div>`;
 }
 
 function targetBlock(c, st) {
-  return `<section class="cd-sec"><h3 class="mini-title">Hedef harf</h3>
+  return `<section class="cd-sec"><h3 class="mini-title">${t("Hedef harf")}</h3>
     <div data-target>${targetInner(c)}</div>
     ${allLettersBlock(c, st)}
   </section>`;
@@ -208,7 +213,7 @@ function inner(c, state) {
   const sub = [c.code, c.instructor].filter(Boolean).map(esc).join(" · ");
   return `<header class="sheet-head detail-head" style="--c:${c.color}">
       <div><h2>${esc(c.name)}</h2>${sub ? `<p class="detail-code">${sub}</p>` : ""}</div>
-      <button type="button" class="icon-btn sm" data-close aria-label="Kapat">${icon.close}</button>
+      <button type="button" class="icon-btn sm" data-close aria-label="${t("Kapat")}">${icon.close}</button>
     </header>
     <div class="sheet-body">
       ${nextBlock(c, state.tasks)}
@@ -217,10 +222,10 @@ function inner(c, state) {
       ${planBlock(c, st, state)}
       ${gradingBlock(c, state.tasks)}
       ${targetBlock(c, st)}
-      <p class="fine cd-src">Bilgiler syllabus'tan alındı · <button type="button" class="link" data-edit>Düzenle</button></p>
+      <p class="fine cd-src">${t("Bilgiler syllabus'tan alındı")} · <button type="button" class="link" data-edit>${t("Düzenle")}</button></p>
     </div>
     <footer class="sheet-foot">
-      <button type="button" class="btn btn-primary" data-new-task>${icon.plus}Görev ekle</button>
+      <button type="button" class="btn btn-primary" data-new-task>${icon.plus}${t("Görev ekle")}</button>
     </footer>`;
 }
 
@@ -261,7 +266,7 @@ export function openCourseDetail(courseId) {
         const i = Number(row.dataset.gradeI);
         const g = course.grading[i];
         return openNumberSheet({
-          context: `${label} · ${g.name} · %${fmtNum(g.weight)}`,
+          context: `${label} · ${g.name} · ${pct(fmtNum(g.weight))}`,
           value: g.score,
           quick: [60, 70, 80, 90, 100],
           impact: (v) => impactLine(course, i, v),
@@ -276,7 +281,7 @@ export function openCourseDetail(courseId) {
       if (e.target.closest("[data-target-letter]")) {
         const letters = [...course.scale].sort((a, b) => b.min - a.min).map((x) => x.letter);
         return openLetterSheet({
-          context: `${label} · Hedef harfin`,
+          context: `${label} · ${t("Hedef harfin")}`,
           letters,
           value: targetResult(course)?.letter || "",
           impact: (l) => letterNeedLine(course, l),
@@ -293,7 +298,7 @@ export function openCourseDetail(courseId) {
         const i = Number(cell.dataset.scaleI);
         const x = course.scale[i];
         return openNumberSheet({
-          context: `${label} · ${x.letter} için en düşük puan`,
+          context: `${label} · ${t("{letter} için en düşük puan", { letter: x.letter })}`,
           value: x.min,
           clearLabel: "",
           onSave: (v) => {
@@ -307,9 +312,9 @@ export function openCourseDetail(courseId) {
       }
       if (e.target.closest("[data-final-min]")) {
         return openNumberSheet({
-          context: `${label} · Final barajı`,
+          context: `${label} · ${t("Final barajı")}`,
           value: course.finalMin,
-          clearLabel: "Barajı kaldır",
+          clearLabel: t("Barajı kaldır"),
           onSave: (v) => {
             store.saveCourse({ ...get(), finalMin: v });
             redraw();
@@ -333,8 +338,8 @@ export function openCourseDetail(courseId) {
       const apply = e.target.closest("[data-apply-letter]");
       if (apply) {
         store.saveCourse({ ...course, letter: apply.dataset.applyLetter });
-        toast(`${course.code || course.name}: ${apply.dataset.applyLetter} olarak ders harfleri tablosuna aktarıldı`, {
-          label: "Tabloda gör",
+        toast(t("{course}: {letter} olarak ders harfleri tablosuna aktarıldı", { course: course.code || course.name, letter: apply.dataset.applyLetter }), {
+          label: t("Tabloda gör"),
           onClick: () => {
             closeSheet();
             location.hash = "#/ortalama";
@@ -361,15 +366,15 @@ function absenceBody(c) {
   const list = [...c.absences].sort((x, y) => y.date.localeCompare(x.date));
   const times = [...new Set(c.sessions.map((s) => s.start))].sort();
   return `<p class="abs-text ${a.level}">${attendanceText(a)}</p>
-    ${a.limit !== null ? `<div class="bar ${a.level}" role="img" aria-label="${a.used} / ${a.limit} devamsızlık"><i style="width:${pct}%"></i></div>` : '<p class="calc-note">Devam şartını dersin <b>Düzenle</b> ekranından gir; kalan hakkını hesaplayalım.</p>'}
-    <h3 class="mini-title gap-t">Geçmiş gün ekle</h3>
+    ${a.limit !== null ? `<div class="bar ${a.level}" role="img" aria-label="${t("{used} / {limit} devamsızlık", { used: a.used, limit: a.limit })}"><i style="width:${pct}%"></i></div>` : `<p class="calc-note">${t("Devam şartını dersin {edit} ekranından gir; kalan hakkını hesaplayalım.", { edit: `<b>${t("Düzenle")}</b>` })}</p>`}
+    <h3 class="mini-title gap-t">${t("Geçmiş gün ekle")}</h3>
     <div class="abs-add">
-      <input type="date" data-abs-date value="${todayISO()}" max="${todayISO()}" aria-label="Devamsızlık tarihi">
-      ${times.length > 1 ? `<select data-abs-start aria-label="Ders saati">${times.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("")}</select>` : times.length ? `<input type="hidden" data-abs-start value="${esc(times[0])}">` : ""}
-      <button type="button" class="btn btn-ghost" data-add-abs>${icon.plus}Ekle</button>
+      <input type="date" data-abs-date value="${todayISO()}" max="${todayISO()}" aria-label="${t("Devamsızlık tarihi")}">
+      ${times.length > 1 ? `<select data-abs-start aria-label="${t("Ders saati")}">${times.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("")}</select>` : times.length ? `<input type="hidden" data-abs-start value="${esc(times[0])}">` : ""}
+      <button type="button" class="btn btn-ghost" data-add-abs>${icon.plus}${t("Ekle")}</button>
     </div>
     ${list.length ? `<ul class="kv abs-list gap-t">${list.map((x) => `<li><b>${fmtShort(x.date)}${x.start ? ` · ${esc(x.start)}` : ""}</b>
-      <button type="button" class="link" data-remove-abs="${esc(x.id)}">Kaldır</button></li>`).join("")}</ul>` : '<p class="fine gap-t">Kayıtlı devamsızlık yok.</p>'}`;
+      <button type="button" class="link" data-remove-abs="${esc(x.id)}">${t("Kaldır")}</button></li>`).join("")}</ul>` : `<p class="fine gap-t">${t("Kayıtlı devamsızlık yok.")}</p>`}`;
 }
 
 export function openAbsences(courseId) {
@@ -377,8 +382,8 @@ export function openAbsences(courseId) {
   const c = get();
   if (!c) return;
   openSheet(`<div class="sheet-form">
-      <header class="sheet-head"><h2>Devamsızlık · ${esc(c.code || c.name)}</h2>
-        <button type="button" class="icon-btn sm" data-close aria-label="Kapat">${icon.close}</button></header>
+      <header class="sheet-head"><h2>${t("Devamsızlık · {name}", { name: esc(c.code || c.name) })}</h2>
+        <button type="button" class="icon-btn sm" data-close aria-label="${t("Kapat")}">${icon.close}</button></header>
       <div class="sheet-body" data-abs-body>${absenceBody(c)}</div>
     </div>`, (d) => {
     const root = d.firstElementChild;
@@ -396,8 +401,8 @@ export function openAbsences(courseId) {
         const date = root.querySelector("[data-abs-date]").value;
         const start = root.querySelector("[data-abs-start]")?.value || "";
         if (!date) return;
-        if (!store.addAbsence(courseId, date, start)) return toast("Bu ders için o gün zaten kayıtlı");
-        toast("Devamsızlık kaydedildi");
+        if (!store.addAbsence(courseId, date, start)) return toast(t("Bu ders için o gün zaten kayıtlı"));
+        toast(t("Devamsızlık kaydedildi"));
         refresh();
       }
     });

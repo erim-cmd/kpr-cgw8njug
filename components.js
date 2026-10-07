@@ -1,5 +1,6 @@
 /** KPR — Birden çok ekranda kullanılan HTML parçaları. */
 
+import { localize, t } from "./i18n.js";
 import { TASK_TYPES, POLICY_KINDS, isExam, isLight } from "./store.js";
 import { esc } from "./ui.js";
 import { icon } from "./icons.js";
@@ -27,36 +28,36 @@ export function sessionItem(s, now = null, absentDate = null) {
   }
   const absent = absentDate && s.course.absences.some((a) => a.date === absentDate && a.start === s.start);
   const absBtn = absentDate && (state === "past" || absent)
-    ? `<button type="button" class="abs-btn ${absent ? "on" : ""}" data-action="mark-absent" data-id="${esc(s.course.id)}" data-start="${esc(s.start)}" data-date="${esc(absentDate)}" aria-pressed="${!!absent}">${absent ? "Gitmedim ✓" : "Gitmedim"}</button>`
+    ? `<button type="button" class="abs-btn ${absent ? "on" : ""}" data-action="mark-absent" data-id="${esc(s.course.id)}" data-start="${esc(s.start)}" data-date="${esc(absentDate)}" aria-pressed="${!!absent}">${absent ? t("Gitmedim ✓") : t("Gitmedim")}</button>`
     : "";
   const meta = [s.course.code, s.room].filter(Boolean).map(esc).join(" · ");
   // Bugün başlamasına 2 saatten az kalan ders: "40 dk sonra"
   const left = now !== null && !state ? toMin(s.start) - now : null;
-  const soon = left !== null && left > 0 && left <= 120 ? `<span class="badge soft">${left < 60 ? `${left} dk sonra` : `${Math.floor(left / 60)} sa ${left % 60 ? `${left % 60} dk ` : ""}sonra`}</span>` : "";
+  const soon = left !== null && left > 0 && left <= 120 ? `<span class="badge soft">${left < 60 ? t("{n} dk sonra", { n: left }) : left % 60 ? t("{h} sa {m} dk sonra", { h: Math.floor(left / 60), m: left % 60 }) : t("{h} sa sonra", { h: Math.floor(left / 60) })}</span>` : "";
   return `<li class="${absBtn ? "session-wrap" : ""}">
     <button class="session ${state} ${absent ? "absent" : ""}" style="--c:${s.course.color}" data-action="course-detail" data-id="${esc(s.course.id)}">
       <span class="session-time">${esc(s.start)}<small>${esc(s.end)}</small></span>
       <span>
-        <span class="session-name">${esc(s.course.name)}${state === "now" ? '<span class="badge">Şu an</span>' : soon}</span>
+        <span class="session-name">${esc(s.course.name)}${state === "now" ? `<span class="badge">${t("Şu an")}</span>` : soon}</span>
         ${meta ? `<span class="session-meta">${meta}</span>` : ""}
       </span>
     </button>${absBtn}
   </li>`;
 }
 
-export function taskItem(t, courses) {
-  const course = courses.find((c) => c.id === t.courseId);
-  const n = daysUntil(t.due);
-  const cls = t.done ? "done" : n < 0 ? "overdue" : n <= 2 ? "soon" : "";
-  const when = t.done ? fmtShort(t.due) : relLabel(n);
-  const sub = t.done ? (t.time || "") : `${fmtShort(t.due)}${t.time ? " · " + t.time : ""}`;
+export function taskItem(task, courses) {
+  const course = courses.find((c) => c.id === task.courseId);
+  const n = daysUntil(task.due);
+  const cls = task.done ? "done" : n < 0 ? "overdue" : n <= 2 ? "soon" : "";
+  const when = task.done ? fmtShort(task.due) : relLabel(n);
+  const sub = task.done ? (task.time || "") : `${fmtShort(task.due)}${task.time ? " · " + task.time : ""}`;
   return `<li class="task ${cls}">
-    <button class="check" data-action="toggle-task" data-id="${esc(t.id)}" aria-pressed="${t.done}"
-      aria-label="${esc(t.title)}: ${t.done ? "tamamlanmadı olarak işaretle" : "tamamlandı olarak işaretle"}">${icon.check}</button>
-    <button class="task-body" data-action="edit-task" data-id="${esc(t.id)}">
-      <span class="task-title">${esc(t.title)}</span>
+    <button class="check" data-action="toggle-task" data-id="${esc(task.id)}" aria-pressed="${task.done}"
+      aria-label="${task.done ? t("{gorev}: tamamlanmadı olarak işaretle", { gorev: esc(task.title) }) : t("{gorev}: tamamlandı olarak işaretle", { gorev: esc(task.title) })}">${icon.check}</button>
+    <button class="task-body" data-action="edit-task" data-id="${esc(task.id)}">
+      <span class="task-title">${esc(task.title)}</span>
       <span class="task-meta">
-        <span class="tag tag-${t.type}">${TASK_TYPES[t.type]}</span>
+        <span class="tag tag-${task.type}">${TASK_TYPES[task.type]}</span>
         ${course ? `<span class="dot" style="--c:${course.color}"></span><span class="course-ref">${esc(course.code || course.name)}</span>` : ""}
       </span>
     </button>
@@ -79,13 +80,13 @@ export function emptyState(title, text, action, label, secondary) {
  * Ders yokken ekranın tek eylemi: ilk syllabus'u ekle (Bugün, Dersler, Dönem aynı kartı gösterir).
  * Elle ekleme ikincil bir bağlantı; + düğmesi ve üstteki "Syllabus ekle" bu sırada gizli (app.js).
  */
-export function startCard(text = "PDF ya da Word dosyasını seç; ders saatleri, sınav tarihleri ve not dağılımı dönem planına dönüşsün.") {
+export function startCard(text = t("PDF ya da Word dosyasını seç; ders saatleri, sınav tarihleri ve not dağılımı dönem planına dönüşsün.")) {
   return `<section class="start">
     <span class="start-icon">${icon.upload}</span>
-    <h2>İlk syllabus'unu ekle</h2>
+    <h2>${t("İlk syllabus'unu ekle")}</h2>
     <p>${text}</p>
-    <button class="btn btn-primary btn-block start-btn" type="button" data-action="import-syllabus">${icon.upload}Syllabus ekle</button>
-    <button class="link start-alt" type="button" data-action="new-course">Syllabus'um yok, dersi elle ekleyeceğim</button>
+    <button class="btn btn-primary btn-block start-btn" type="button" data-action="import-syllabus">${icon.upload}${t("Syllabus ekle")}</button>
+    <button class="link start-alt" type="button" data-action="new-course">${t("Syllabus'um yok, dersi elle ekleyeceğim")}</button>
   </section>`;
 }
 
@@ -95,18 +96,18 @@ export function installCard() {
   if (!mode) return "";
   const text =
     mode === "ios"
-      ? "Safari'de <b>Paylaş</b> → <b>Ana Ekrana Ekle</b>'ye dokun."
-      : "Ana ekranına ekle, uygulama gibi tam ekran ve internetsiz kullan.";
+      ? t("Safari'de <b>Paylaş</b> → <b>Ana Ekrana Ekle</b>'ye dokun.")
+      : t("Ana ekranına ekle, uygulama gibi tam ekran ve internetsiz kullan.");
   return `<div class="install-card">
     <img class="brand-mark" src="logo-mark.svg" alt="" width="32" height="32">
-    <div><strong>Köprü'yü telefonuna kur</strong><p>${text}</p></div>
-    ${mode === "prompt" ? '<button class="btn btn-primary" type="button" data-action="install">Kur</button>' : ""}
-    <button class="icon-btn sm" type="button" data-action="dismiss-install" aria-label="Kapat">${icon.close}</button>
+    <div><strong>${t("Köprü'yü telefonuna kur")}</strong><p>${text}</p></div>
+    ${mode === "prompt" ? `<button class="btn btn-primary" type="button" data-action="install">${t("Kur")}</button>` : ""}
+    <button class="icon-btn sm" type="button" data-action="dismiss-install" aria-label="${t("Kapat")}">${icon.close}</button>
   </div>`;
 }
 
 const SEV_ORDER = { kritik: 0, dikkat: 1, bilgi: 2 };
-export const SEV_LABEL = { kritik: "Kritik", dikkat: "Dikkat", bilgi: "İpucu" };
+export const SEV_LABEL = localize({ kritik: "Kritik", dikkat: "Dikkat", bilgi: "İpucu" }, { kritik: "Critical", dikkat: "Watch out", bilgi: "Tip" });
 export const sortFlags = (list) => [...list].sort((a, b) => SEV_ORDER[a.severity] - SEV_ORDER[b.severity]);
 
 /** Bir syllabus kuralı (kırmızı bayrak). withHide: ders sayfasında "Gizle" bağlantısı. */
@@ -116,7 +117,7 @@ export function flagItem(p, withHide = false) {
     <p class="flag-rule">${esc(p.rule)}</p>
     ${p.consequence ? `<p class="flag-cons">→ ${esc(p.consequence)}</p>` : ""}
     ${p.source || withHide ? `<p class="flag-foot">${p.source ? `<small class="irow-src">“${esc(p.source)}”</small>` : ""}
-      ${withHide ? `<button type="button" class="link" data-hide-policy="${esc(p.id)}">Gizle</button>` : ""}</p>` : ""}
+      ${withHide ? `<button type="button" class="link" data-hide-policy="${esc(p.id)}">${t("Gizle")}</button>` : ""}</p>` : ""}
   </li>`;
 }
 
@@ -136,7 +137,7 @@ export function weekStripHtml({ state, selected = null, action }) {
   const ti = todayIdx();
   const monday = new Date();
   monday.setDate(monday.getDate() - ti);
-  const tag = (w) => (w.final ? "final haftası" : w.vize ? "vize haftası" : w.busy ? "yoğun" : "sakin");
+  const tag = (w) => (w.final ? t("final haftası") : w.vize ? t("vize haftası") : w.busy ? t("yoğun") : t("sakin"));
   const cur = d.current !== null ? d.weeks[d.current] : null;
   const nxt = cur ? d.weeks[d.current + 1] : null;
   const days = DAYS_SHORT.map((label, i) => {
@@ -146,7 +147,7 @@ export function weekStripHtml({ state, selected = null, action }) {
     const due = open.filter((t) => t.due === iso && !isLight(t));
     const exam = due.some(isExam);
     const task = due.some((t) => !isExam(t));
-    const what = [exam && "sınav", task && "teslim"].filter(Boolean).join(", ");
+    const what = [exam && t("sınav"), task && t("teslim")].filter(Boolean).join(", ");
     const sel = selected !== null && i === selected;
     return `<button type="button" class="wk-day${i === ti ? " is-today" : ""}${i < ti ? " is-past" : ""}${sel ? " is-sel" : ""}" data-action="${action}" data-day="${i}"
       ${selected !== null ? `aria-pressed="${sel}"` : ""} aria-label="${DAYS[i]} ${day.getDate()}${what ? `: ${what}` : ""}">
@@ -154,12 +155,12 @@ export function weekStripHtml({ state, selected = null, action }) {
       <span class="wk-dots">${exam ? '<i class="ex"></i>' : ""}${task ? '<i class="due"></i>' : ""}</span>
     </button>`;
   }).join("");
-  return `<section class="wk" aria-label="Bu hafta">
+  return `<section class="wk" aria-label="${t("Bu hafta")}">
     <div class="wk-head">
-      <span>${cur ? `<b>${d.current + 1}. hafta</b> / ${d.weeks.length}` : `<b>Bu hafta</b>`}</span>
-      ${nxt ? `<span>Gelecek hafta: <b class="${nxt.final || nxt.vize ? "danger-text" : nxt.busy ? "warn-text" : ""}">${tag(nxt)}</b></span>` : ""}
+      <span>${cur ? `<b>${t("{n}. hafta", { n: d.current + 1 })}</b> / ${d.weeks.length}` : `<b>${t("Bu hafta")}</b>`}</span>
+      ${nxt ? `<span>${t("Gelecek hafta: {durum}", { durum: `<b class="${nxt.final || nxt.vize ? "danger-text" : nxt.busy ? "warn-text" : ""}">${tag(nxt)}</b>` })}</span>` : ""}
     </div>
-    <div class="wk-days" role="group" aria-label="Gün seç">${days}</div>
-    <div class="wk-legend" aria-hidden="true"><span><i class="ex"></i>Sınav</span><span><i class="due"></i>Teslim</span></div>
+    <div class="wk-days" role="group" aria-label="${t("Gün seç")}">${days}</div>
+    <div class="wk-legend" aria-hidden="true"><span><i class="ex"></i>${t("Sınav")}</span><span><i class="due"></i>${t("Teslim")}</span></div>
   </section>`;
 }
