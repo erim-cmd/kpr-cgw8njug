@@ -259,6 +259,8 @@ export function openTaskForm(task = null, defaults = {}) {
     const c = courses.find((x) => x.id === courseId);
     return `${TASK_TYPES[type]}${c ? ` · ${c.code || c.name}` : ""}`;
   };
+  // Yer tutucu dolu bir değer gibi görünmesin: ne olduğunu ve boş kalırsa ne yazılacağını söyler
+  const hint = (type, courseId) => `Başlık · boş kalırsa ${suggest(type, courseId)}`;
 
   openSheet(
     `<form class="sheet-form task-form">
@@ -269,7 +271,7 @@ export function openTaskForm(task = null, defaults = {}) {
              <input type="hidden" name="type" value="${esc(t.type)}">`
           : `<div class="pchips one-row" role="radiogroup" aria-label="Tür">${QUICK_TYPES.map((k) => radio("type", k, QUICK_LABEL[k], k === t.type)).join("")}</div>`}
         <label class="field title-field"><span class="visually-hidden">Başlık</span>
-          <input name="title" value="${esc(t.title)}" maxlength="120" placeholder="${esc(suggest(t.type, t.courseId))}" autofocus autocomplete="off" enterkeyhint="done">
+          <input name="title" value="${esc(t.title)}" maxlength="120" placeholder="${esc(hint(t.type, t.courseId))}" autofocus autocomplete="off" enterkeyhint="done">
         </label>
         <div class="field"><span class="field-label">Ders</span>
           <div class="pchips scroll-row" role="radiogroup" aria-label="Ders">
@@ -305,7 +307,7 @@ export function openTaskForm(task = null, defaults = {}) {
       const refreshHints = () => {
         const type = form.elements.type.value;
         form.elements.note.placeholder = noteHint(type);
-        form.elements.title.placeholder = suggest(type, form.elements.courseId.value || null);
+        form.elements.title.placeholder = hint(type, form.elements.courseId.value || null);
       };
       form.addEventListener("change", (e) => {
         if (e.target.name === "type" || e.target.name === "courseId") refreshHints();

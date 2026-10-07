@@ -4,12 +4,12 @@ import { esc, toast } from "./ui.js";
 import { icon } from "./icons.js";
 import { infoNote } from "./components.js";
 import { todayISO } from "./dates.js";
-import { installMode, isStandalone, promptInstall } from "./install.js";
+import { installMode, isStandalone, isNativeApp, promptInstall } from "./install.js";
 import { permissionState, enableNotifications, disableNotifications, testNotification } from "./notify.js";
 import { buildICS, deliverICS, countExportable } from "./ics.js";
 import { THEMES, applyTheme } from "./theme.js";
 
-export const APP_VERSION = "2.18.1";
+export const APP_VERSION = "2.19.0";
 
 function themeSeg(current) {
   const items = Object.entries(THEMES).map(([k, label]) =>
@@ -51,6 +51,7 @@ function calendarRows(state) {
 }
 
 function installRow() {
+  if (isNativeApp()) return "";
   if (isStandalone()) {
     return `<div class="group-row"><div><strong>Uygulama</strong><p>Ana ekrandan açıldı.</p></div><span class="status-ok">Kurulu ✓</span></div>`;
   }
@@ -103,14 +104,14 @@ export function view() {
       </div>
     </section>
 
-    <section class="section">
+    ${isNativeApp() ? "" : `<section class="section">
       <div class="section-head"><h2>Uygulama</h2></div>
       <div class="group">
         ${installRow()}
         <div class="group-row"><div><strong>İnternetsiz çalışma</strong><p>Bir kez açtıktan sonra internet olmadan da çalışır.</p></div>
           ${"serviceWorker" in navigator && navigator.serviceWorker.controller ? '<span class="status-ok" id="sw-status">Hazır ✓</span>' : '<span class="status-muted" id="sw-status">Hazırlanıyor…</span>'}</div>
       </div>
-    </section>
+    </section>`}
 
     <section class="section">
       <div class="section-head"><h2>Verilerin</h2></div>

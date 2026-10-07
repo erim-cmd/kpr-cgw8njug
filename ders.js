@@ -47,8 +47,11 @@ function nextBlock(c, tasks) {
   const n = daysUntil(next.due);
   const when = n === 0 ? "bugün" : n === 1 ? "yarın" : `${n} gün`;
   const kind = labelOf(next) || TASK_TYPES[next.type] || "Teslim";
+  // Tür adı başlıkta zaten geçiyorsa ("Ödev 2") ikinci kez yazılmaz
+  const tr = (s) => s.toLocaleLowerCase("tr-TR");
+  const label = tr(next.title).includes(tr(kind)) ? "Sıradaki" : kind;
   return `<section class="cd-next" style="--c:${c.color}">
-    <p class="cd-next-line"><b>${esc(kind)}</b> · ${when}${w !== null ? ` · %${fmtNum(w)}` : ""}</p>
+    <p class="cd-next-line"><b>${esc(label)}</b> · ${when}${w !== null ? ` · %${fmtNum(w)}` : ""}</p>
     <p class="cd-next-title">${esc(next.title)} <small>${fmtShort(next.due)}${next.time ? ` ${esc(next.time)}` : ""}</small></p>
   </section>`;
 }
