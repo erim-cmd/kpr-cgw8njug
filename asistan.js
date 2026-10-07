@@ -57,7 +57,7 @@ export function view() {
         <span class="visually-hidden">Sorunu yaz</span>
         <input name="q" maxlength="200" placeholder="Örn. finalden kaç almam lazım?" autocomplete="off" enterkeyhint="send">
       </label>
-      <button type="submit" class="btn btn-primary" aria-label="Sor">${icon.chat}Sor</button>
+      <button type="submit" class="btn btn-violet" aria-label="Sor">${icon.chat}Sor</button>
     </form>
 
     ${chat.length ? "" : sample()}

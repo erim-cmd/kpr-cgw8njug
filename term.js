@@ -101,14 +101,15 @@ function absenceRow(c, weeks) {
 /** Devamsızlık: şartı girilmemiş dersler tek satırda toplanır. */
 function devamBlock(state, weeks) {
   const risk = riskiest(state.courses, weeks);
-  const set = state.courses.filter((c) => attendance(c, weeks).limit !== null || c.absences.length);
+  // Şartı girilmiş dersler satır olarak; girilmemişler yalnız alttaki tek kutuda (aynı ders iki yerde görünmez)
+  const set = state.courses.filter((c) => attendance(c, weeks).limit !== null);
   const unset = state.courses.filter((c) => attendance(c, weeks).limit === null);
   return `<section class="section" id="devamsizlik">
       <div class="section-head"><h2>Devamsızlık</h2>${risk && risk.a.level !== "ok" ? `<span class="u-term warn-text">${esc(risk.c.code || risk.c.name)}: ${riskShort(risk.a)}</span>` : ""}</div>
       ${set.length ? `<ul class="list att-list">${set.map((c) => absenceRow(c, weeks)).join("")}</ul>` : ""}
       ${unset.length ? `<div class="att-unset">
         <p><b>Devam şartı girilmemiş</b><small>Kalan hakkını hesaplamak için şartı gir.</small></p>
-        <div class="att-unset-list">${unset.map((c) => `<button type="button" class="chip-btn" data-action="attend-rule" data-id="${esc(c.id)}"><i style="--c:${c.color}"></i>${esc(c.code || c.name)}</button>`).join("")}</div>
+        <div class="att-unset-list">${unset.map((c) => `<button type="button" class="chip-btn" data-action="attend-rule" data-id="${esc(c.id)}"><i style="--c:${c.color}"></i>${esc(c.code || c.name)}${c.absences.length ? ` · ${c.absences.length} kayıt` : ""}</button>`).join("")}</div>
       </div>` : ""}
       ${infoNote("Devamsızlık nasıl sayılır?", "Derse gittiğin varsayılır; gitmediğin dersi Bugün'de ders bitince \"Gitmedim\" ile işaretle. Geçmiş bir günü eklemek için derse dokun. Devam şartını sağlamayan öğrenci NA alır ve finale giremez (BAU Yönetmeliği Md. 19).")}
     </section>`;
@@ -231,7 +232,7 @@ export const ortalama = {
     return `<header class="page-head">
         <a class="link back-link" href="#/donem">← Dönem</a>
         <h1 class="page-title">Ders harfleri</h1>
-        <p class="page-sub">Harf, kredi ve ortalama · BAU, A–F, 4,00 üzerinden</p>
+        <p class="page-sub">Kredi ve ortalama · BAU, 4,00 üzerinden</p>
       </header>
       ${gpaSection(state, projection(state))}`;
   },

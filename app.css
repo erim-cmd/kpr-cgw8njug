@@ -644,8 +644,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
   width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer;
   padding: 12px 14px; border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--border); color: var(--text);
 }
-.ask-example svg { width: 18px; height: 18px; color: var(--accent); }
-.ask-example:hover { border-color: var(--accent); }
+.ask-example svg { width: 18px; height: 18px; color: var(--violet); }
+.ask-example:hover { border-color: var(--violet); }
 
 /* Seçmeli Keşfi */
 .interest-card { display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px; }
@@ -747,6 +747,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 .pchip input:focus-visible + span { outline: 2px solid var(--cyan); }
 .field-label { display: block; margin-bottom: 6px; font-size: var(--fs-xs); font-weight: 600; color: var(--text-muted); }
 .title-field input { font: 600 var(--fs-lg) var(--font-display); padding: 12px 14px; }
+.title-field input::placeholder { font: 400 var(--fs-md) var(--font-body); color: var(--text-muted); }
 .due-pick { margin-top: 8px; }
 .time-link { margin-top: 8px; font-size: var(--fs-xs); }
 .time-pick { margin-top: 8px; max-width: 140px; }
@@ -1033,3 +1034,15 @@ button.tl-row { width: 100%; padding: 10px 14px; border-radius: var(--r-md); bac
 .back-link { display: inline-block; margin-bottom: 8px; }
 /* ?bolum=akis gibi adreslerle kaydırınca bölüm başlığı üst çubuğun altında kalmasın */
 #hedef, #devamsizlik, #akis { scroll-margin-top: calc(72px + var(--safe-t)); }
+
+/* ---- Dokunma alanı ≥ 44px (Apple HIG) ----
+   Küçük denetimler aynı görünür; görünmez bir katman dokunulan alanı en az 44×44px'e büyütür.
+   .abs-btn ve .flag-hide zaten konumlu (absolute); :where sayesinde onların konumu korunur. */
+:where(.brand, .add-syllabus, .icon-btn, .check, .pick-chip, .link, .u-pick, .focus-done, .chip-btn, .info-note summary, .flag-src summary, .footnote a, a[href^="mailto:"], .seg button) { position: relative; } /* :where — kendi konumu olan (ör. .flag-hide) bozulmaz */
+.focus-exam { position: relative; } /* all: unset sonrası */
+:is(.brand, .add-syllabus, .icon-btn, .check, .pick-chip, .link, .u-pick, .focus-done, .focus-exam, .abs-btn, .chip-btn, .info-note summary, .flag-src summary, .footnote a, a[href^="mailto:"], .seg button)::after {
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
+}
+.u-num input, .num-in { min-height: 44px; }
+.u-num input { min-width: 44px; }
