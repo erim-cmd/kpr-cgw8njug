@@ -31,10 +31,11 @@ runMigrations();
 applyTheme(store.get().settings.theme);
 
 const ROUTES = {
-  bugun: { mod: today, title: "Bugün", icon: "home", fab: "new-task" },
+  // Alttaki ana düğme: Bugün ve Dersler'de geniş "Syllabus ekle"; Görevler'de küçük + (görev). Görev ekleme
+  // Bugün'de "Bu hafta" başlığındaki küçük düğmede (Erim geri bildirimi, 7 Eki: syllabus daha belirgin, görev daha küçük)
+  bugun: { mod: today, title: "Bugün", icon: "home", fab: "import-syllabus" },
   gorevler: { mod: tasks, title: "Görevler", icon: "tasks", fab: "new-task" },
-  // Syllabus ekleme her ekranda üst çubukta (#add-syllabus); Dersler'de ayrıca + yok
-  dersler: { mod: courses, title: "Dersler", icon: "book", fab: null },
+  dersler: { mod: courses, title: "Dersler", icon: "book", fab: "import-syllabus" },
   asistan: { mod: asistan, title: "Asistan", icon: "chat", fab: null, accent: true },
   donem: { mod: term, title: "Dönem", icon: "gauge", fab: null },
   ortalama: { mod: term.ortalama, title: "Ders harfleri", fab: null },
@@ -55,8 +56,6 @@ const $tabbar = document.getElementById("tabbar");
 const $fab = document.getElementById("fab");
 const $settings = document.getElementById("settings-link");
 const $add = document.getElementById("add-syllabus");
-// Ders yokken bu ekranlarda ortada büyük "Syllabus ekle" var; üstteki düğme ikinci bir çağrı olmasın
-const OWN_START = ["bugun", "dersler", "donem"];
 
 $tabbar.innerHTML = `<div class="tabbar-inner">${TABS.map(
   (r) => `<a class="tab${ROUTES[r].accent ? " tab-accent" : ""}" href="#/${r}" data-route="${r}"><span class="tab-ic">${icon[ROUTES[r].icon]}</span><span>${ROUTES[r].title}</span></a>`
@@ -130,10 +129,13 @@ function render() {
 
   // Ders yokken tek eylem "Syllabus ekle": + düğmesi (görev ekle) gizli
   const hasCourses = store.get().courses.length > 0;
-  $add.hidden = !hasCourses && OWN_START.includes(name);
+  $add.hidden = true; // üst çubuktaki eski "Syllabus ekle" yerine alttaki geniş düğme
   $fab.hidden = !route.fab || !hasCourses;
   $fab.dataset.action = route.fab || "";
-  $fab.setAttribute("aria-label", "Görev ekle");
+  const wide = route.fab === "import-syllabus";
+  $fab.classList.toggle("fab-wide", wide);
+  $fab.innerHTML = wide ? `${icon.upload}<span>Syllabus ekle</span>` : icon.plus;
+  if (wide) $fab.removeAttribute("aria-label"); else $fab.setAttribute("aria-label", "Görev ekle");
   // Onboarding sonrası ilk çizim dahil: eski adresten gelen ?gorunum / ?bolum burada uygulanır
   applyParams();
 }
