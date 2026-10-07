@@ -1,6 +1,8 @@
 # iOS görselleri
 
-`logo-mark.svg`'den üretildi (işaret yeniden çizilmedi). Zemin rengi = `tokens.css` `--bg`.
+`logo-mark.svg` (v2, düz) dosyasından üretildi; işaret yeniden çizilmedi. Zemin rengi = `tokens.css` `--bg`.
+
+iOS'un renkli (tinted) ikon modu ve bildirim simgesi için tek renk işaret: `../kpr-isaret-tek-renk-beyaz.svg`.
 
 | Dosya | Ne için |
 |---|---|

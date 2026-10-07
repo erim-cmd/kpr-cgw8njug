@@ -1,0 +1,15 @@
+<svg width="580" height="580" xmlns="http://www.w3.org/2000/svg" viewBox="30 95 580 580" role="img" aria-label="Köprü">
+  <!-- Tek renk işaret (iOS renkli ikon ve bildirim için beyaz): kemer, gövdeden ve koldan 14 birimlik boşlukla ayrılır; yoksa tek renkte köprü kaybolur -->
+  <defs>
+    <clipPath id="kAbove"><path d="M0 0 H640 V593 H579 C574 470 468 378 330 378 C214 378 92 468 80 606 H0 Z"/></clipPath>
+    <mask id="kGap" maskUnits="userSpaceOnUse" x="0" y="0" width="700" height="760">
+      <rect x="0" y="0" width="700" height="760" fill="#fff"/>
+      <path d="M80 606 C92 468 214 378 330 378 C468 378 574 470 579 593 A67 67 0 0 1 445 593 C441 516 398 447 322 447 C246 447 194 500 184 566 C178 604 150 628 116 630 C94 631 79 622 80 606 Z" fill="#000" stroke="#000" stroke-width="28" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  <g fill="#FFFFFF" mask="url(#kGap)">
+    <path d="M190 470 L505 190" stroke="#FFFFFF" stroke-width="134" stroke-linecap="round" fill="none" clip-path="url(#kAbove)"/>
+    <rect x="75" y="110" width="140" height="550" rx="70"/>
+  </g>
+  <path d="M80 606 C92 468 214 378 330 378 C468 378 574 470 579 593 A67 67 0 0 1 445 593 C441 516 398 447 322 447 C246 447 194 500 184 566 C178 604 150 628 116 630 C94 631 79 622 80 606 Z" fill="#FFFFFF"/>
+</svg>
