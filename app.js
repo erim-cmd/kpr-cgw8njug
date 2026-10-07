@@ -10,7 +10,7 @@ import { toast } from "./ui.js";
 import { icon } from "./icons.js";
 import { openCourseForm, openTaskForm, openCourseDetail } from "./forms.js";
 import { openImport } from "./importer.js";
-import { onInstallChange, promptInstall, dismissInstall } from "./install.js";
+import { onInstallChange, promptInstall, dismissInstall, isNativeApp } from "./install.js";
 import * as onboarding from "./onboarding.js";
 import * as today from "./today.js";
 import * as tasks from "./tasks.js";
@@ -270,7 +270,8 @@ handleShortcut();
 // ------------------------------------------------------------------
 // Service worker + "Yeni sürüm hazır" akışı
 // ------------------------------------------------------------------
-if ("serviceWorker" in navigator) {
+// Mağaza uygulamasında dosyalar uygulamanın içinde, güncelleme mağazadan gelir: service worker yok
+if ("serviceWorker" in navigator && !isNativeApp()) {
   window.addEventListener("load", async () => {
     try {
       const reg = await navigator.serviceWorker.register("sw.js", { scope: "./" });

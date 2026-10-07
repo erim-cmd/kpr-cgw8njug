@@ -49,6 +49,7 @@
   --danger-text: #F58BA0;   /* kırmızı zemin üstünde açık yazı (sınav etiketi, risk) */
   --warn-soft-text: #F7D08F; /* uyarı kutusu yazısı */
   --on-violet: #FFFFFF;     /* mor (Asistan) düğme üstündeki simge */
+  --violet-solid: #7C3AED;  /* üstünde beyaz yazı olan mor düğme zemini (≥ 4.5:1) */
   --switch-knob: #FFFFFF;   /* açık anahtarın topuzu */
   --scrim: #080B14;         /* pencere arkası karartma (yarı saydam kullanılır) */
   --on-danger: #FFFFFF;     /* kırmızı (silme onayı) düğme yazısı */
@@ -98,6 +99,7 @@
   --danger-text: #A5223D;
   --warn-soft-text: #744300;
   --on-violet: #FFFFFF;
+  --violet-solid: #6B3FDB;
   --switch-knob: #FFFFFF;
   --scrim: #141A28;
   --on-danger: #FFFFFF;
@@ -137,6 +139,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 }
 .btn svg { width: 18px; height: 18px; }
 .btn-primary { background: var(--gradient); color: var(--on-accent); }
+.btn-violet { background: var(--violet-solid); color: var(--on-violet); } /* yalnızca Asistan */
 .btn-ghost { background: var(--surface-2); border-color: var(--border); color: var(--text); }
 .btn-danger { background: none; border-color: color-mix(in srgb, var(--danger) 45%, transparent); color: var(--danger); }
 .btn-danger.armed { background: var(--danger); border-color: var(--danger); color: var(--on-danger); }

@@ -128,7 +128,7 @@ export function infoNote(summary, text) {
 /**
  * Hafta şeridi (Bugün ve Hafta görünümü ortak): Pzt–Paz, gün numarası, sınav (kırmızı) / teslim (sarı) noktası.
  * Bugün dolu camgöbeği daire; selected verilirse o gün halkalı (aria-pressed).
- * action: "strip-day" (Bugün: dokununca Hafta o günle açılır) ya da "pick-day" (Hafta: o günün dersleri).
+ * action: "pick-day" (Hafta görünümü: o günün dersleri).
  */
 export function weekStripHtml({ state, selected = null, action }) {
   const open = state.tasks.filter((t) => !t.done);

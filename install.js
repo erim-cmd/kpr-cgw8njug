@@ -22,8 +22,11 @@ window.addEventListener("appinstalled", () => {
 
 export const onInstallChange = (fn) => listeners.add(fn);
 
+/** Mağaza uygulaması (Capacitor kabuğu) içinde mi? Web'e özgü yönergeler (ana ekrana ekle, kur) burada gizlenir. */
+export const isNativeApp = () => window.Capacitor?.isNativePlatform?.() === true;
+
 export const isStandalone = () =>
-  window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  isNativeApp() || window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 
 export const isIOS = () =>
   /iphone|ipad|ipod/i.test(navigator.userAgent) ||
