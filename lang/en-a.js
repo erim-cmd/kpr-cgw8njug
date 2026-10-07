@@ -1,5 +1,6 @@
 // İngilizce sözlük (grup a). Anahtar: koddaki t("…") metni, birebir.
 export default {
+  "Tanıtım sayfası": "About Köprü",
   // app.js — sekmeler, üst çubuk, bildirimler
   "Görevler": "Tasks",
   "Dersler": "Courses",

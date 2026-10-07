@@ -10,7 +10,7 @@ import { buildICS, deliverICS, countExportable } from "./ics.js";
 import { THEMES, applyTheme } from "./theme.js";
 import { LANGS, setLang, t } from "./i18n.js";
 
-export const APP_VERSION = "2.21.0";
+export const APP_VERSION = "2.21.1";
 
 function themeSeg(current) {
   const items = Object.entries(THEMES).map(([k, label]) =>

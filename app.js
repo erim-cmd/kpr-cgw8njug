@@ -69,6 +69,7 @@ function drawChrome() {
     (r) => `<a class="tab${ROUTES[r].accent ? " tab-accent" : ""}" href="#/${r}" data-route="${r}"><span class="tab-ic">${icon[ROUTES[r].icon]}</span><span>${ROUTES[r].title}</span></a>`
   ).join("")}</div>`;
   $add.innerHTML = `${icon.upload}<span>${t("Syllabus ekle")}</span>`;
+  document.getElementById("site-link").textContent = `← ${t("Tanıtım sayfası")}`;
 }
 $fab.innerHTML = icon.plus;
 $settings.innerHTML = icon.settings;
