@@ -347,7 +347,7 @@ export function openTaskForm(task = null, defaults = {}) {
         });
         closeSheet();
         if (!task && type === "quiz" && canAsk()) {
-          toast("Quiz eklendi. Önceden hatırlatayım mı?", { label: "Evet", onClick: () => enableNotifications() });
+          toast("Quiz eklendi. Önceden hatırlatalım mı?", { label: "Evet", onClick: () => enableNotifications() });
         } else {
           toast(task ? "Görev güncellendi" : "Görev eklendi");
         }
