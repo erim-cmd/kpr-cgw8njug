@@ -1,57 +1,16 @@
 <svg width="580" height="580" xmlns="http://www.w3.org/2000/svg" viewBox="30 95 580 580" role="img" aria-label="Köprü">
   <defs>
-    <linearGradient id="kStem" x1="0" y1="110" x2="0" y2="660" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#12C8F4"/>
-      <stop offset="0.55" stop-color="#0A6AF6"/>
-      <stop offset="1" stop-color="#0B4FF0"/>
-    </linearGradient>
-    <linearGradient id="kStemShade" x1="75" y1="0" x2="215" y2="0" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#000" stop-opacity="0.18"/>
-      <stop offset="0.45" stop-color="#000" stop-opacity="0"/>
-      <stop offset="1" stop-color="#000" stop-opacity="0.12"/>
-    </linearGradient>
-    <linearGradient id="kArm" x1="215" y1="430" x2="545" y2="165" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#1F3FE6"/>
-      <stop offset="0.6" stop-color="#5B45EE"/>
-      <stop offset="1" stop-color="#B84DF2"/>
-    </linearGradient>
-    <linearGradient id="kArc" x1="86" y1="0" x2="552" y2="0" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#3FD6F8"/>
-      <stop offset="0.35" stop-color="#5C8CF8"/>
-      <stop offset="0.7" stop-color="#8A5CF4"/>
-      <stop offset="1" stop-color="#C846F0"/>
-    </linearGradient>
-    <linearGradient id="kFold" x1="300" y1="430" x2="552" y2="660" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#2A10C8" stop-opacity="0"/>
-      <stop offset="0.45" stop-color="#2A10C8" stop-opacity="0.55"/>
-      <stop offset="1" stop-color="#3A0FB0" stop-opacity="0.35"/>
-    </linearGradient>
-    <linearGradient id="kGloss" x1="0" y1="370" x2="0" y2="430" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff" stop-opacity="0.28"/>
-      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
-    </linearGradient>
-    <filter id="kDrop" filterUnits="userSpaceOnUse" x="0" y="250" width="640" height="500">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="9"/>
-      <feOffset dx="-6" dy="10"/>
-      <feComponentTransfer><feFuncA type="linear" slope="0.45"/></feComponentTransfer>
-      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <linearGradient id="kGloss2" x1="120" y1="0" x2="545" y2="0" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff" stop-opacity="0.45"/>
-      <stop offset="0.6" stop-color="#fff" stop-opacity="0.15"/>
-      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
-    </linearGradient>
+    <linearGradient id="kStem" x1="0" y1="110" x2="0" y2="660" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4CC9F0"/><stop offset="1" stop-color="#3B82F6"/></linearGradient>
+    <linearGradient id="kArm" x1="215" y1="430" x2="545" y2="165" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#5B6CF6"/><stop offset="1" stop-color="#8B5CF6"/></linearGradient>
+    <linearGradient id="kArc" x1="86" y1="0" x2="552" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4CC9F0"/><stop offset="1" stop-color="#8B5CF6"/></linearGradient>
     <clipPath id="kAbove"><path d="M0 0 H640 V593 H579 C574 470 468 378 330 378 C214 378 92 468 80 606 H0 Z"/></clipPath>
   </defs>
   <!-- üst kol: gövdenin arkasında, kemerin altında kalan ucu kırpılı -->
   <path d="M190 470 L505 190" stroke="url(#kArm)" stroke-width="134" stroke-linecap="round" fill="none" clip-path="url(#kAbove)"/>
   <!-- gövde -->
   <rect x="75" y="110" width="140" height="550" rx="70" fill="url(#kStem)"/>
-  <rect x="75" y="110" width="140" height="550" rx="70" fill="url(#kStemShade)"/>
-  <!-- köprü kemeri (alt kol): tepede ince, uçlarda kalın kurdele -->
-  <g filter="url(#kDrop)">
+  <!-- köprü kemeri (alt kol) — v2: düz, gölgesiz (7 Eki 2026) -->
+  <g>
     <path d="M80 606 C92 468 214 378 330 378 C468 378 574 470 579 593 A67 67 0 0 1 445 593 C441 516 398 447 322 447 C246 447 194 500 184 566 C178 604 150 628 116 630 C94 631 79 622 80 606 Z" fill="url(#kArc)"/>
   </g>
-  <!-- iç kıvrım (3B kurdele gölgesi) -->
-  <path d="M322 447 C398 447 441 516 445 593 C452 560 462 545 470 538 C455 480 410 440 350 428 C338 436 330 442 322 447 Z" fill="url(#kFold)"/>
 </svg>

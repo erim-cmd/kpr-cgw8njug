@@ -313,7 +313,7 @@ function openMerge(r) {
       <div class="sheet-body">
         ${added.length
           ? `<p class="lead-text">Bu derse eklenecekler:</p><ul class="kv">${added.map((a) => `<li><b>${esc(a)}</b><span>eklenecek</span></li>`).join("")}</ul>`
-          : `<p class="lead-text">Bu syllabus'ta derste eksik olan bir şey bulamadım.</p>`}
+          : `<p class="lead-text">Bu syllabus derse yeni bir bilgi eklemiyor.</p>`}
         ${!weeks.length ? `<p class="calc-note">Haftalık plan bu dosyada okunamadı (tablo PDF'te dağılmış olabilir). Word (.docx) sürümü varsa onu dene.</p>` : ""}
         <p class="fine">Notların, devamsızlıkların ve düzelttiğin bilgiler değişmez; sadece boş olanlar dolar.</p>
       </div>

@@ -118,7 +118,7 @@ function gradingBlock(c, tasks) {
     </button></li>`).join("");
   return `<section class="cd-sec"><h3 class="mini-title">Değerlendirme</h3>
     <ul class="grade-rows">${rows}</ul>
-    <p class="cd-note">${r.average !== null ? `Şu ana kadarki ortalaman <b>${fmtNum(r.average)}</b> (notun %${fmtNum(r.doneWeight)}'lik kısmı girildi).` : "Aldığın notu girmek için satıra dokun; hedef harf hesabı buna göre güncellenir."}</p>
+    <p class="cd-note">${r.average !== null ? `Şu ana kadarki ortalaman <b>${fmtNum(r.average)}</b> (notunun %${fmtNum(r.doneWeight)} kadarı girildi).` : "Aldığın notu girmek için satıra dokun; hedef harf hesabı buna göre güncellenir."}</p>
     ${Math.abs(total - 100) > 0.01 ? `<p class="cd-note warn-text">Ağırlıkların toplamı %${fmtNum(total)}, 100 değil. Düzenle'den kontrol et.</p>` : ""}
     ${mine.length ? `<ul class="kv">${mine.map((t) => `<li><b>${esc(t.title)}</b><span>${relLabel(daysUntil(t.due))} · ${fmtShort(t.due)}</span></li>`).join("")}</ul>` : ""}
   </section>`;
@@ -168,8 +168,8 @@ function targetInner(c) {
   const pick = res.done
     ? ""
     : `<button type="button" class="tl-row" data-target-letter><span>Hedef harfin</span><b class="tl-letter">${esc(res.letter)} ▾</b></button>`;
-  const apply = res.done && res.letter !== c.letter ? `<button type="button" class="btn btn-ghost gap-t" data-apply-letter="${esc(res.letter)}">Ortalama tablosuna ${esc(res.letter)} olarak aktar</button>` : "";
-  const applied = res.done && res.letter === c.letter ? `<p class="fine">Ortalama tablosunda bu ders ${esc(res.letter)} olarak kayıtlı.</p>` : "";
+  const apply = res.done && res.letter !== c.letter ? `<button type="button" class="btn btn-ghost gap-t" data-apply-letter="${esc(res.letter)}">Ders harfleri tablosuna ${esc(res.letter)} olarak aktar</button>` : "";
+  const applied = res.done && res.letter === c.letter ? `<p class="fine">Ders harfleri tablosunda bu ders ${esc(res.letter)} olarak kayıtlı.</p>` : "";
   return `${pick}<div class="calc-result tl-res" aria-live="polite">${res.lines.map((l, i) => `<p class="${i ? "fine" : ""}">${esc(l)}</p>`).join("")}${applied}${apply}</div>`;
 }
 
@@ -330,7 +330,7 @@ export function openCourseDetail(courseId) {
       const apply = e.target.closest("[data-apply-letter]");
       if (apply) {
         store.saveCourse({ ...course, letter: apply.dataset.applyLetter });
-        toast(`${course.code || course.name}: ${apply.dataset.applyLetter} olarak Ortalama'ya aktarıldı`, {
+        toast(`${course.code || course.name}: ${apply.dataset.applyLetter} olarak ders harfleri tablosuna aktarıldı`, {
           label: "Tabloda gör",
           onClick: () => {
             closeSheet();
@@ -358,7 +358,7 @@ function absenceBody(c) {
   const list = [...c.absences].sort((x, y) => y.date.localeCompare(x.date));
   const times = [...new Set(c.sessions.map((s) => s.start))].sort();
   return `<p class="abs-text ${a.level}">${attendanceText(a)}</p>
-    ${a.limit !== null ? `<div class="bar ${a.level}" role="img" aria-label="${a.used} / ${a.limit} devamsızlık"><i style="width:${pct}%"></i></div>` : '<p class="calc-note">Devam şartını dersin <b>Düzenle</b> ekranından gir; kalan hakkını hesaplayayım.</p>'}
+    ${a.limit !== null ? `<div class="bar ${a.level}" role="img" aria-label="${a.used} / ${a.limit} devamsızlık"><i style="width:${pct}%"></i></div>` : '<p class="calc-note">Devam şartını dersin <b>Düzenle</b> ekranından gir; kalan hakkını hesaplayalım.</p>'}
     <h3 class="mini-title gap-t">Geçmiş gün ekle</h3>
     <div class="abs-add">
       <input type="date" data-abs-date value="${todayISO()}" max="${todayISO()}" aria-label="Devamsızlık tarihi">
