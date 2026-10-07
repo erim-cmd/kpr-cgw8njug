@@ -41,7 +41,7 @@ Köprü, işini bilen bir **üst dönem arkadaşı** gibi konuşur: kısa, net, 
 | görev | todo, iş | Öğrencinin kendi eklediği ve syllabus'tan gelenler |
 | devamsızlık | yoklama (arayüzde) | Asistan "yoklama" sorusunu anlar |
 | devam zorunluluğu / devam şartı | katılım zorunluluğu | "Derslerin en az %70'ine devam zorunlu" |
-| ders harfleri tablosu | Ortalama tablosu | UMIS benzeri tablo (`#/ortalama`); ekran başlığı "Ders harfleri ve kredi" |
+| ders harfleri tablosu | Ortalama tablosu | UMIS benzeri tablo (`#/ortalama`); ekran başlığı "Ders harfleri", Dönem'deki bağlantısı "Ders harfleri ve kredi" |
 | internetsiz | çevrimdışı, offline | |
 | yapay zekâ | yapay zeka, AI (metinde) | Logodaki "AI STUDY COMPANION" kalır |
 | AKTS | ECTS | |
