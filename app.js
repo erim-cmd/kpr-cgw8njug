@@ -299,11 +299,29 @@ if ("serviceWorker" in navigator && !isNativeApp()) {
           onClick: () => worker.postMessage("SKIP_WAITING"),
         });
 
-      if (reg.waiting && navigator.serviceWorker.controller) offerUpdate(reg.waiting);
+      // Yeni sürüm kullanıcı "Yenile"ye basmadan da gelsin (Erim, 7 Eki: telefonda eski sürüm kalıyordu):
+      //  - açılışta bekleyen sürüm varsa hemen geçilir (henüz bir şey yazılmadı);
+      //  - kullanım sırasında gelirse "Yenile" önerilir, uygulama arka plana geçince (form açık değilse) kendiliğinden geçilir.
+      const startedAt = Date.now();
+      const apply = (worker) => worker.postMessage("SKIP_WAITING");
+      const applyWhenHidden = (worker) => {
+        const onHide = () => {
+          if (document.visibilityState !== "hidden" || document.querySelector("dialog[open]")) return;
+          document.removeEventListener("visibilitychange", onHide);
+          apply(worker);
+        };
+        document.addEventListener("visibilitychange", onHide);
+      };
+      const handle = (worker) => {
+        if (Date.now() - startedAt < 8000 && !document.querySelector("dialog[open]")) return apply(worker);
+        offerUpdate(worker);
+        applyWhenHidden(worker);
+      };
+      if (reg.waiting && navigator.serviceWorker.controller) handle(reg.waiting);
       reg.addEventListener("updatefound", () => {
         const worker = reg.installing;
         worker?.addEventListener("statechange", () => {
-          if (worker.state === "installed" && navigator.serviceWorker.controller) offerUpdate(worker);
+          if (worker.state === "installed" && navigator.serviceWorker.controller) handle(worker);
         });
       });
 
