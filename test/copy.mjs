@@ -17,10 +17,15 @@ const RULES = [
   { re: /çevrimdışı|offline/i, why: "\"internetsiz\" de" },
   { re: /\bLütfen\b/i, why: "rica kalıbı yok; doğrudan söyle" },
   { re: /\bİptal\b/, why: "kapatma düğmesi \"Vazgeç\"" },
-  { re: /\b\w+(sınız|siniz|sunuz|sünüz)\b/i, why: "\"sen\" diye hitap et" },
+  { re: /\p{L}(sınız|siniz|sunuz|sünüz)(?!\p{L})/iu, why: "\"sen\" diye hitap et" },
   { re: /yapay zeka/i, why: "\"yapay zekâ\" (şapkalı)" },
   { re: /\bKPR\b/, why: "arayüzde ad \"Köprü\"" },
   { re: /\bHata oluştu\b/i, why: "ne olduğunu ve ne yapılacağını söyle" },
+  { re: /\}(<\/b>)?'[a-zçğıöşü]/, why: "değişken değere ek getirme (sayının okunuşuna göre değişir); cümleyi eksiz kur" },
+  { re: /\p{Extended_Pictographic}/u, why: "emoji yok (tek istisna: Tamamlandı 🎉)", except: /Tamamlandı 🎉/ },
+  { re: /\p{L}(ayım|eyim) mı(?!\p{L})|(?<!\p{L})(hesaplarım|bulamadım|bakarım|cevaplarım|hesaplayayım|hatırlatayım|göstereyim|ekleyeyim)(?!\p{L})/u, why: "arayüz \"biz\" diye konuşur (\"ben\" yalnızca Asistan'da)", skip: ["asistan-core.js", "asistan.js"] },
+  { re: /\bkatılım zorunlu/i, why: "\"devam zorunluluğu\" (terim sözlüğü)" },
+  { re: /\bOrtalama'ya\b|\bOrtalama tablosu/, why: "\"ders harfleri tablosu\" (terim sözlüğü)" },
 ];
 
 let fail = 0, scanned = 0;
@@ -28,21 +33,28 @@ for (const f of FILES) {
   const src = readFileSync(root + f, "utf8")
     .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " ")) // blok yorum (satır sayısı korunur)
     .replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, " "));
-  src.split("\n").forEach((line, i) => {
-    if (/^\s*\/\//.test(line) || /console\.|new RegExp|:\s*\/.+\/[gimsuy]*,?\s*$|=\s*\/.+\/[gimsuy]*;?\s*$/.test(line)) return;
-    const code = line.replace(/(^|[^:"'`\\])\/\/.*$/, "$1"); // satır sonu yorumu
-    for (const m of code.matchAll(/(["'`])((?:\\.|(?!\1).)*)\1/g)) {
-      const text = m[2];
+  const texts = []; // [satır, metin]
+  const lines = src.split("\n").map((line) =>
+    /^\s*\/\//.test(line) || /console\.|new RegExp|:\s*\/.+\/[gimsuy]*,?\s*$|=\s*\/.+\/[gimsuy]*;?\s*$/.test(line)
+      ? "" : line.replace(/(^|[^:"'`\\])\/\/.*$/, "$1")); // yorum ve regex satırları boşaltılır
+  lines.forEach((code, i) => {
+    for (const m of code.matchAll(/(["'`])((?:\\.|(?!\1).)*)\1/g)) texts.push([i + 1, m[2]]);
+  });
+  const clean = lines.join("\n");
+  for (const m of clean.matchAll(/>([^<>`]*?)</g)) texts.push([clean.slice(0, m.index).split("\n").length, m[1]]);
+  for (const [ln, text] of texts) {
+    {
       if (!/\p{L}/u.test(text)) continue;
       scanned++;
       for (const r of RULES) {
+        if (r.skip?.includes(f) || (r.except && r.except.test(text))) continue;
         if (r.re.test(text) && (!r.only || r.only.test(text))) {
           fail++;
-          console.log(`✗ ${f}:${i + 1} — ${r.why}\n    ${text.slice(0, 120)}`);
+          console.log(`✗ ${f}:${ln} — ${r.why}\n    ${text.slice(0, 120)}`);
         }
       }
     }
-  });
+  }
 }
 console.log(`Yazı dili: ${scanned} metin tarandı · ${fail ? fail + " hata" : "sorun yok"}`);
 process.exit(fail ? 1 : 0);

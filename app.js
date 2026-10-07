@@ -115,7 +115,7 @@ function render() {
 
   if (isOnboarding) {
     $view.innerHTML = onboarding.view();
-    document.title = "Köprü — Öğrenci Asistanı";
+    document.title = "Köprü";
     return;
   }
 
@@ -191,8 +191,8 @@ const globalActions = {
       const a = attendance(find(store.get().courses, c.id), store.get().settings.termWeeks);
       const name = c.code || c.name;
       const msg =
-        a.level === "over" ? `⚠️ ${name}: devamsızlık sınırı aşıldı`
-          : a.level === "last" ? `⚠️ ${name}: devamsızlık hakkın bitti`
+        a.level === "over" ? `${name}: devamsızlık sınırı aşıldı`
+          : a.level === "last" ? `${name}: devamsızlık hakkın bitti`
             : a.level === "warn" ? `${name}: 1 devamsızlık hakkın kaldı`
               : "Devamsızlık kaydedildi";
       toast(msg, { label: "Geri al", onClick: () => {

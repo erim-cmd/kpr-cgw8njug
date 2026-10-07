@@ -186,7 +186,7 @@ export function buildReminders(state, from = new Date(), days = 8) {
       const exam = at(t.due, t.time || "09:00");
       push({ id: `r:${t.id}:7d`, fireAt: at(toISO(addDays(exam, -7)), "09:00"), title: `1 hafta kaldı: ${name}`, body: "Çalışma planını bugün yap.", url: "#/gorevler" });
       push({ id: `r:${t.id}:1d`, fireAt: at(toISO(addDays(exam, -1)), "20:00"), title: `Yarın sınav: ${name}`, body: t.time ? `Saat ${t.time}. Son tekrar zamanı.` : "Son tekrar zamanı.", url: "#/gorevler" });
-      push({ id: `r:${t.id}:2h`, fireAt: t.time ? addMin(exam, -120) : at(t.due, "08:00"), title: `Bugün sınav: ${name}`, body: t.time ? `${t.time}'de başlıyor.` : "Bugün sınavın var.", url: "#/gorevler" });
+      push({ id: `r:${t.id}:2h`, fireAt: t.time ? addMin(exam, -120) : at(t.due, "08:00"), title: `Bugün sınav: ${name}`, body: t.time ? `Başlangıç ${t.time}.` : "Bugün sınavın var.", url: "#/gorevler" });
     } else {
       const due = at(t.due, t.time || "23:59");
       push({ id: `r:${t.id}:3d`, fireAt: quiet(addDays(due, -3)), title: `3 gün kaldı: ${name}`, body: `${TASK_TYPES[t.type]} teslimi ${t.time || "gün sonu"}.`, url: "#/gorevler" });

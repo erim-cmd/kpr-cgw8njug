@@ -34,7 +34,7 @@ export function targetText(p, target) {
   const need = p.needed(target);
   if (need === null) return "";
   if (need > 4) return `Bu dönem hepsinden A alsan da GNO <b>${fmtGpa(target)}</b> olmuyor. Daha düşük bir hedef dene ya da not yükseltmek için ders tekrarını düşün.`;
-  if (need <= 0) return `Bu dönem ne alırsan al GNO'n <b>${fmtGpa(target)}</b>'nin üstünde kalıyor.`;
+  if (need <= 0) return `Bu dönem ne alırsan al GNO'n <b>${fmtGpa(target)}</b> ya da üstünde kalıyor.`;
   return `GNO'n <b>${fmtGpa(target)}</b> olsun istiyorsan bu dönem en az <b class="need">${fmtGpa(need)}</b> ortalama gerekiyor (yaklaşık ${nearestLetter(need)} ortalaması).`;
 }
 

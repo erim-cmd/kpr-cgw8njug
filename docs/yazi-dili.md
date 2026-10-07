@@ -17,7 +17,7 @@ Köprü, işini bilen bir **üst dönem arkadaşı** gibi konuşur: kısa, net, 
 
 ## Kurallar
 
-1. **Hitap "sen".** Siz, -sınız/-siniz, "Lütfen" yok. (`test/copy.mjs`)
+1. **Hitap "sen", konuşan "biz".** Öğrenciye "sen" denir; siz, -sınız/-siniz, "Lütfen" yok. Arayüz kendinden "biz" diye söz eder ("haber verelim mi?", "hesaplayalım"). Yalnız Asistan sohbette "ben" der ("Bunu derslerinin bilgilerinde bulamadım."). (`test/copy.mjs`)
 2. **Önce bilgi, sonra eylem.** "3 gün kaldı: Proje raporu" → gövde: "Teslim saatini kontrol et."
 3. **Bir cümle bir iş.** Açıklama uzarsa paragraf değil `infoNote()` ("ⓘ") altına.
 4. **Fiil ile biten düğme.** "Kaydet", "Sil", "Aktar", "Gir". Kapatan düğme: "Vazgeç" (İptal değil), bilgi penceresi: "Kapat".
@@ -27,6 +27,7 @@ Köprü, işini bilen bir **üst dönem arkadaşı** gibi konuşur: kısa, net, 
 8. **Sayılar Türkçe biçimde.** Ondalık virgül (`fmtGpa` → 3,12; eşikler 1,80 / 2,00), ay adı tam ("3 Ekim"), saat 24 saat ("14:30").
 9. **Uydurma yok.** Emin olunmayan değer "?" ya da "bilinmiyor"; örnek içerik "Önizleme" etiketli.
 10. **Korkutma, ama yumuşatma da.** Risk açıkça söylenir ("sınamalı öğrenci sayılırsın"), yanına ne yapılacağı yazılır.
+11. **Değişken değere ek getirme.** Türkçe ek sayının okunuşuna göre değişir (%40'ı, %35'i, %30'u; 10:00'da, 09:15'te); koddan gelen değerin arkasına kesme işaretli ek yazılmaz. Cümle eksiz kurulur: "Notunun %35 kadarı belli oldu", "Başlangıç 14:30.", "GNO'n 3,00 ya da üstünde kalıyor". Sabit sözcüklere ek serbest ("Köprü'yü", "Düzenle'den").
 
 ## Terim sözlüğü
 
@@ -39,6 +40,8 @@ Köprü, işini bilen bir **üst dönem arkadaşı** gibi konuşur: kısa, net, 
 | teslim | deadline | Ödev/proje/lab için zamanı söylerken |
 | görev | todo, iş | Öğrencinin kendi eklediği ve syllabus'tan gelenler |
 | devamsızlık | yoklama (arayüzde) | Asistan "yoklama" sorusunu anlar |
+| devam zorunluluğu / devam şartı | katılım zorunluluğu | "Derslerin en az %70'ine devam zorunlu" |
+| ders harfleri tablosu | Ortalama tablosu | UMIS benzeri tablo (`#/ortalama`); ekran başlığı "Ders harfleri ve kredi" |
 | internetsiz | çevrimdışı, offline | |
 | yapay zekâ | yapay zeka, AI (metinde) | Logodaki "AI STUDY COMPANION" kalır |
 | AKTS | ECTS | |

@@ -9,7 +9,7 @@ import { permissionState, enableNotifications, disableNotifications, testNotific
 import { buildICS, deliverICS, countExportable } from "./ics.js";
 import { THEMES, applyTheme } from "./theme.js";
 
-export const APP_VERSION = "2.17.1";
+export const APP_VERSION = "2.17.2";
 
 function themeSeg(current) {
   const items = Object.entries(THEMES).map(([k, label]) =>
@@ -87,7 +87,7 @@ export function view() {
     <section class="section">
       <div class="section-head"><h2>Hatırlatmalar</h2></div>
       <div class="group">${notifyRows(store.get())}</div>
-      <div class="gap-t">${infoNote("Bildirimler nasıl çalışır?", "Uygulama kapalıyken zamanında bildirim için sunucu gerekiyor; o gelene kadar en garanti yol takvime aktarmak. Android'de uygulama kapalıyken de ara ara kontrol ediyoruz.")}</div>
+      <div class="gap-t">${infoNote("Bildirimler nasıl çalışır?", "Uygulama kapalıyken zamanında bildirim için sunucu gerekiyor; o gelene kadar en güvenilir yol takvime aktarmak. Android'de uygulama kapalıyken de ara ara kontrol ediyoruz.")}</div>
     </section>
 
     <section class="section">
