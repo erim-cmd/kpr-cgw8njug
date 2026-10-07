@@ -23,9 +23,12 @@ import { attendance } from "./attendance.js";
 import { dismiss } from "./today.js";
 import { todayISO } from "./dates.js";
 import { enableNotifications, checkReminders, sync, permissionState } from "./notify.js";
+import { applyTheme } from "./theme.js";
 
 // Kayıtlı veri eski biçimdeyse ekran çizilmeden önce yeni biçime geçir (bir kez; migrate.js)
 runMigrations();
+// Görünüm (theme-boot.js ilk kararı verdi; burada tarayıcı çubuğu rengi ve "Sistem" takibi kurulur)
+applyTheme(store.get().settings.theme);
 
 const ROUTES = {
   bugun: { mod: today, title: "Bugün", icon: "home", fab: "new-task" },
@@ -232,6 +235,8 @@ window.addEventListener("hashchange", () => {
   handleShortcut();
 });
 store.subscribe(render);
+// Yedekten yükleme / sıfırlama da tema tercihini değiştirebilir
+store.subscribe(() => applyTheme(store.get().settings.theme));
 
 // Veri değişince arka plan hatırlatma listesini güncelle (art arda değişiklikleri birleştir)
 let syncTimer;

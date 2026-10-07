@@ -47,3 +47,6 @@ jobs:
 
       - name: Syllabus'u var olan derse birleştirme
         run: node test/merge.mjs
+
+      - name: Görünüm (açık/koyu tema, kontrast)
+        run: node test/theme.mjs

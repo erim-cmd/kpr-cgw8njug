@@ -48,7 +48,8 @@ export const uid = () =>
 
 // todayView: Bugün ekranındaki [Bugün | Hafta] anahtarının son konumu (arayüz tercihi)
 // interests: Seçmeli Keşfi'nde seçilen ilgi alanları (INTERESTS anahtarları)
-const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false, todayView: "bugun", interests: [] });
+// theme: görünüm tercihi — "sistem" (telefonu izler) | "acik" | "koyu" (theme.js)
+const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false, todayView: "bugun", interests: [], theme: "sistem" });
 // version: veri şeması sürümü (göçler migrate.js'te; v2 = geçmiş dönemler gpaBase'e çevrildi)
 // archive: göçte arayüzden kaldırılan ama silinmeyen veri (geri dönüş için)
 const empty = () => ({ version: 1, profile: { name: "" }, courses: [], tasks: [], transcript: [], gpaBase: null, settings: defaultSettings(), archive: { transcript: [] } });
@@ -193,6 +194,7 @@ function normSettings(s) {
     // Dönem → GNO kartındaki bir kerelik "Şu anki GNO'n?" sorusu atlandı mı
     gnoSkip: s.gnoSkip === true,
     interests: Array.isArray(s.interests) ? [...new Set(s.interests.filter((k) => typeof k === "string" && Object.hasOwn(INTERESTS, k)))] : [],
+    theme: s.theme === "acik" || s.theme === "koyu" ? s.theme : "sistem",
   };
 }
 

@@ -73,7 +73,7 @@ body.onboarding .add-syllabus { display: none; }
   width: 56px; height: 56px; border-radius: var(--r-lg); border: none;
   background: var(--gradient); color: var(--on-accent);
   display: grid; place-items: center; cursor: pointer;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 20px var(--shadow-1);
 }
 .fab svg { width: 26px; height: 26px; stroke-width: 2.4; }
 .fab[hidden] { display: none; }
@@ -249,7 +249,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
   display: flex; align-items: center; gap: 14px;
   max-width: calc(100% - 32px); padding: 10px 12px 10px 16px;
   background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 12px 32px var(--shadow-2);
   font-size: var(--fs-sm); white-space: nowrap;
   animation: toast-in 0.2s ease-out;
 }
@@ -592,7 +592,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 .tab-accent .tab-ic {
   width: 40px; height: 40px; margin-top: -14px; border-radius: 50%;
   background: var(--violet); color: var(--on-violet);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 6px 16px var(--shadow-1);
 }
 .tab-accent .tab-ic svg { width: 21px; height: 21px; stroke-width: 2.1; }
 .tab-accent[aria-current="page"] .tab-ic { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent); }
