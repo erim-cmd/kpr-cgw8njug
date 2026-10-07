@@ -9,7 +9,7 @@ import { permissionState, enableNotifications, disableNotifications, testNotific
 import { buildICS, deliverICS, countExportable } from "./ics.js";
 import { THEMES, applyTheme } from "./theme.js";
 
-export const APP_VERSION = "2.19.0";
+export const APP_VERSION = "2.20.0";
 
 function themeSeg(current) {
   const items = Object.entries(THEMES).map(([k, label]) =>
@@ -83,6 +83,7 @@ export function view() {
     <section class="section">
       <div class="section-head"><h2>Görünüm</h2></div>
       ${themeSeg(store.get().settings.theme)}
+      <p class="fine">Otomatik: telefonun açık/koyu ayarını izler.</p>
     </section>
 
     <section class="section">

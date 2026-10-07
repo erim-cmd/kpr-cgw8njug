@@ -76,6 +76,15 @@ body.onboarding .add-syllabus { display: none; }
   box-shadow: 0 8px 20px var(--shadow-1);
 }
 .fab svg { width: 26px; height: 26px; stroke-width: 2.4; }
+/* Geniş ana düğme: "Syllabus ekle" (Bugün, Dersler) */
+.fab:not(.fab-wide) { width: 48px; height: 48px; background: var(--surface); color: var(--cyan); border: 1px solid var(--border); } /* görev ekle: syllabus'tan küçük ve ikincil */
+.fab:not(.fab-wide) svg { width: 22px; height: 22px; }
+.fab.fab-wide { width: auto; height: 52px; padding: 0 20px 0 16px; gap: 8px; display: inline-flex; align-items: center; border-radius: var(--r-pill); font-size: var(--fs-md); font-weight: 600; }
+.fab.fab-wide svg { width: 20px; height: 20px; stroke-width: 2.2; }
+/* Bölüm başlığındaki küçük "Görev ekle" */
+.head-actions { display: inline-flex; align-items: center; gap: 14px; }
+.mini-add { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: var(--r-pill); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: var(--fs-xs); font-weight: 600; cursor: pointer; }
+.mini-add svg { width: 14px; height: 14px; stroke-width: 2.4; }
 .fab[hidden] { display: none; }
 
 body.onboarding .tabbar,
@@ -87,6 +96,8 @@ body.onboarding #view { padding-bottom: 32px; }
 .page-head { margin-bottom: 22px; }
 .eyebrow { margin: 0 0 4px; font-size: var(--fs-xs); font-weight: 500; color: var(--text-muted); text-transform: capitalize; }
 .page-title { font: 700 var(--fs-2xl)/1.2 var(--font-display); letter-spacing: -0.01em; margin: 0; }
+/* Bugün'deki selamlama: altındaki tarih ve özetle aynı yazı tipi (Erim geri bildirimi) */
+.page-title.greet { font: 600 var(--fs-2xl)/1.2 var(--font-body); letter-spacing: -0.02em; }
 .page-sub { margin: 4px 0 0; color: var(--text-muted); font-size: var(--fs-md); }
 
 .section { margin-bottom: 28px; }
@@ -1038,9 +1049,9 @@ button.tl-row { width: 100%; padding: 10px 14px; border-radius: var(--r-md); bac
 /* ---- Dokunma alanı ≥ 44px (Apple HIG) ----
    Küçük denetimler aynı görünür; görünmez bir katman dokunulan alanı en az 44×44px'e büyütür.
    .abs-btn ve .flag-hide zaten konumlu (absolute); :where sayesinde onların konumu korunur. */
-:where(.brand, .add-syllabus, .icon-btn, .check, .pick-chip, .link, .u-pick, .focus-done, .chip-btn, .info-note summary, .flag-src summary, .footnote a, a[href^="mailto:"], .seg button) { position: relative; } /* :where — kendi konumu olan (ör. .flag-hide) bozulmaz */
+:where(.brand, .add-syllabus, .icon-btn, .check, .pick-chip, .link, .u-pick, .focus-done, .chip-btn, .mini-add, .info-note summary, .flag-src summary, .footnote a, a[href^="mailto:"], .seg button) { position: relative; } /* :where — kendi konumu olan (ör. .flag-hide) bozulmaz */
 .focus-exam { position: relative; } /* all: unset sonrası */
-:is(.brand, .add-syllabus, .icon-btn, .check, .pick-chip, .link, .u-pick, .focus-done, .focus-exam, .abs-btn, .chip-btn, .info-note summary, .flag-src summary, .footnote a, a[href^="mailto:"], .seg button)::after {
+:is(.brand, .add-syllabus, .icon-btn, .check, .pick-chip, .link, .u-pick, .focus-done, .focus-exam, .abs-btn, .chip-btn, .mini-add, .info-note summary, .flag-src summary, .footnote a, a[href^="mailto:"], .seg button)::after {
   content: ""; position: absolute; left: 50%; top: 50%;
   width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
 }

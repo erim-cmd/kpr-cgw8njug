@@ -72,7 +72,7 @@ function targetCard(state, p) {
   if (p.missingCredit) hints.push(`${p.missingCredit} dersin kredisi girilmemiş`);
   if (p.term.total && p.term.graded < p.term.total) hints.push(`${p.term.total - p.term.graded} dersin harfi seçilmemiş`);
   return `<section class="section" id="hedef">${head}<div class="card-box tgt-card">
-      <div class="tgt-row"><span>Dönem sonunda</span>
+      <div class="tgt-row"><span>Hedeflediğin GNO</span>
         <button type="button" class="u-pick tgt-pick" data-action="pick-target" aria-label="Hedef GNO ${t.toFixed(2)}">${t.toFixed(2).replace(".", ",")}</button></div>
       ${text ? `<p class="target-res">${text.replace("ortalama gerekiyor", "YNO gerekiyor")}</p>` : `<p class="calc-note">Hesap için derslerine kredi gir.</p>`}
       <p class="tgt-stats">Şu an <b>${fmtGpa(base.gno)}</b> · ${base.credits.toLocaleString("tr-TR")} kredi${st ? ` · <em class="standing ${st.level}">${st.label}</em>` : ""}
