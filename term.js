@@ -58,7 +58,7 @@ function targetCard(state, p) {
       ${state.settings.gnoSkip
         ? `<p class="calc-note">Hedefine ulaşmak için bu dönem ne gerektiğini görmek istersen şu anki GNO'nu gir.</p>
           <div><button type="button" class="btn btn-ghost btn-sm" data-action="edit-base">GNO'nu gir</button></div>`
-        : `<p class="tgt-ask"><b>Şu anki GNO'n ve tamamladığın kredi?</b><small>UMIS transkriptinin en altında yazar. Girersen hedefin için bu dönem ne gerektiğini hesaplarım.</small></p>
+        : `<p class="tgt-ask"><b>Şu anki GNO'n ve tamamladığın kredi?</b><small>UMIS transkriptinin en altında yazar. Girersen hedefin için bu dönem ne gerektiğini hesaplayalım.</small></p>
           <div class="empty-actions"><button type="button" class="btn btn-primary btn-sm" data-action="edit-base">Gir</button>
             <button type="button" class="btn btn-ghost btn-sm" data-action="skip-gno">Atla</button></div>`}
       ${p.term.graded ? `<p class="tgt-stats">Bu dönem tahmini YNO <b>${fmtGpa(p.term.avg)}</b></p>` : ""}
@@ -194,8 +194,8 @@ function flowBlock(state) {
   }
   if (run.length) rows.push(calmRow(run));
   return `<section class="section" id="akis">${head}
-    <p class="fw-sub">${doneShare < 0.5 ? "Notunun henüz hiçbir kısmı belli değil" : `Notunun <b>${pct(doneShare)}</b>'i belli oldu`}</p>
-    <div class="fw-bar" role="img" aria-label="Dönem notunun yüzde ${Math.round(doneShare)}'i belli oldu"><i style="width:${Math.min(100, doneShare)}%"></i></div>
+    <p class="fw-sub">${doneShare < 0.5 ? "Notunun henüz hiçbir kısmı belli değil" : `Notunun <b>${pct(doneShare)}</b> kadarı belli oldu`}</p>
+    <div class="fw-bar" role="img" aria-label="Dönem notunun yüzde ${Math.round(doneShare)} kadarı belli oldu"><i style="width:${Math.min(100, doneShare)}%"></i></div>
     ${past.length ? `<button type="button" class="fw-past-btn" data-action="toggle-past" aria-expanded="${pastOpen}">Geçen haftalar (${past.length}) ${pastOpen ? "▴" : "▾"}</button>
       ${pastOpen ? `<ol class="tl past">${past.map((w) => weekRow(w, null, byId)).join("")}</ol>` : ""}` : ""}
     ${rows.length ? `<ol class="tl">${rows.join("")}</ol>` : '<p class="calc-note gap-t">Önünde değerlendirme kalmadı.</p>'}
@@ -250,7 +250,7 @@ function openAttendRule(c) {
         <button type="button" class="icon-btn sm" data-close aria-label="Kapat">${icon.close}</button></header>
       <div class="sheet-body">
         <p class="fine">Syllabus'ta yazmıyorsa hocana sor; BAU'da sağlamayan öğrenci NA alır.</p>
-        <button type="button" class="att-opt" data-att="pct"><b>Derslerin %X'ine katılım zorunlu</b><small>ör. %70</small></button>
+        <button type="button" class="att-opt" data-att="pct"><b>Derslerin en az %X'ine devam zorunlu</b><small>ör. %70</small></button>
         <button type="button" class="att-opt" data-att="max"><b>En fazla N devamsızlık hakkı</b><small>ör. 4 ders</small></button>
       </div>
     </div>`, (d) => {
@@ -258,7 +258,7 @@ function openAttendRule(c) {
       const pct = b.dataset.att === "pct";
       closeSheet();
       openNumberSheet({
-        context: pct ? `${c.code || c.name} · Katılım zorunluluğu` : `${c.code || c.name} · En fazla devamsızlık`,
+        context: pct ? `${c.code || c.name} · Devam zorunluluğu` : `${c.code || c.name} · En fazla devamsızlık`,
         value: pct ? c.attendPct : c.absLimit,
         min: pct ? 1 : 0,
         max: pct ? 100 : 60,

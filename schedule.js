@@ -19,7 +19,7 @@ export function weekView() {
 
   const body = sessions.length
     ? `<ul class="list">${sessions.map((s) => sessionItem(s, selected === today ? nowMin() : null)).join("")}</ul>`
-    : '<p class="muted-note">Bu gün dersin yok.</p>';
+    : `<p class="muted-note">${selected === today ? "Bugün" : "O gün"} dersin yok.</p>`;
 
   return `
     ${weekStripHtml({ state: store.get(), selected, action: "pick-day" })}
