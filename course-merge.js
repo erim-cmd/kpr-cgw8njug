@@ -10,6 +10,8 @@
  * parsed: parseSyllabus / yapay zekâ sanitize() çıktısı. Saf fonksiyon; test/merge.mjs.
  */
 
+import { t } from "./i18n.js";
+
 const empty = (v) => v === null || v === undefined || v === "" || (Array.isArray(v) && !v.length);
 
 export function mergeIntoCourse(course, parsed) {
@@ -24,28 +26,28 @@ export function mergeIntoCourse(course, parsed) {
   };
   if (empty(out.weeks) && parsed.weeks?.length) {
     out.weeks = parsed.weeks;
-    added.push(`haftalık plan (${parsed.weeks.length} hafta)`);
+    added.push(t("haftalık plan ({n} hafta)", { n: parsed.weeks.length }));
   }
-  fill("code", pc.code, "ders kodu");
-  fill("instructor", pc.instructor, "hoca");
-  fill("email", pc.email, "e-posta");
-  fill("office", pc.office, "ofis");
-  fill("officeHours", pc.office_hours, "ofis saati");
-  fill("credit", pc.credit ?? null, "kredi");
-  fill("ects", pc.ects ?? null, "AKTS");
-  fill("sessions", parsed.sessions || [], "ders saatleri");
-  fill("grading", (parsed.grading || []).map((g) => ({ name: g.name, weight: g.weight, score: null })), "not dağılımı");
-  fill("policies", parsed.policies || [], "dikkat edilecekler");
-  fill("finalMin", parsed.final_min ?? null, "final barajı");
+  fill("code", pc.code, t("ders kodu"));
+  fill("instructor", pc.instructor, t("hoca"));
+  fill("email", pc.email, t("e-posta"));
+  fill("office", pc.office, t("ofis"));
+  fill("officeHours", pc.office_hours, t("ofis saati"));
+  fill("credit", pc.credit ?? null, t("kredi"));
+  fill("ects", pc.ects ?? null, t("AKTS"));
+  fill("sessions", parsed.sessions || [], t("ders saatleri"));
+  fill("grading", (parsed.grading || []).map((g) => ({ name: g.name, weight: g.weight, score: null })), t("not dağılımı"));
+  fill("policies", parsed.policies || [], t("dikkat edilecekler"));
+  fill("finalMin", parsed.final_min ?? null, t("final barajı"));
   // Devam şartı: ikisinden biri girilmişse dokunma
   const att = parsed.attendance || {};
   if (empty(out.attendPct) && empty(out.absLimit)) {
     if (!empty(att.percent)) {
       out.attendPct = att.percent;
-      added.push("devam şartı");
+      added.push(t("devam şartı"));
     } else if (!empty(att.max_absences)) {
       out.absLimit = att.max_absences;
-      added.push("devam şartı");
+      added.push(t("devam şartı"));
     }
   }
   return { course: out, added };

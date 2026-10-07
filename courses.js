@@ -2,6 +2,7 @@ import { store } from "./store.js";
 import { esc } from "./ui.js";
 import { DAYS_SHORT, toMin } from "./dates.js";
 import { startCard } from "./components.js";
+import { t } from "./i18n.js";
 
 function courseCard(c, tasks) {
   const openCount = tasks.filter((t) => t.courseId === c.id && !t.done).length;
@@ -19,11 +20,11 @@ function courseCard(c, tasks) {
           ${meta ? `<span class="course-meta">${meta}</span>` : ""}
         </span>
         ${openCount || critical ? `<span class="badges">
-          ${openCount ? `<span class="badge">${openCount} açık görev</span>` : ""}
-          ${critical ? `<span class="badge flag-badge">${critical} kritik kural</span>` : ""}
+          ${openCount ? `<span class="badge">${t("{n} açık görev", { n: openCount })}</span>` : ""}
+          ${critical ? `<span class="badge flag-badge">${t("{n} kritik kural", { n: critical })}</span>` : ""}
         </span>` : ""}
       </span>
-      <span class="course-times">${times || '<span class="pill">Saat eklenmedi</span>'}</span>
+      <span class="course-times">${times || `<span class="pill">${t("Saat eklenmedi")}</span>`}</span>
     </button>
   </li>`;
 }
@@ -32,8 +33,8 @@ export function view() {
   const { courses, tasks } = store.get();
   return `
     <header class="page-head">
-      <h1 class="page-title">Dersler</h1>
-      ${courses.length ? "" : '<p class="page-sub">Bu dönemki derslerin</p>'}
+      <h1 class="page-title">${t("Dersler")}</h1>
+      ${courses.length ? "" : `<p class="page-sub">${t("Bu dönemki derslerin")}</p>`}
     </header>
     ${courses.length
       ? `<ul class="list">${courses.map((c) => courseCard(c, tasks)).join("")}</ul>`

@@ -6,7 +6,9 @@
  * Tanıtım sitesi data-theme almaz, koyu kalır.
  */
 
-export const THEMES = { sistem: "Otomatik", acik: "Açık", koyu: "Koyu" };
+import { localize } from "./i18n.js";
+
+export const THEMES = localize({ sistem: "Otomatik", acik: "Açık", koyu: "Koyu" }, { sistem: "Automatic", acik: "Light", koyu: "Dark" });
 
 const media = typeof matchMedia === "function" ? matchMedia("(prefers-color-scheme: light)") : null;
 

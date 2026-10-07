@@ -4,12 +4,13 @@
  * tarayıcıya dokunmadığı için Node testlerinde de çalışır.
  */
 
+import { t, locale, decimal } from "./i18n.js";
 import { letterFor, neededByLetter, COEF } from "./gpa.js";
 import { groupOf } from "./weights.js";
 import { density } from "./density.js";
 import { todayISO, parseISO } from "./dates.js";
 
-export const fmtNum = (n) => (Math.round(n * 10) / 10).toLocaleString("tr-TR");
+export const fmtNum = (n) => (Math.round(n * 10) / 10).toLocaleString(locale());
 
 /** Girilen notlara göre ağırlıklı ortalama ve hedef için gereken ortalama. */
 export function calcGrades(grading, target) {
@@ -47,7 +48,11 @@ export function targetResult(c) {
     out.done = true;
     out.status = "done";
     out.letter = underBar ? "F" : letterFor(r.earned, c.scale);
-    out.lines.push(`Ders puanın ${fmtNum(r.earned)} → tahmini harfin ${out.letter}${out.letter in COEF ? ` (${COEF[out.letter].toFixed(2).replace(".", ",")})` : ""}.`);
+    out.lines.push(
+      out.letter in COEF
+        ? t("Ders puanın {score} → tahmini harfin {letter} ({coef}).", { score: fmtNum(r.earned), letter: out.letter, coef: decimal(COEF[out.letter].toFixed(2)) })
+        : t("Ders puanın {score} → tahmini harfin {letter}.", { score: fmtNum(r.earned), letter: out.letter }),
+    );
   } else {
     const rows = neededByLetter(c.scale, r.earned, r.remaining);
     const tl = rows.find((x) => x.letter === c.targetLetter) || rows.find((x) => x.letter === "B") || rows[Math.floor(rows.length / 2)];
@@ -58,18 +63,18 @@ export function targetResult(c) {
     out.onlyFinal = onlyFinal;
     out.status = tl.status;
     out.best = rows.find((x) => x.status !== "no")?.letter ?? null;
-    if (tl.status === "ok") out.lines.push("Bu harfi garantiledin.");
+    if (tl.status === "ok") out.lines.push(t("Bu harfi garantiledin."));
     else if (tl.status === "no") {
       const best = rows.find((x) => x.status !== "no");
-      out.lines.push(best ? `Bu harf artık mümkün değil, en yüksek ulaşabileceğin: ${best.letter}.` : "Kalanlardan 100 alsan da tablodaki en düşük harfe ulaşmak zor görünüyor.");
+      out.lines.push(best ? t("Bu harf artık mümkün değil, en yüksek ulaşabileceğin: {letter}.", { letter: best.letter }) : t("Kalanlardan 100 alsan da tablodaki en düşük harfe ulaşmak zor görünüyor."));
     } else {
       const need = Math.max(0, tl.need);
       out.need = need;
-      out.lines.push(onlyFinal ? `Finalden en az ${fmtNum(need)} alman gerekiyor.` : `Kalan değerlendirmelerden ortalama en az ${fmtNum(need)} alman gerekiyor.`);
+      out.lines.push(onlyFinal ? t("Finalden en az {n} alman gerekiyor.", { n: fmtNum(need) }) : t("Kalan değerlendirmelerden ortalama en az {n} alman gerekiyor.", { n: fmtNum(need) }));
     }
-    if (c.finalMin !== null && fin && fin.score === null) out.lines.push(`Finalden en az ${fmtNum(c.finalMin)} alman şart; altında kalırsan diğer notlardan bağımsız F olabilir.`);
+    if (c.finalMin !== null && fin && fin.score === null) out.lines.push(t("Finalden en az {n} alman şart; altında kalırsan diğer notlardan bağımsız F olabilir.", { n: fmtNum(c.finalMin) }));
   }
-  if (underBar) out.lines.push(`Final notun (${fmtNum(fin.score)}) barajın (${fmtNum(c.finalMin)}) altında. Bütünlemeye girersen final satırına bütünleme notunu yaz.`);
+  if (underBar) out.lines.push(t("Final notun ({score}) barajın ({min}) altında. Bütünlemeye girersen final satırına bütünleme notunu yaz.", { score: fmtNum(fin.score), min: fmtNum(c.finalMin) }));
   return out;
 }
 
@@ -98,11 +103,11 @@ export function impactLine(c, i, v) {
   const r = targetResult({ ...c, grading });
   if (!r) return "";
   const L = c.targetLetter;
-  if (r.status === "done") return `Bu notla ders puanın ${fmtNum(r.earned)} → ${r.letter}`;
+  if (r.status === "done") return t("Bu notla ders puanın {score} → {letter}", { score: fmtNum(r.earned), letter: r.letter });
   if (r.letter !== L) return "";
-  if (r.status === "ok") return `Bu notla ${L} garanti`;
-  if (r.status === "no") return `Bu notla ${L} artık mümkün değil${r.best ? ` (en yüksek ${r.best})` : ""}`;
-  return `Hedef ${L} için ${r.onlyFinal ? "finalden" : "kalanlardan ortalama"} ${fmtNum(r.need)} yeter`;
+  if (r.status === "ok") return t("Bu notla {L} garanti", { L });
+  if (r.status === "no") return r.best ? t("Bu notla {L} artık mümkün değil (en yüksek {best})", { L, best: r.best }) : t("Bu notla {L} artık mümkün değil", { L });
+  return r.onlyFinal ? t("Hedef {L} için finalden {n} yeter", { L, n: fmtNum(r.need) }) : t("Hedef {L} için kalanlardan ortalama {n} yeter", { L, n: fmtNum(r.need) });
 }
 
 /** Harf seçerken: o harf için ne gerekiyor (tek satır). */
@@ -110,7 +115,7 @@ export function letterNeedLine(c, L) {
   if (!c.scale.length || !c.grading.length) return "";
   const r = targetResult({ ...c, targetLetter: L });
   if (!r || r.done) return "";
-  if (r.status === "ok") return `${L} garanti`;
-  if (r.status === "no") return `${L} artık mümkün değil`;
-  return `${L} için ${r.onlyFinal ? "finalden" : "kalanlardan ortalama"} en az ${fmtNum(r.need)}`;
+  if (r.status === "ok") return t("{L} garanti", { L });
+  if (r.status === "no") return t("{L} artık mümkün değil", { L });
+  return r.onlyFinal ? t("{L} için finalden en az {n}", { L, n: fmtNum(r.need) }) : t("{L} için kalanlardan ortalama en az {n}", { L, n: fmtNum(r.need) });
 }
