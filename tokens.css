@@ -81,15 +81,15 @@
    (yazı olarak kullanılanlar ≥ 4.5:1 — test/theme.mjs denetler). */
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg: #F4F6FB;
-  --bg-2: #EDF1F8;
-  --surface: #FFFFFF;
-  --surface-2: #EEF2F8;
-  --border: #D6DDEA;
+  --bg: #E9ECF1;
+  --bg-2: #E2E6EC;
+  --surface: #F5F6F9;
+  --surface-2: #ECEFF3;
+  --border: #D2D8E2;
   --text: #141A28;
   --text-muted: #4D5872;
   --text-dim: #5F6A84;
-  --cyan: #0573A0;
+  --cyan: #046C97;
   --violet: #6B3FDB;
   --accent: #4C5BD4;
   --danger: #C42D4B;

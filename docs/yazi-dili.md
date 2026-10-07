@@ -43,6 +43,7 @@ Köprü, işini bilen bir **üst dönem arkadaşı** gibi konuşur: kısa, net, 
 | devam zorunluluğu / devam şartı | katılım zorunluluğu | "Derslerin en az %70'ine devam zorunlu" |
 | ders harfleri tablosu | Ortalama tablosu | UMIS benzeri tablo (`#/ortalama`); ekran başlığı "Ders harfleri", Dönem'deki bağlantısı "Ders harfleri ve kredi" |
 | internetsiz | çevrimdışı, offline | |
+| Otomatik (tema) | Sistem | "Telefonun açık/koyu ayarını izler" |
 | yapay zekâ | yapay zeka, AI (metinde) | Logodaki "AI STUDY COMPANION" kalır |
 | AKTS | ECTS | |
 | hoca | eğitmen, öğretim üyesi | |

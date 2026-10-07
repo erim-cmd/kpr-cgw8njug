@@ -185,7 +185,7 @@ export function view() {
     </div>`;
   const head = `<header class="page-head">
       <p class="eyebrow">${fmtLong(new Date())}</p>
-      <h1 class="page-title">${greeting()}, ${esc(profile.name)}</h1>
+      <h1 class="page-title greet">${greeting()}, ${esc(profile.name)}</h1>
       ${mode === "bugun" ? summary(state, open, sessions, now) : ""}
     </header>`;
 
@@ -225,7 +225,7 @@ export function view() {
     </section>
 
     <section class="section">
-      <div class="section-head"><h2>Bu hafta</h2><a class="link" href="#/gorevler">Tümü</a></div>
+      <div class="section-head"><h2>Bu hafta</h2><span class="head-actions"><button type="button" class="mini-add" data-action="new-task">${icon.plus}Görev ekle</button><a class="link" href="#/gorevler">Tümü</a></span></div>
       ${upcoming.length
         ? `<ul class="list">${upcoming.map((t) => taskItem(t, courses)).join("")}</ul>`
         : heroId ? '<p class="muted-note">Bu hafta başka teslim yok.</p>'

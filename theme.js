@@ -6,7 +6,7 @@
  * Tanıtım sitesi data-theme almaz, koyu kalır.
  */
 
-export const THEMES = { sistem: "Sistem", acik: "Açık", koyu: "Koyu" };
+export const THEMES = { sistem: "Otomatik", acik: "Açık", koyu: "Koyu" };
 
 const media = typeof matchMedia === "function" ? matchMedia("(prefers-color-scheme: light)") : null;
 
