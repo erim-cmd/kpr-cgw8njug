@@ -9,7 +9,7 @@ AGENTS.md eklenirse: biri güncellenince diğeri de güncellenir.
 - `functions/api/syllabus.js` `DAILY_LIMIT` (5) düşürülmez/kaldırılmaz; test için gerekirse yalnızca yerelde, söyleyerek.
 - GNO, devamsızlık ve bildirim mantığını değiştirirken önce o davranışı yakalayan bir test ekle; test geçmeden commit yok. `gpa.js`'e doğrulanmamış katsayı girmez (D-, E, R doğrulanana kadar).
 - BAU sistemlerinden ve sitesinden veri kazınmaz (AKTS kataloğu dahil). Öğrencinin kendi yüklediği veri serbest.
-- Logo: `logo-mark.svg` ve `docs/marka/` kullanılır, elle yeniden çizilmez. "AI STUDY COMPANION" alt yazısı kalır.
+- Logo: `logo-mark.svg` ve `docs/marka/` kullanılır, elle yeniden çizilmez. "AI STUDY COMPANION" alt yazısı kalır. v2 (7 Eki 2026): düz, gölgesiz, iki renk (cyan #4CC9F0 → mor #8B5CF6); eski 3B hâli `docs/marka/eski/`. Tek renk gereken yerde `docs/marka/kpr-isaret-tek-renk-*.svg` (kemer boşluklu). PNG'ler (ikonlar, iOS) SVG'den üretilir, elle düzenlenmez.
 - Gerçek API çağrısı (ücretli) yapılmaz; sahte cevapla test edilir.
 
 ## Sırlar
