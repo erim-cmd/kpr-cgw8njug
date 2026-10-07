@@ -8,6 +8,7 @@
  */
 
 import { fold } from "./syllabus-local.js";
+import { localize } from "./i18n.js";
 
 // Sıra önemli: "Final Project" bir projedir, final sınavı değil
 const GROUPS = [
@@ -71,5 +72,8 @@ export function taskWeight(task, course, tasks) {
 }
 
 /** Bileşen grubunun Türkçe adı (sıradaki değerlendirme kartı için). */
-export const GROUP_LABEL = { final: "Final", vize: "Ara sınav", quiz: "Quiz", proje: "Proje", lab: "Lab", odev: "Ödev" };
+export const GROUP_LABEL = localize(
+  { final: "Final", vize: "Ara sınav", quiz: "Quiz", proje: "Proje", lab: "Lab", odev: "Ödev" },
+  { final: "Final", vize: "Midterm", quiz: "Quiz", proje: "Project", lab: "Lab", odev: "Homework" },
+);
 export const labelOf = (t) => GROUP_LABEL[taskGroup(t)] ?? null;

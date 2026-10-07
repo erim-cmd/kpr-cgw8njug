@@ -10,6 +10,8 @@
  *   - Devam zorunluluğu (attendPct): toplam oturum × (100 − %) ÷ 100, aşağı yuvarlanır
  */
 
+import { t } from "./i18n.js";
+
 export function attendance(course, weeks) {
   // Programı olmayan ders (çevrimiçi, saati yazmayan): haftada bir oturum say; yoksa devam oranı
   // girilmiş olsa bile hak hesaplanamaz ve kart yanlışlıkla "Devam şartı girilmedi" der.
@@ -32,8 +34,8 @@ export function attendance(course, weeks) {
 }
 
 export function attendanceText(a) {
-  if (a.limit === null) return a.used ? `${a.used} devamsızlık` : "Devam şartı girilmedi";
-  if (a.level === "over") return `Sınır aşıldı: ${a.used}/${a.limit}. NA riski var, hocanla konuş.`;
-  if (a.level === "last") return `Hakkın bitti (${a.used}/${a.limit}). Bir devamsızlık daha NA demek.`;
-  return `${a.left} devamsızlık hakkın kaldı (${a.used}/${a.limit})`;
+  if (a.limit === null) return a.used ? t("{n} devamsızlık", { n: a.used }) : t("Devam şartı girilmedi");
+  if (a.level === "over") return t("Sınır aşıldı: {used}/{limit}. NA riski var, hocanla konuş.", { used: a.used, limit: a.limit });
+  if (a.level === "last") return t("Hakkın bitti ({used}/{limit}). Bir devamsızlık daha NA demek.", { used: a.used, limit: a.limit });
+  return t("{n} devamsızlık hakkın kaldı ({used}/{limit})", { n: a.left, used: a.used, limit: a.limit });
 }

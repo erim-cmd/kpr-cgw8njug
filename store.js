@@ -5,27 +5,33 @@
  * doğrulanır, böylece bozuk veri uygulamayı kıramaz.
  */
 
+import { localize } from "./i18n.js";
+
 const KEY = "kpr:data:v1";
 
 export const COLORS = ["#4CC9F0", "#8B5CF6", "#F472B6", "#F5B84C", "#4ADE80", "#F0607A", "#60A5FA", "#2DD4BF"];
 // sinav/proje/diger syllabus'tan gelir (eski kayıtlar da bu türlerde); diğerleri öğrencinin elle eklediği işler
-export const TASK_TYPES = {
+export const TASK_TYPES = localize({
   sinav: "Sınav", odev: "Ödev", proje: "Proje", quiz: "Quiz", okuma: "Okuma", lab: "Lab raporu",
   sunum: "Sunum hazırlığı", kisisel: "Kişisel", diger: "Diğer",
-};
+}, {
+  sinav: "Exam", odev: "Homework", proje: "Project", quiz: "Quiz", okuma: "Reading", lab: "Lab report",
+  sunum: "Presentation prep", kisisel: "Personal", diger: "Other",
+});
 // Elle eklenebilen türler (sıra = formdaki tek satırlık çipler). Sınav/proje/diğer syllabus'tan gelir;
 // "okuma" eski kayıtlarda kalır ama formda seçilmez.
 export const QUICK_TYPES = ["odev", "quiz", "lab", "sunum", "kisisel"];
-export const QUICK_LABEL = { odev: "Ödev", quiz: "Quiz", lab: "Lab", sunum: "Sunum", kisisel: "Kişisel" };
+export const QUICK_LABEL = localize({ odev: "Ödev", quiz: "Quiz", lab: "Lab", sunum: "Sunum", kisisel: "Kişisel" },
+  { odev: "Homework", quiz: "Quiz", lab: "Lab", sunum: "Presentation", kisisel: "Personal" });
 // Sınav gibi yaklaşan uyarı alanlar; yoğunluğa/not ağırlığına katılmayanlar
 export const isExam = (t) => t.type === "sinav" || t.type === "quiz";
 export const isLight = (t) => t.type === "okuma" || t.type === "kisisel";
 // BAU harf notları (Yönetmelik Md. 26). Katsayılar gpa.js'te.
 // UMIS not hesaplama ekranındaki liste + yönetmelikteki NI, PR (eski yedekler için)
 export const GRADE_CODES = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "E", "F", "NA", "S", "U", "EX", "W", "I", "R", "NI", "PR"];
-export const SEASONS = { guz: "Güz", bahar: "Bahar", yaz: "Yaz" };
+export const SEASONS = localize({ guz: "Güz", bahar: "Bahar", yaz: "Yaz" }, { guz: "Fall", bahar: "Spring", yaz: "Summer" });
 // Seçmeli Keşfi: ilgi alanları (anahtar → etiket). Ayarlarda sadece bu anahtarlar saklanır.
-export const INTERESTS = {
+export const INTERESTS = localize({
   teknoloji: "Teknoloji",
   finans: "Finans",
   pazarlama: "Pazarlama",
@@ -34,7 +40,10 @@ export const INTERESTS = {
   girisimcilik: "Girişimcilik",
   veri: "Veri/Analitik",
   uluslararasi: "Uluslararası",
-};
+}, {
+  teknoloji: "Technology", finans: "Finance", pazarlama: "Marketing", hukuk: "Law",
+  surdurulebilirlik: "Sustainability", girisimcilik: "Entrepreneurship", veri: "Data/Analytics", uluslararasi: "International",
+});
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -49,7 +58,8 @@ export const uid = () =>
 // todayView: Bugün ekranındaki [Bugün | Hafta] anahtarının son konumu (arayüz tercihi)
 // interests: Seçmeli Keşfi'nde seçilen ilgi alanları (INTERESTS anahtarları)
 // theme: görünüm tercihi — "sistem" (telefonu izler) | "acik" | "koyu" (theme.js)
-const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false, todayView: "bugun", interests: [], theme: "sistem" });
+// lang: arayüz dili — "tr" | "en" (i18n.js)
+const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false, todayView: "bugun", interests: [], theme: "sistem", lang: "tr" });
 // version: veri şeması sürümü (göçler migrate.js'te; v2 = geçmiş dönemler gpaBase'e çevrildi)
 // archive: göçte arayüzden kaldırılan ama silinmeyen veri (geri dönüş için)
 const empty = () => ({ version: 1, profile: { name: "" }, courses: [], tasks: [], transcript: [], gpaBase: null, settings: defaultSettings(), archive: { transcript: [] } });
@@ -81,10 +91,13 @@ function normScale(list) {
     .sort((a, b) => b.min - a.min);
 }
 
-export const POLICY_KINDS = {
+export const POLICY_KINDS = localize({
   devam: "Devam", gec_teslim: "Geç teslim", telafi: "Mazeret / telafi", butunleme: "Bütünleme",
   baraj: "Baraj", not_kurali: "Not kuralı", durustluk: "Akademik dürüstlük", diger: "Diğer",
-};
+}, {
+  devam: "Attendance", gec_teslim: "Late work", telafi: "Excuse / make-up", butunleme: "Resit",
+  baraj: "Minimum score", not_kurali: "Grading rule", durustluk: "Academic integrity", diger: "Other",
+});
 const SEVERITIES = ["kritik", "dikkat", "bilgi"];
 function normPolicy(p) {
   const rule = str(p?.rule, 200);
@@ -190,11 +203,12 @@ function normSettings(s) {
     termWeeks: Number.isInteger(s.termWeeks) && s.termWeeks >= 1 && s.termWeeks <= 30 ? s.termWeeks : d.termWeeks,
     notify: s.notify === true,
     notifyClasses: s.notifyClasses === true,
-    todayView: s.todayView === "hafta" ? "hafta" : "bugun",
+    todayView: s.todayView === "hafta" ? "hafta" : "bugun", // i18n-ok
     // Dönem → GNO kartındaki bir kerelik "Şu anki GNO'n?" sorusu atlandı mı
     gnoSkip: s.gnoSkip === true,
     interests: Array.isArray(s.interests) ? [...new Set(s.interests.filter((k) => typeof k === "string" && Object.hasOwn(INTERESTS, k)))] : [],
     theme: s.theme === "acik" || s.theme === "koyu" ? s.theme : "sistem",
+    lang: s.lang === "en" ? "en" : "tr",
   };
 }
 

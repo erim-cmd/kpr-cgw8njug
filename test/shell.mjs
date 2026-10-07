@@ -24,7 +24,11 @@ for (const p of shell) {
 
 // Uygulamanın ES modülleri (kökteki .js dosyaları) SHELL'de olmalı
 const listed = new Set(shell);
-for (const f of readdirSync(root).filter((f) => f.endsWith(".js") && f !== "sw.js")) {
+const modules = [
+  ...readdirSync(root).filter((f) => f.endsWith(".js") && f !== "sw.js"),
+  ...readdirSync(root + "lang").filter((f) => f.endsWith(".js")).map((f) => "lang/" + f),
+];
+for (const f of modules) {
   if (!listed.has(f)) {
     console.log(`✗ ${f} depoda var ama SHELL listesinde yok (internetsizken yüklenemez)`);
     fail++;

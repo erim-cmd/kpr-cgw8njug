@@ -1,3 +1,8 @@
+/* Uygulamada tek yazı tipi: başlıklar da Inter (Erim geri bildirimi, 7 Eki 2026 — Space Grotesk'in 1, y, İ biçimleri metinle uyuşmuyordu).
+   Tanıtım sitesi Space Grotesk'i kullanmaya devam eder (site.css). */
+:root { --font-display: var(--font-body); }
+.page-title { letter-spacing: -0.02em; }
+
 /* ==========================================================
    KPR — Uygulama stilleri (token'lar: css/tokens.css)
    ========================================================== */
@@ -96,8 +101,7 @@ body.onboarding #view { padding-bottom: 32px; }
 .page-head { margin-bottom: 22px; }
 .eyebrow { margin: 0 0 4px; font-size: var(--fs-xs); font-weight: 500; color: var(--text-muted); text-transform: capitalize; }
 .page-title { font: 700 var(--fs-2xl)/1.2 var(--font-display); letter-spacing: -0.01em; margin: 0; }
-/* Bugün'deki selamlama: altındaki tarih ve özetle aynı yazı tipi (Erim geri bildirimi) */
-.page-title.greet { font: 600 var(--fs-2xl)/1.2 var(--font-body); letter-spacing: -0.02em; }
+
 .page-sub { margin: 4px 0 0; color: var(--text-muted); font-size: var(--fs-md); }
 
 .section { margin-bottom: 28px; }
@@ -742,8 +746,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 /* Görev formu (v2.12): radyo çipleri, hepsi ilk ekranda */
 .task-form .sheet-body { gap: 14px; }
 .pchips { display: flex; gap: 6px; }
-.pchips.one-row { flex-wrap: nowrap; }
-.pchips.one-row .pchip { flex: 1 1 0; min-width: 0; }
+.pchips.one-row { flex-wrap: wrap; }
+.pchips.one-row .pchip { flex: 1 0 auto; min-width: 0; }
 .pchips.scroll-row { overflow-x: auto; scrollbar-width: none; margin: 0 -20px; padding: 2px 20px; }
 .pchips.scroll-row::-webkit-scrollbar { display: none; }
 .pchip { position: relative; flex: none; }

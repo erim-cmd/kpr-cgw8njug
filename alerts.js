@@ -13,68 +13,74 @@ import { daysUntil, parseISO, toISO, todayIdx, toMin, nowMin, relLabel } from ".
 import { attendance } from "./attendance.js";
 import { calcGrades } from "./ders-calc.js";
 import { projection, fmtGpa, standing } from "./gpa.js";
+import { t, locale } from "./i18n.js";
 
 const LEVEL_ORDER = { danger: 0, warn: 1, info: 2 };
 const courseName = (c) => (c ? c.code || c.name : "");
-const label = (t, courses) => {
-  const c = courses.find((x) => x.id === t.courseId);
-  return c ? `${courseName(c)} · ${t.title}` : t.title;
+const label = (task, courses) => {
+  const c = courses.find((x) => x.id === task.courseId);
+  return c ? `${courseName(c)} · ${task.title}` : task.title;
 };
+/** "bugün" / "yarın" / "5 gün sonra" */
+const inDays = (n) => (n === 0 ? t("bugün") : n === 1 ? t("yarın") : t("{n} gün sonra", { n }));
 
 export function buildAlerts(state) {
   const { courses, tasks, settings } = state;
-  const open = tasks.filter((t) => !t.done);
+  const open = tasks.filter((x) => !x.done);
   const out = [];
 
   // 1) Gecikenler
-  const overdue = open.filter((t) => daysUntil(t.due) < 0);
+  const overdue = open.filter((x) => daysUntil(x.due) < 0);
   if (overdue.length) {
     out.push({
-      id: `overdue:${overdue.map((t) => t.id).join(",")}`,
+      id: `overdue:${overdue.map((x) => x.id).join(",")}`,
       level: "danger",
-      title: overdue.length === 1 ? `Gecikti: ${label(overdue[0], courses)}` : `${overdue.length} görevin gecikti`,
-      text: "Bitirdiysen işaretle; bitirmediysen hocana ya da syllabus'taki geç teslim kuralına bak.",
+      title: overdue.length === 1 ? t("Gecikti: {ad}", { ad: label(overdue[0], courses) }) : t("{n} görevin gecikti", { n: overdue.length }),
+      text: t("Bitirdiysen işaretle; bitirmediysen hocana ya da syllabus'taki geç teslim kuralına bak."),
       route: "gorevler",
     });
   }
 
   // 2) Yaklaşan sınavlar (7 gün)
-  for (const t of open.filter(isExam)) {
-    const n = daysUntil(t.due);
+  for (const task of open.filter(isExam)) {
+    const n = daysUntil(task.due);
     if (n < 0 || n > 7) continue;
     out.push({
-      id: `exam:${t.id}:${n}`,
+      id: `exam:${task.id}:${n}`,
       level: n <= 1 ? "danger" : n <= 3 ? "warn" : "info",
       // "Quiz 2 · 5 gün sonra": başlıktaki sayı ile gün sayısı yan yana gelip karışmasın
-      title: `${label(t, courses)} · ${n === 0 ? "bugün" : n === 1 ? "yarın" : `${n} gün sonra`}${t.time ? ` · ${t.time}` : ""}`,
-      text: n <= 1 ? "Son tekrar zamanı. Sınıfını ve saatini kontrol et." : "Çalışma planını şimdi yap; son güne kalmasın.",
-      taskId: t.id,
+      title: `${label(task, courses)} · ${inDays(n)}${task.time ? ` · ${task.time}` : ""}`,
+      text: n <= 1 ? t("Son tekrar zamanı. Sınıfını ve saatini kontrol et.") : t("Çalışma planını şimdi yap; son güne kalmasın."),
+      taskId: task.id,
     });
   }
 
   // 3) Yakın teslimler (2 gün)
-  for (const t of open.filter((x) => !isExam(x))) {
-    const n = daysUntil(t.due);
+  for (const task of open.filter((x) => !isExam(x))) {
+    const n = daysUntil(task.due);
     if (n < 0 || n > 2) continue;
     out.push({
-      id: `due:${t.id}:${n}`,
+      id: `due:${task.id}:${n}`,
       level: n === 0 ? "danger" : "warn",
-      title: `${TASK_TYPES[t.type]}: ${label(t, courses)} · ${relLabel(n).toLocaleLowerCase("tr-TR")}${t.time ? ` · ${t.time}` : ""}`,
-      text: "Teslim saatini ve yükleme yerini kontrol et.",
-      taskId: t.id,
+      title: `${TASK_TYPES[task.type]}: ${label(task, courses)} · ${relLabel(n).toLocaleLowerCase(locale())}${task.time ? ` · ${task.time}` : ""}`,
+      text: t("Teslim saatini ve yükleme yerini kontrol et."),
+      taskId: task.id,
     });
   }
 
   // 4) Yoğun hafta (önümüzdeki 7 gün)
   // Okuma ve kişisel işler haftayı "yoğun" yapmaz
-  const week = open.filter((t) => !isLight(t) && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 6);
+  const week = open.filter((x) => !isLight(x) && daysUntil(x.due) >= 0 && daysUntil(x.due) <= 6);
   const weekExams = week.filter(isExam).length;
   if (weekExams >= 2 || week.length >= 4) {
+    const parts = [];
+    if (weekExams) parts.push(t("{n} sınav", { n: weekExams }));
+    parts.push(t("{n} teslim", { n: week.length - weekExams }));
     out.push({
       id: `busy:${toISO(new Date())}:${week.length}`,
       level: "info",
-      title: `Yoğun hafta: ${weekExams ? `${weekExams} sınav, ` : ""}${week.length - weekExams} teslim`,
-      text: "Önümüzdeki 7 gün dolu. En yakın ve en ağır olandan başla.",
+      title: t("Yoğun hafta: {liste}", { liste: parts.join(", ") }),
+      text: t("Önümüzdeki 7 gün dolu. En yakın ve en ağır olandan başla."),
       route: "gorevler",
     });
   }
@@ -83,17 +89,18 @@ export function buildAlerts(state) {
   for (const c of courses) {
     const a = attendance(c, settings.termWeeks);
     if (a.level === "over" || a.level === "last" || a.level === "warn") {
+      const ders = courseName(c);
       out.push({
         id: `abs:${c.id}:${a.used}`,
         level: a.level === "warn" ? "warn" : "danger",
         title:
-          a.level === "over" ? `${courseName(c)}: devamsızlık sınırı aşıldı`
-            : a.level === "last" ? `${courseName(c)}: devamsızlık hakkın bitti`
-              : `${courseName(c)}: 1 devamsızlık hakkın kaldı`,
+          a.level === "over" ? t("{ders}: devamsızlık sınırı aşıldı", { ders })
+            : a.level === "last" ? t("{ders}: devamsızlık hakkın bitti", { ders })
+              : t("{ders}: 1 devamsızlık hakkın kaldı", { ders }),
         text:
-          a.level === "over" ? "Devam şartını sağlamayan öğrenci NA alır ve finale giremez. Hocanla hemen konuş."
-            : a.level === "last" ? "Bir devamsızlık daha NA (finale girememe) demek."
-              : `Bu derste ${a.used}/${a.limit} kullandın.`,
+          a.level === "over" ? t("Devam şartını sağlamayan öğrenci NA alır ve finale giremez. Hocanla hemen konuş.")
+            : a.level === "last" ? t("Bir devamsızlık daha NA (finale girememe) demek.")
+              : t("Bu derste {used}/{limit} kullandın.", { used: a.used, limit: a.limit }),
         courseId: c.id,
       });
     }
@@ -104,11 +111,12 @@ export function buildAlerts(state) {
     if (!c.grading.length || !c.grading.some((g) => g.score !== null)) continue;
     const r = calcGrades(c.grading, c.target);
     if (r.needed === null || r.needed < 85) continue;
+    const ders = courseName(c);
     out.push({
       id: `grade:${c.id}:${Math.round(r.needed)}`,
       level: r.needed > 100 ? "danger" : "warn",
-      title: r.needed > 100 ? `${courseName(c)}: hedef ${c.target} artık zor` : `${courseName(c)}: kalanlardan ${Math.round(r.needed)} gerekiyor`,
-      text: r.needed > 100 ? "Kalanlardan 100 alsan da yetmiyor. Hedefini güncelle ya da bütünleme kuralına bak." : "Hedefe ulaşmak için kalan sınavlar çok önemli.",
+      title: r.needed > 100 ? t("{ders}: hedef {hedef} artık zor", { ders, hedef: c.target }) : t("{ders}: kalanlardan {puan} gerekiyor", { ders, puan: Math.round(r.needed) }),
+      text: r.needed > 100 ? t("Kalanlardan 100 alsan da yetmiyor. Hedefini güncelle ya da bütünleme kuralına bak.") : t("Hedefe ulaşmak için kalan sınavlar çok önemli."),
       courseId: c.id,
     });
   }
@@ -118,11 +126,12 @@ export function buildAlerts(state) {
   const g = p.after ?? p.prev.avg;
   const st = standing(g);
   if (st && st.level !== "ok") {
+    const vars = { gno: fmtGpa(g), durum: st.label.toLocaleLowerCase(locale()) };
     out.push({
-      id: `gpa:${fmtGpa(g)}`,
+      id: `gpa:${g.toFixed(2)}`,
       level: st.level,
-      title: `${p.after != null ? "GNO tahminin" : "GNO'n"} ${fmtGpa(g)}: ${st.label.toLocaleLowerCase("tr-TR")}`,
-      text: st.level === "danger" ? "GNO 1,80'in altında kalırsa sınamalı öğrenci sayılırsın." : "Mezuniyet için GNO en az 2,00 olmalı.",
+      title: p.after != null ? t("GNO tahminin {gno}: {durum}", vars) : t("GNO'n {gno}: {durum}", vars),
+      text: st.level === "danger" ? t("GNO 1,80'in altında kalırsa sınamalı öğrenci sayılırsın.") : t("Mezuniyet için GNO en az 2,00 olmalı."),
       route: "ortalama",
     });
   }
@@ -137,7 +146,7 @@ export function buildAlerts(state) {
       out.push({
         id: `class:${c.id}:${toISO(new Date())}:${s.start}`,
         level: "info",
-        title: `${diff <= 1 ? "Şimdi" : `${diff} dk sonra`}: ${c.name}`,
+        title: diff <= 1 ? t("Şimdi: {ders}", { ders: c.name }) : t("{n} dk sonra: {ders}", { n: diff, ders: c.name }),
         text: [s.start, s.room].filter(Boolean).join(" · "),
         courseId: c.id,
       });
@@ -180,18 +189,19 @@ export function buildReminders(state, from = new Date(), days = 8) {
   const out = [];
   const push = (r) => { if (r.fireAt > addDays(from, -1) && r.fireAt <= until) out.push(r); };
 
-  for (const t of tasks.filter((x) => !x.done)) {
-    const name = label(t, courses);
-    if (isExam(t)) {
-      const exam = at(t.due, t.time || "09:00");
-      push({ id: `r:${t.id}:7d`, fireAt: at(toISO(addDays(exam, -7)), "09:00"), title: `1 hafta kaldı: ${name}`, body: "Çalışma planını bugün yap.", url: "#/gorevler" });
-      push({ id: `r:${t.id}:1d`, fireAt: at(toISO(addDays(exam, -1)), "20:00"), title: `Yarın sınav: ${name}`, body: t.time ? `Saat ${t.time}. Son tekrar zamanı.` : "Son tekrar zamanı.", url: "#/gorevler" });
-      push({ id: `r:${t.id}:2h`, fireAt: t.time ? addMin(exam, -120) : at(t.due, "08:00"), title: `Bugün sınav: ${name}`, body: t.time ? `Başlangıç ${t.time}.` : "Bugün sınavın var.", url: "#/gorevler" });
+  for (const task of tasks.filter((x) => !x.done)) {
+    const ad = label(task, courses);
+    if (isExam(task)) {
+      const exam = at(task.due, task.time || "09:00");
+      push({ id: `r:${task.id}:7d`, fireAt: at(toISO(addDays(exam, -7)), "09:00"), title: t("1 hafta kaldı: {ad}", { ad }), body: t("Çalışma planını bugün yap."), url: "#/gorevler" });
+      push({ id: `r:${task.id}:1d`, fireAt: at(toISO(addDays(exam, -1)), "20:00"), title: t("Yarın sınav: {ad}", { ad }), body: task.time ? t("Saat {saat}. Son tekrar zamanı.", { saat: task.time }) : t("Son tekrar zamanı."), url: "#/gorevler" });
+      push({ id: `r:${task.id}:2h`, fireAt: task.time ? addMin(exam, -120) : at(task.due, "08:00"), title: t("Bugün sınav: {ad}", { ad }), body: task.time ? t("Başlangıç {saat}.", { saat: task.time }) : t("Bugün sınavın var."), url: "#/gorevler" });
     } else {
-      const due = at(t.due, t.time || "23:59");
-      push({ id: `r:${t.id}:3d`, fireAt: quiet(addDays(due, -3)), title: `3 gün kaldı: ${name}`, body: `${TASK_TYPES[t.type]} teslimi ${t.time || "gün sonu"}.`, url: "#/gorevler" });
-      push({ id: `r:${t.id}:1d`, fireAt: quiet(addDays(due, -1)), title: `Yarın teslim: ${name}`, body: `${TASK_TYPES[t.type]} · ${t.time || "gün sonu"}`, url: "#/gorevler" });
-      push({ id: `r:${t.id}:3h`, fireAt: quiet(addMin(due, -180)), title: `3 saat kaldı: ${name}`, body: `${TASK_TYPES[t.type]} teslimi ${t.time || "bu gece"}.`, url: "#/gorevler" });
+      const due = at(task.due, task.time || "23:59");
+      const tur = TASK_TYPES[task.type];
+      push({ id: `r:${task.id}:3d`, fireAt: quiet(addDays(due, -3)), title: t("3 gün kaldı: {ad}", { ad }), body: t("{tur} teslimi {saat}.", { tur, saat: task.time || t("gün sonu") }), url: "#/gorevler" });
+      push({ id: `r:${task.id}:1d`, fireAt: quiet(addDays(due, -1)), title: t("Yarın teslim: {ad}", { ad }), body: `${tur} · ${task.time || t("gün sonu")}`, url: "#/gorevler" });
+      push({ id: `r:${task.id}:3h`, fireAt: quiet(addMin(due, -180)), title: t("3 saat kaldı: {ad}", { ad }), body: t("{tur} teslimi {saat}.", { tur, saat: task.time || t("bu gece") }), url: "#/gorevler" });
     }
   }
 
@@ -200,19 +210,19 @@ export function buildReminders(state, from = new Date(), days = 8) {
     const iso = toISO(day);
     const idx = (day.getDay() + 6) % 7;
     const classes = courses.flatMap((c) => c.sessions.filter((s) => s.day === idx).map((s) => ({ c, s })));
-    const due = tasks.filter((t) => !t.done && t.due === iso);
+    const due = tasks.filter((x) => !x.done && x.due === iso);
     if (classes.length || due.length) {
       const parts = [];
-      if (classes.length) parts.push(`${classes.length} ders`);
+      if (classes.length) parts.push(t("{n} ders", { n: classes.length }));
       const exams = due.filter(isExam).length;
-      if (exams) parts.push(`${exams} sınav`);
-      if (due.length - exams) parts.push(`${due.length - exams} teslim`);
+      if (exams) parts.push(t("{n} sınav", { n: exams }));
+      if (due.length - exams) parts.push(t("{n} teslim", { n: due.length - exams }));
       const first = classes.sort((a, b) => toMin(a.s.start) - toMin(b.s.start))[0];
       push({
         id: `r:day:${iso}`,
         fireAt: at(iso, "08:00"),
-        title: `Bugün: ${parts.join(", ")}`,
-        body: first ? `İlk ders ${first.s.start} · ${first.c.name}${first.s.room ? ` · ${first.s.room}` : ""}` : due.map((t) => label(t, courses)).join(", "),
+        title: t("Bugün: {ad}", { ad: parts.join(", ") }),
+        body: first ? t("İlk ders {saat} · {ders}", { saat: first.s.start, ders: `${first.c.name}${first.s.room ? ` · ${first.s.room}` : ""}` }) : due.map((x) => label(x, courses)).join(", "),
         url: "#/bugun",
       });
     }
@@ -221,7 +231,7 @@ export function buildReminders(state, from = new Date(), days = 8) {
         push({
           id: `r:class:${c.id}:${iso}:${s.start}`,
           fireAt: addMin(at(iso, s.start), -15),
-          title: `15 dk sonra: ${c.name}`,
+          title: t("{n} dk sonra: {ders}", { n: 15, ders: c.name }),
           body: [s.start, s.room].filter(Boolean).join(" · "),
           url: "#/program",
         });

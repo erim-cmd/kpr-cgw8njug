@@ -15,6 +15,7 @@
 import { store } from "./store.js";
 import { buildReminders } from "./alerts.js";
 import { isIOS, isStandalone } from "./install.js";
+import { t, getLang } from "./i18n.js";
 
 const SENT_KEY = "kpr:notified";
 const CATCH_UP_MS = 12 * 60 * 60 * 1000; // uygulama kapalıyken kaçanlar: en fazla 12 saat geriye
@@ -37,7 +38,7 @@ async function registration() {
 
 async function show(title, options) {
   const reg = await registration();
-  if (reg?.showNotification) return reg.showNotification(title, { icon: "icon-192.png", badge: "icon-192.png", lang: "tr", ...options });
+  if (reg?.showNotification) return reg.showNotification(title, { icon: "icon-192.png", badge: "icon-192.png", lang: getLang(), ...options });
   return new Notification(title, options);
 }
 
@@ -68,7 +69,7 @@ export async function enableNotifications() {
   const sent = readSent();
   for (const r of buildReminders(store.get())) if (r.fireAt <= new Date()) sent[r.id] = Date.now();
   writeSent(sent);
-  await show("Bildirimler açık", { body: "Sınav, teslim ve günlük özetlerini buradan göreceksin.", tag: "kpr-welcome", data: { url: "#/bugun" } });
+  await show(t("Bildirimler açık"), { body: t("Sınav, teslim ve günlük özetlerini buradan göreceksin."), tag: "kpr-welcome", data: { url: "#/bugun" } });
   await sync();
   return true;
 }
@@ -79,7 +80,7 @@ export function disableNotifications() {
 }
 
 export async function testNotification() {
-  await show("Deneme bildirimi", { body: "Köprü bildirimleri çalışıyor.", tag: "kpr-test", data: { url: "#/ayarlar" } });
+  await show(t("Deneme bildirimi"), { body: t("Köprü bildirimleri çalışıyor."), tag: "kpr-test", data: { url: "#/ayarlar" } });
 }
 
 /** Zamanı gelmiş hatırlatmaları gösterir. Açılışta, görünürlük değişince ve dakikada bir çağrılır. */
@@ -96,7 +97,7 @@ export async function checkReminders() {
 
   // Uzun süre açılmadıysa birikenleri tek bildirimde topla
   if (due.length > 3) {
-    await show(`${due.length} hatırlatman var`, {
+    await show(t("{n} hatırlatman var", { n: due.length }), {
       body: due.slice(0, 4).map((r) => r.title).join("\n"),
       tag: "kpr-digest",
       data: { url: "#/bugun" },

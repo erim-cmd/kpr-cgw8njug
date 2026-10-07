@@ -5,8 +5,11 @@
  * böylece gece yarısına yakın saatlerde gün kayması olmaz.
  */
 
-export const DAYS = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
-export const DAYS_SHORT = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+import { t, locale, localize } from "./i18n.js";
+
+export const DAYS = localize(["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"],
+  ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]);
+export const DAYS_SHORT = localize(["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"], ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
 
 const pad = (n) => String(n).padStart(2, "0");
 
@@ -34,16 +37,16 @@ export const nowMin = () => {
 };
 
 export function relLabel(n) {
-  if (n < -1) return `${-n} gün gecikti`;
-  if (n === -1) return "Dün";
-  if (n === 0) return "Bugün";
-  if (n === 1) return "Yarın";
-  return `${n} gün kaldı`;
+  if (n < -1) return t("{n} gün gecikti", { n: -n });
+  if (n === -1) return t("Dün");
+  if (n === 0) return t("Bugün");
+  if (n === 1) return t("Yarın");
+  return t("{n} gün kaldı", { n });
 }
 
-export const fmtLong = (d) => d.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long" });
+export const fmtLong = (d) => d.toLocaleDateString(locale(), { weekday: "long", day: "numeric", month: "long" });
 // "3 Ekim": Türkçede "3 Eki" kısaltması ek gibi okunuyor, ay adı tam yazılır
-export const fmtShort = (iso) => parseISO(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
+export const fmtShort = (iso) => parseISO(iso).toLocaleDateString(locale(), { day: "numeric", month: "long" });
 
 /**
  * Göreli gün adı: "Bugün", "Yarın", bu hafta içindeyse gün adı ("Cuma"), daha ileriyse "12 Kasım".
@@ -58,10 +61,10 @@ export function dayLabel(iso) {
 
 export function greeting() {
   const h = new Date().getHours();
-  if (h < 5) return "İyi geceler";
-  if (h < 12) return "Günaydın";
-  if (h < 18) return "İyi günler";
-  return "İyi akşamlar";
+  if (h < 5) return t("İyi geceler");
+  if (h < 12) return t("Günaydın");
+  if (h < 18) return t("İyi günler");
+  return t("İyi akşamlar");
 }
 
 export const byDue = (a, b) => a.due.localeCompare(b.due) || (a.time || "99").localeCompare(b.time || "99");

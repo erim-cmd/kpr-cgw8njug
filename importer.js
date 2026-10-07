@@ -16,6 +16,7 @@ import { sessionRow, gradeRow, swatches, bindRows, readSessions, readGrading, op
 import { mergeIntoCourse } from "./course-merge.js";
 import { extractText, DocError } from "./doc-text.js";
 import { parseSyllabus } from "./syllabus-local.js";
+import { t, localize } from "./i18n.js";
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -67,9 +68,9 @@ const mediaTypeOf = (file) =>
 /** Yapay zekâ ile okur. Başarısızsa { error } döner (asla fırlatmaz), çağıran cihaz içine düşer. */
 async function readWithAI(file) {
   const mediaType = mediaTypeOf(file);
-  if (!AI_TYPES.has(mediaType)) return { error: "Word ve metin dosyaları yapay zekâya gönderilmiyor" };
-  if (file.size > AI_MAX_BYTES) return { error: "dosya 4 MB'tan büyük" };
-  if (!navigator.onLine) return { error: "internet bağlantısı yok" };
+  if (!AI_TYPES.has(mediaType)) return { error: t("Word ve metin dosyaları yapay zekâya gönderilmiyor") };
+  if (file.size > AI_MAX_BYTES) return { error: t("dosya 4 MB'tan büyük") };
+  if (!navigator.onLine) return { error: t("internet bağlantısı yok") };
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 80_000);
   try {
@@ -81,9 +82,9 @@ async function readWithAI(file) {
     });
     const body = await res.json().catch(() => ({}));
     if (res.ok && body.result) return { result: body.result };
-    return { error: body.error || `sunucu ${res.status} döndü` };
+    return { error: body.error || t("sunucu {kod} döndü", { kod: res.status }) };
   } catch (err) {
-    return { error: err.name === "AbortError" ? "okuma çok uzun sürdü" : "sunucuya ulaşılamadı" };
+    return { error: err.name === "AbortError" ? t("okuma çok uzun sürdü") : t("sunucuya ulaşılamadı") };
   } finally {
     clearTimeout(timer);
   }
@@ -91,7 +92,7 @@ async function readWithAI(file) {
 
 const head = (title) => `<header class="sheet-head">
   <h2>${title}</h2>
-  <button type="button" class="icon-btn sm" data-close aria-label="Kapat">${icon.close}</button>
+  <button type="button" class="icon-btn sm" data-close aria-label="${t("Kapat")}">${icon.close}</button>
 </header>`;
 
 /* ------------------------------------------------------------------ */
@@ -106,24 +107,24 @@ export function openImport({ into = null } = {}) {
   target = into;
   openSheet(
     `<form class="sheet-form" data-step="pick">
-      ${head("Syllabus'tan ekle")}
+      ${head(t("Syllabus'tan ekle"))}
       <div class="sheet-body">
-        <p class="lead-text">Dersin syllabus'unu (izlence) yükle. Köprü ders bilgilerini, ders saatlerini, vize-final ve ödev tarihlerini, not dağılımını, devam şartını ve dikkat edilecek kuralları bulsun. Kaydetmeden önce her şeyi kontrol edebilirsin.</p>
+        <p class="lead-text">${t("Dersin syllabus'unu (izlence) yükle. Köprü ders bilgilerini, ders saatlerini, vize-final ve ödev tarihlerini, not dağılımını, devam şartını ve dikkat edilecek kuralları bulsun. Kaydetmeden önce her şeyi kontrol edebilirsin.")}</p>
         <label class="drop" data-drop>
           <input type="file" name="file" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.txt,text/plain" required class="visually-hidden">
           <span class="drop-icon">${icon.upload}</span>
-          <strong data-file-label>Dosya seç</strong>
-          <small>PDF, Word (.docx) ya da metin</small>
+          <strong data-file-label>${t("Dosya seç")}</strong>
+          <small>${t("PDF, Word (.docx) ya da metin")}</small>
         </label>
-        <p class="fine" data-local-note>Dosyan cihazında okunur, hiçbir yere gönderilmez. İnternet olmadan da çalışır.</p>
+        <p class="fine" data-local-note>${t("Dosyan cihazında okunur, hiçbir yere gönderilmez. İnternet olmadan da çalışır.")}</p>
         <label class="consent" data-ai hidden>
           <input type="checkbox" name="ai">
-          <span><b>Yapay zekâ ile oku (daha doğru).</b> <a href="gizlilik.html" target="_blank" rel="noopener">Aydınlatma metnini</a> okudum; PDF ya da fotoğrafımın, okunması için yurt dışındaki yapay zekâ hizmetine (Anthropic) aktarılmasına açık rıza veriyorum. Dosya saklanmaz. Günde 5 okuma hakkın var; olmazsa cihazında okunur.</span>
+          <span><b>${t("Yapay zekâ ile oku (daha doğru).")}</b> ${t("{link} okudum; PDF ya da fotoğrafımın, okunması için yurt dışındaki yapay zekâ hizmetine (Anthropic) aktarılmasına açık rıza veriyorum. Dosya saklanmaz. Günde 5 okuma hakkın var; olmazsa cihazında okunur.", { link: `<a href="gizlilik.html" target="_blank" rel="noopener">${t("Aydınlatma metnini")}</a>` })}</span>
         </label>
       </div>
       <footer class="sheet-foot">
-        <button type="button" class="btn btn-ghost" data-manual>Elle ekle</button>
-        <button type="submit" class="btn btn-primary">Oku</button>
+        <button type="button" class="btn btn-ghost" data-manual>${t("Elle ekle")}</button>
+        <button type="submit" class="btn btn-primary">${t("Oku")}</button>
       </footer>
     </form>`,
     (d) => {
@@ -134,7 +135,7 @@ export function openImport({ into = null } = {}) {
 
       input.addEventListener("change", () => {
         const f = input.files[0];
-        label.textContent = f ? f.name : "Dosya seç";
+        label.textContent = f ? f.name : t("Dosya seç");
         drop.classList.toggle("has-file", !!f);
       });
       ["dragover", "dragenter"].forEach((ev) =>
@@ -168,16 +169,19 @@ export function openImport({ into = null } = {}) {
 /* 2) Okuma                                                            */
 /* ------------------------------------------------------------------ */
 
-const STEPS = ["Dosya açılıyor", "Ders bilgileri okunuyor", "Tarihler ve not dağılımı çıkarılıyor", "Kurallar bulunuyor"];
+const STEPS = localize(
+  ["Dosya açılıyor", "Ders bilgileri okunuyor", "Tarihler ve not dağılımı çıkarılıyor", "Kurallar bulunuyor"],
+  ["Opening the file", "Reading course details", "Pulling out dates and the grade breakdown", "Finding rules"]
+);
 
 function showProgress(ai = false) {
   const d = openSheet(`<div class="sheet-form">
-    <header class="sheet-head"><h2>Syllabus okunuyor</h2></header>
+    <header class="sheet-head"><h2>${t("Syllabus okunuyor")}</h2></header>
     <div class="sheet-body">
       <div class="reading" role="status" aria-live="polite">
         <div class="reading-orb"><img class="brand-mark" src="logo-mark.svg" alt="" width="32" height="32"></div>
         <ol class="steps">${STEPS.map((s, i) => `<li data-s="${i}">${s}</li>`).join("")}</ol>
-        <p class="fine">${ai ? "Yapay zekâ ile okuma genelde 10–40 saniye sürer. Pencereyi kapatma." : "Birkaç saniye sürer."}</p>
+        <p class="fine">${ai ? t("Yapay zekâ ile okuma genelde 10–40 saniye sürer. Pencereyi kapatma.") : t("Birkaç saniye sürer.")}</p>
       </div>
     </div>
   </div>`);
@@ -199,11 +203,11 @@ function showProgress(ai = false) {
 
 function showError(message, file) {
   openSheet(`<div class="sheet-form">
-    ${head("Okunamadı")}
+    ${head(t("Okunamadı"))}
     <div class="sheet-body"><p class="error-box">${esc(message)}</p></div>
     <footer class="sheet-foot">
-      <button type="button" class="btn btn-ghost" data-manual>Elle ekle</button>
-      ${file ? '<button type="button" class="btn btn-primary" data-retry>Tekrar dene</button>' : '<button type="button" class="btn btn-primary" data-back>Başka dosya seç</button>'}
+      <button type="button" class="btn btn-ghost" data-manual>${t("Elle ekle")}</button>
+      ${file ? `<button type="button" class="btn btn-primary" data-retry>${t("Tekrar dene")}</button>` : `<button type="button" class="btn btn-primary" data-back>${t("Başka dosya seç")}</button>`}
     </footer>
   </div>`, (d) => {
     d.querySelector("[data-manual]").addEventListener("click", () => openCourseForm());
@@ -238,7 +242,7 @@ async function run(file, { ai = false } = {}) {
     else openReview(result, { reader: "local", aiError });
   } catch (err) {
     stop();
-    showError(err instanceof DocError ? err.message : "Dosya okunamadı. Başka bir dosya dene ya da dersi elle ekle.");
+    showError(err instanceof DocError ? err.message : t("Dosya okunamadı. Başka bir dosya dene ya da dersi elle ekle."));
     if (!(err instanceof DocError)) console.error(err);
   }
 }
@@ -259,17 +263,17 @@ function weekDate(week) {
 function itemRow(it, i) {
   const guess = !DATE.test(it.date) ? weekDate(it.week) : "";
   const hasDate = DATE.test(it.date);
-  const hint = hasDate ? "" : guess ? `Tarih yazmıyor; ${it.week}. haftanın başı olarak dolduruldu. Doğruysa işaretle.` : it.week ? `Tarih yazmıyor (${it.week}. hafta). Tarihi girersen eklenir.` : "Tarih bulunamadı. Tarihi girersen eklenir.";
+  const hint = hasDate ? "" : guess ? t("Tarih yazmıyor; {n}. haftanın başı olarak dolduruldu. Doğruysa işaretle.", { n: it.week }) : it.week ? t("Tarih yazmıyor ({n}. hafta). Tarihi girersen eklenir.", { n: it.week }) : t("Tarih bulunamadı. Tarihi girersen eklenir.");
   return `<li class="irow ${hasDate ? "" : "no-date"}">
-    <label class="irow-check"><input type="checkbox" data-f="on" ${hasDate ? "checked" : ""} aria-label="Bu tarihi ekle"></label>
+    <label class="irow-check"><input type="checkbox" data-f="on" ${hasDate ? "checked" : ""} aria-label="${t("Bu tarihi ekle")}"></label>
     <div class="irow-body">
       <div class="irow-top">
-        <select data-f="type" aria-label="Tür">${Object.entries(TASK_TYPES).map(([k, l]) => `<option value="${k}" ${k === it.type ? "selected" : ""}>${l}</option>`).join("")}</select>
-        <input data-f="title" value="${esc(it.title)}" maxlength="120" aria-label="Başlık">
+        <select data-f="type" aria-label="${t("Tür")}">${Object.entries(TASK_TYPES).map(([k, l]) => `<option value="${k}" ${k === it.type ? "selected" : ""}>${l}</option>`).join("")}</select>
+        <input data-f="title" value="${esc(it.title)}" maxlength="120" aria-label="${t("Başlık")}">
       </div>
       <div class="irow-when">
-        <input type="date" data-f="due" value="${hasDate ? esc(it.date) : guess}" aria-label="Tarih">
-        <input type="time" data-f="time" value="${TIME.test(it.time) ? esc(it.time) : ""}" aria-label="Saat">
+        <input type="date" data-f="due" value="${hasDate ? esc(it.date) : guess}" aria-label="${t("Tarih")}">
+        <input type="time" data-f="time" value="${TIME.test(it.time) ? esc(it.time) : ""}" aria-label="${t("Saat")}">
       </div>
       ${hint ? `<small class="irow-hint">${hint}</small>` : ""}
       ${it.source ? `<small class="irow-src">“${esc(it.source)}”</small>` : ""}
@@ -282,10 +286,10 @@ function itemRow(it, i) {
 function weeksBlock(weeks) {
   if (!weeks.length) return "";
   return `<details class="wk-edit">
-    <summary class="mini-title">Haftalık konular (${weeks.length})</summary>
+    <summary class="mini-title">${t("Haftalık konular ({n})", { n: weeks.length })}</summary>
     <ul class="wrows">${weeks.map((w) => `<li class="wrow" data-n="${w.n}" data-date="${esc(w.date || "")}" data-note="${esc(w.note || "")}">
-      <span class="wrow-n">H${w.n}</span>
-      <input data-f="topic" value="${esc(w.topic)}" maxlength="200" aria-label="${w.n}. hafta konusu">
+      <span class="wrow-n">${t("H{n}", { n: w.n })}</span>
+      <input data-f="topic" value="${esc(w.topic)}" maxlength="200" aria-label="${t("{n}. hafta konusu", { n: w.n })}">
     </li>`).join("")}</ul>
   </details>`;
 }
@@ -312,21 +316,22 @@ function openMerge(r) {
       ${head(`${esc(course.code || course.name)} · syllabus`)}
       <div class="sheet-body">
         ${added.length
-          ? `<p class="lead-text">Bu derse eklenecekler:</p><ul class="kv">${added.map((a) => `<li><b>${esc(a)}</b><span>eklenecek</span></li>`).join("")}</ul>`
-          : `<p class="lead-text">Bu syllabus derse yeni bir bilgi eklemiyor.</p>`}
-        ${!weeks.length ? `<p class="calc-note">Haftalık plan bu dosyada okunamadı (tablo PDF'te dağılmış olabilir). Word (.docx) sürümü varsa onu dene.</p>` : ""}
-        <p class="fine">Notların, devamsızlıkların ve düzelttiğin bilgiler değişmez; sadece boş olanlar dolar.</p>
+          ? `<p class="lead-text">${t("Bu derse eklenecekler:")}</p><ul class="kv">${added.map((a) => `<li><b>${esc(a)}</b><span>${t("eklenecek")}</span></li>`).join("")}</ul>`
+          : `<p class="lead-text">${t("Bu syllabus derse yeni bir bilgi eklemiyor.")}</p>`}
+        ${!weeks.length ? `<p class="calc-note">${t("Haftalık plan bu dosyada okunamadı (tablo PDF'te dağılmış olabilir). Word (.docx) sürümü varsa onu dene.")}</p>` : ""}
+        <p class="fine">${t("Notların, devamsızlıkların ve düzelttiğin bilgiler değişmez; sadece boş olanlar dolar.")}</p>
       </div>
       <footer class="sheet-foot">
-        <button type="button" class="btn btn-ghost" data-close>Vazgeç</button>
-        ${added.length ? '<button type="button" class="btn btn-primary" data-merge>Ekle</button>' : ""}
+        <button type="button" class="btn btn-ghost" data-close>${t("Vazgeç")}</button>
+        ${added.length ? `<button type="button" class="btn btn-primary" data-merge>${t("Ekle")}</button>` : ""}
       </footer>
     </div>`,
     (d) => {
       d.querySelector("[data-merge]")?.addEventListener("click", () => {
         store.saveCourse(merged);
         closeSheet();
-        toast(`${course.code || course.name}: ${added[0]}${added.length > 1 ? ` ve ${added.length - 1} alan daha` : ""} eklendi`);
+        const name = course.code || course.name;
+        toast(added.length > 1 ? t("{ders}: {alan} ve {n} alan daha eklendi", { ders: name, alan: added[0], n: added.length - 1 }) : t("{ders}: {alan} eklendi", { ders: name, alan: added[0] }));
       });
     }
   );
@@ -341,67 +346,67 @@ function openReview(r, { reader = "local", aiError = "" } = {}) {
   const att = r.attendance || { percent: null, max_absences: null, source: "" };
   r.warnings = r.warnings || [];
   const found = [
-    sessions.length && `${sessions.length} ders saati`,
-    r.items.length && `${r.items.length} tarih`,
-    r.grading.length && `${r.grading.length} not bileşeni`,
-    (r.policies || []).length && `${r.policies.length} kural`,
+    sessions.length && t("{n} ders saati", { n: sessions.length }),
+    r.items.length && t("{n} tarih", { n: r.items.length }),
+    r.grading.length && t("{n} not bileşeni", { n: r.grading.length }),
+    (r.policies || []).length && t("{n} kural", { n: r.policies.length }),
   ].filter(Boolean).join(", ");
 
   openSheet(
     `<form class="sheet-form" novalidate>
-      ${head("Kontrol et ve kaydet")}
+      ${head(t("Kontrol et ve kaydet"))}
       <div class="sheet-body">
-        <p class="lead-text">Köprü ${found ? `<b>${found}</b> buldu` : "bu dosyada tarih veya saat bulamadı"}. Yanlış bir şey varsa düzelt, sonra kaydet.</p>
-        <p class="fine reader-note" data-reader="${reader}">${reader === "ai" ? "Yapay zekâ ile okundu." : aiError ? `Yapay zekâ ile okunamadı (${esc(aiError)}); dosya cihazında okundu.` : "Cihazında okundu."}</p>
-        ${existing ? `<p class="info-box">${esc(existing.name)} dersin zaten kayıtlı. Kaydedince bu dersin bilgileri güncellenir, yeni tarihler eklenir.</p>` : ""}
+        <p class="lead-text">${found ? t("Köprü {bulunan} buldu. Yanlış bir şey varsa düzelt, sonra kaydet.", { bulunan: `<b>${found}</b>` }) : t("Köprü bu dosyada tarih veya saat bulamadı. Yanlış bir şey varsa düzelt, sonra kaydet.")}</p>
+        <p class="fine reader-note" data-reader="${reader}">${reader === "ai" ? t("Yapay zekâ ile okundu.") : aiError ? t("Yapay zekâ ile okunamadı ({hata}); dosya cihazında okundu.", { hata: esc(aiError) }) : t("Cihazında okundu.")}</p>
+        ${existing ? `<p class="info-box">${t("{ders} dersin zaten kayıtlı. Kaydedince bu dersin bilgileri güncellenir, yeni tarihler eklenir.", { ders: esc(existing.name) })}</p>` : ""}
         ${r.warnings.length ? `<ul class="warn-box">${r.warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}
 
-        <h3 class="mini-title">Ders</h3>
-        <label class="field"><span>Ders adı</span><input name="name" value="${esc(r.course.name)}" required maxlength="80"></label>
+        <h3 class="mini-title">${t("Ders")}</h3>
+        <label class="field"><span>${t("Ders adı")}</span><input name="name" value="${esc(r.course.name)}" required maxlength="80"></label>
         <div class="row2">
-          <label class="field"><span>Ders kodu</span><input name="code" value="${esc(r.course.code)}" maxlength="20"></label>
-          <label class="field"><span>Hoca</span><input name="instructor" value="${esc(r.course.instructor)}" maxlength="60"></label>
+          <label class="field"><span>${t("Ders kodu")}</span><input name="code" value="${esc(r.course.code)}" maxlength="20"></label>
+          <label class="field"><span>${t("Hoca")}</span><input name="instructor" value="${esc(r.course.instructor)}" maxlength="60"></label>
         </div>
         <div class="row2">
-          <label class="field"><span>E-posta</span><input name="email" value="${esc(r.course.email)}" maxlength="80"></label>
-          <label class="field"><span>Ofis</span><input name="office" value="${esc(r.course.office)}" maxlength="60"></label>
+          <label class="field"><span>${t("E-posta")}</span><input name="email" value="${esc(r.course.email)}" maxlength="80"></label>
+          <label class="field"><span>${t("Ofis")}</span><input name="office" value="${esc(r.course.office)}" maxlength="60"></label>
         </div>
-        <label class="field"><span>Ofis saatleri</span><input name="officeHours" value="${esc(r.course.office_hours)}" maxlength="80"></label>
+        <label class="field"><span>${t("Ofis saatleri")}</span><input name="officeHours" value="${esc(r.course.office_hours)}" maxlength="80"></label>
         <div class="row2">
-          <label class="field"><span>Kredi <span class="hint">(GNO için)</span></span><input name="credit" type="number" min="0" max="30" step="0.5" inputmode="decimal" value="${r.course.credit ?? existing?.credit ?? ""}"></label>
-          <label class="field"><span>AKTS</span><input name="ects" type="number" min="0" max="60" step="0.5" inputmode="decimal" value="${r.course.ects ?? existing?.ects ?? ""}"></label>
+          <label class="field"><span>${t("Kredi")} <span class="hint">${t("(GNO için)")}</span></span><input name="credit" type="number" min="0" max="30" step="0.5" inputmode="decimal" value="${r.course.credit ?? existing?.credit ?? ""}"></label>
+          <label class="field"><span>${t("AKTS")}</span><input name="ects" type="number" min="0" max="60" step="0.5" inputmode="decimal" value="${r.course.ects ?? existing?.ects ?? ""}"></label>
         </div>
-        <fieldset class="field"><legend>Renk</legend>${swatches(color)}</fieldset>
+        <fieldset class="field"><legend>${t("Renk")}</legend>${swatches(color)}</fieldset>
 
-        <h3 class="mini-title">Haftalık ders saatleri</h3>
+        <h3 class="mini-title">${t("Haftalık ders saatleri")}</h3>
         <div class="srows" data-rows="sessions">${sessions.map(sessionRow).join("")}</div>
-        <button type="button" class="btn btn-ghost" data-add="sessions">${icon.plus}Saat ekle</button>
+        <button type="button" class="btn btn-ghost" data-add="sessions">${icon.plus}${t("Saat ekle")}</button>
 
-        <h3 class="mini-title">Sınav ve ödev tarihleri</h3>
-        ${r.items.length ? `<ul class="irows">${r.items.map(itemRow).join("")}</ul>` : '<p class="calc-note">Tarih bulunamadı. Kaydettikten sonra elle ekleyebilirsin.</p>'}
+        <h3 class="mini-title">${t("Sınav ve ödev tarihleri")}</h3>
+        ${r.items.length ? `<ul class="irows">${r.items.map(itemRow).join("")}</ul>` : `<p class="calc-note">${t("Tarih bulunamadı. Kaydettikten sonra elle ekleyebilirsin.")}</p>`}
 
         ${weeksBlock(r.weeks || [])}
 
-        <h3 class="mini-title">Devam şartı</h3>
+        <h3 class="mini-title">${t("Devam şartı")}</h3>
         <div class="row2">
-          <label class="field"><span>Devam zorunluluğu</span>
-            <span class="pct"><input name="attendPct" type="number" min="0" max="100" step="1" inputmode="numeric" value="${att.percent ?? existing?.attendPct ?? ""}" placeholder="ör. 70"><span>%</span></span></label>
-          <label class="field"><span>ya da en fazla devamsızlık</span>
-            <input name="absLimit" type="number" min="0" max="200" step="1" inputmode="numeric" value="${att.max_absences ?? existing?.absLimit ?? ""}" placeholder="ders sayısı"></label>
+          <label class="field"><span>${t("Devam zorunluluğu")}</span>
+            <span class="pct"><input name="attendPct" type="number" min="0" max="100" step="1" inputmode="numeric" value="${att.percent ?? existing?.attendPct ?? ""}" placeholder="${t("ör. 70")}"><span>%</span></span></label>
+          <label class="field"><span>${t("ya da en fazla devamsızlık")}</span>
+            <input name="absLimit" type="number" min="0" max="200" step="1" inputmode="numeric" value="${att.max_absences ?? existing?.absLimit ?? ""}" placeholder="${t("ders sayısı")}"></label>
         </div>
-        ${att.source ? `<small class="irow-src">“${esc(att.source)}”</small>` : '<p class="calc-note">Syllabus\'ta devam şartı bulunamadı. Biliyorsan gir; devamsızlık takibi buna göre çalışır.</p>'}
+        ${att.source ? `<small class="irow-src">“${esc(att.source)}”</small>` : `<p class="calc-note">${t("Syllabus'ta devam şartı bulunamadı. Biliyorsan gir; devamsızlık takibi buna göre çalışır.")}</p>`}
 
-        ${(r.policies || []).length ? `<h3 class="mini-title">Dikkat edilecek kurallar</h3>
+        ${(r.policies || []).length ? `<h3 class="mini-title">${t("Dikkat edilecek kurallar")}</h3>
         <ul class="flags">${sortFlags(r.policies).map((p) => flagItem(p)).join("")}</ul>
-        <p class="calc-note">Bunlar ders sayfasının en üstünde görünecek.</p>` : ""}
+        <p class="calc-note">${t("Bunlar ders sayfasının en üstünde görünecek.")}</p>` : ""}
 
-        <h3 class="mini-title">Not dağılımı</h3>
+        <h3 class="mini-title">${t("Not dağılımı")}</h3>
         <div class="srows" data-rows="grading">${r.grading.map(gradeRow).join("")}</div>
-        <button type="button" class="btn btn-ghost" data-add="grading">${icon.plus}Bileşen ekle</button>
+        <button type="button" class="btn btn-ghost" data-add="grading">${icon.plus}${t("Bileşen ekle")}</button>
       </div>
       <footer class="sheet-foot">
-        <button type="button" class="btn btn-ghost" data-close>Vazgeç</button>
-        <button type="submit" class="btn btn-primary">Kaydet</button>
+        <button type="button" class="btn btn-ghost" data-close>${t("Vazgeç")}</button>
+        <button type="submit" class="btn btn-primary">${t("Kaydet")}</button>
       </footer>
     </form>`,
     (d) => {
@@ -422,7 +427,7 @@ function openReview(r, { reader = "local", aiError = "" } = {}) {
         e.preventDefault();
         const nameInput = form.elements.namedItem("name");
         if (!nameInput.value.trim()) {
-          nameInput.setCustomValidity("Ders adı gerekli.");
+          nameInput.setCustomValidity(t("Ders adı gerekli."));
           nameInput.reportValidity();
           nameInput.addEventListener("input", () => nameInput.setCustomValidity(""), { once: true });
           return;
@@ -435,7 +440,7 @@ function openReview(r, { reader = "local", aiError = "" } = {}) {
           const get = (f) => row.querySelector(`[data-f="${f}"]`);
           if (!get("on").checked) continue;
           if (!get("due").value) {
-            get("due").setCustomValidity("Eklemek için tarih gir ya da işareti kaldır.");
+            get("due").setCustomValidity(t("Eklemek için tarih gir ya da işareti kaldır."));
             get("due").reportValidity();
             return;
           }
@@ -466,9 +471,9 @@ function openReview(r, { reader = "local", aiError = "" } = {}) {
           tasks
         );
         closeSheet();
-        if (!res) return toast("Kaydedilemedi");
+        if (!res) return toast(t("Kaydedilemedi"));
         // Ders artık Dönem → Ortalama bölümündeki tabloda (UMIS görünümü)
-        toast(`${res.course.code || res.course.name} eklendi · ${res.count} tarih`, { label: "Tabloda gör", onClick: () => (location.hash = "#/ortalama") });
+        toast(t("{ders} eklendi · {n} tarih", { ders: res.course.code || res.course.name, n: res.count }), { label: t("Tabloda gör"), onClick: () => (location.hash = "#/ortalama") });
       });
     }
   );
