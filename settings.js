@@ -7,8 +7,15 @@ import { todayISO } from "./dates.js";
 import { installMode, isStandalone, promptInstall } from "./install.js";
 import { permissionState, enableNotifications, disableNotifications, testNotification } from "./notify.js";
 import { buildICS, deliverICS, countExportable } from "./ics.js";
+import { THEMES, applyTheme } from "./theme.js";
 
-export const APP_VERSION = "2.16.1";
+export const APP_VERSION = "2.17.0";
+
+function themeSeg(current) {
+  const items = Object.entries(THEMES).map(([k, label]) =>
+    `<button type="button" data-action="set-theme" data-theme="${k}" aria-pressed="${current === k}">${label}</button>`).join("");
+  return `<div class="seg theme-seg" role="group" aria-label="Görünüm">${items}</div>`;
+}
 
 let icsClasses = true;
 
@@ -73,6 +80,11 @@ export function view() {
     </section>
 
     <section class="section">
+      <div class="section-head"><h2>Görünüm</h2></div>
+      ${themeSeg(store.get().settings.theme)}
+    </section>
+
+    <section class="section">
       <div class="section-head"><h2>Hatırlatmalar</h2></div>
       <div class="group">${notifyRows(store.get())}</div>
       <div class="gap-t">${infoNote("Bildirimler nasıl çalışır?", "Uygulama kapalıyken zamanında bildirim için sunucu gerekiyor; o gelene kadar en garanti yol takvime aktarmak. Android'de uygulama kapalıyken de ara ara kontrol ediyoruz.")}</div>
@@ -118,6 +130,13 @@ export function view() {
 let resetArmed = false;
 
 export const actions = {
+  "set-theme"(el) {
+    const theme = el.dataset.theme;
+    if (!Object.hasOwn(THEMES, theme)) return;
+    applyTheme(theme);
+    store.setSettings({ theme });
+  },
+
   async "install-now"(_el, { render }) {
     await promptInstall();
     render();

@@ -11,7 +11,7 @@
  * Uygulamada "Yeni sürüm hazır → Yenile" uyarısı çıkar (bkz. js/app.js).
  */
 
-const VERSION = "2.16.1";
+const VERSION = "2.17.0";
 const SHELL_CACHE = `kpr-shell-${VERSION}`;
 
 const SHELL = [
@@ -21,6 +21,8 @@ const SHELL = [
   "./manifest.webmanifest",
   "./logo-mark.svg",
   "./tokens.css",
+  "./theme-boot.js",
+  "./theme.js",
   "./fonts/inter-latin.woff2",
   "./fonts/inter-latin-ext.woff2",
   "./fonts/space-grotesk-latin.woff2",

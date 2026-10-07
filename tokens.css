@@ -51,6 +51,9 @@
   --on-violet: #FFFFFF;     /* mor (Asistan) düğme üstündeki simge */
   --switch-knob: #FFFFFF;   /* açık anahtarın topuzu */
   --scrim: #080B14;         /* pencere arkası karartma (yarı saydam kullanılır) */
+  --on-danger: #FFFFFF;     /* kırmızı (silme onayı) düğme yazısı */
+  --shadow-1: rgba(0, 0, 0, 0.35); /* kart/yüzen düğme gölgesi */
+  --shadow-2: rgba(0, 0, 0, 0.45); /* alt pencere gölgesi */
   /* Köşe: 3 değer + hap */
   --r-sm: 8px;
   --r-md: 12px;
@@ -70,6 +73,36 @@
   --radius: var(--r-lg);
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+/* Açık tema: uygulama <html data-theme="light"> ile açar (theme.js / theme-boot.js).
+   Tanıtım sitesi data-theme almaz, koyu kalır. Vurgu renkleri beyaz zeminde okunacak kadar koyu
+   (yazı olarak kullanılanlar ≥ 4.5:1 — test/theme.mjs denetler). */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #F4F6FB;
+  --bg-2: #EDF1F8;
+  --surface: #FFFFFF;
+  --surface-2: #EEF2F8;
+  --border: #D6DDEA;
+  --text: #141A28;
+  --text-muted: #4D5872;
+  --text-dim: #5F6A84;
+  --cyan: #0573A0;
+  --violet: #6B3FDB;
+  --accent: #4C5BD4;
+  --danger: #C42D4B;
+  --warn: #9A5A00;
+  --ok: #15793A;
+  --on-accent: #FFFFFF;
+  --danger-text: #A5223D;
+  --warn-soft-text: #744300;
+  --on-violet: #FFFFFF;
+  --switch-knob: #FFFFFF;
+  --scrim: #141A28;
+  --on-danger: #FFFFFF;
+  --shadow-1: rgba(20, 26, 40, 0.12);
+  --shadow-2: rgba(20, 26, 40, 0.18);
 }
 
 * { box-sizing: border-box; }
@@ -92,7 +125,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 
 .brand-mark {
   width: 32px; height: 32px; border-radius: var(--r-sm);
-  background: var(--gradient); color: #0E1320;
+  background: var(--gradient); color: var(--on-accent);
   display: grid; place-items: center;
   font: 700 1rem var(--font-display);
 }
@@ -103,10 +136,10 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
   font-weight: 600; font-size: 0.92rem; cursor: pointer; text-decoration: none; white-space: nowrap;
 }
 .btn svg { width: 18px; height: 18px; }
-.btn-primary { background: var(--gradient); color: #0E1320; }
+.btn-primary { background: var(--gradient); color: var(--on-accent); }
 .btn-ghost { background: var(--surface-2); border-color: var(--border); color: var(--text); }
-.btn-danger { background: none; border-color: rgba(240, 96, 122, 0.45); color: var(--danger); }
-.btn-danger.armed { background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn-danger { background: none; border-color: color-mix(in srgb, var(--danger) 45%, transparent); color: var(--danger); }
+.btn-danger.armed { background: var(--danger); border-color: var(--danger); color: var(--on-danger); }
 .btn-block { width: 100%; }
 .btn:disabled { opacity: 0.5; cursor: default; }
 
