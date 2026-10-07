@@ -121,8 +121,8 @@ export function buildAlerts(state) {
     out.push({
       id: `gpa:${fmtGpa(g)}`,
       level: st.level,
-      title: `Ortalaman ${fmtGpa(g)}: ${st.label.toLocaleLowerCase("tr-TR")}`,
-      text: st.level === "danger" ? "GNO 1.80'in altında kalırsa sınamalı öğrenci sayılırsın." : "Mezuniyet için GNO en az 2.00 olmalı.",
+      title: `${p.after != null ? "GNO tahminin" : "GNO'n"} ${fmtGpa(g)}: ${st.label.toLocaleLowerCase("tr-TR")}`,
+      text: st.level === "danger" ? "GNO 1,80'in altında kalırsa sınamalı öğrenci sayılırsın." : "Mezuniyet için GNO en az 2,00 olmalı.",
       route: "ortalama",
     });
   }

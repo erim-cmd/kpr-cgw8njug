@@ -50,3 +50,6 @@ jobs:
 
       - name: Görünüm (açık/koyu tema, kontrast)
         run: node test/theme.mjs
+
+      - name: Yazı dili (docs/yazi-dili.md)
+        run: node test/copy.mjs

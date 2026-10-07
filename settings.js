@@ -9,7 +9,7 @@ import { permissionState, enableNotifications, disableNotifications, testNotific
 import { buildICS, deliverICS, countExportable } from "./ics.js";
 import { THEMES, applyTheme } from "./theme.js";
 
-export const APP_VERSION = "2.17.0";
+export const APP_VERSION = "2.17.1";
 
 function themeSeg(current) {
   const items = Object.entries(THEMES).map(([k, label]) =>
@@ -107,7 +107,7 @@ export function view() {
       <div class="section-head"><h2>Uygulama</h2></div>
       <div class="group">
         ${installRow()}
-        <div class="group-row"><div><strong>İnternetsiz çalışma</strong><p>Uygulama bir kez açıldıktan sonra çevrimdışı da çalışır.</p></div>
+        <div class="group-row"><div><strong>İnternetsiz çalışma</strong><p>Bir kez açtıktan sonra internet olmadan da çalışır.</p></div>
           ${"serviceWorker" in navigator && navigator.serviceWorker.controller ? '<span class="status-ok" id="sw-status">Hazır ✓</span>' : '<span class="status-muted" id="sw-status">Hazırlanıyor…</span>'}</div>
       </div>
     </section>
