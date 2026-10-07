@@ -1,4 +1,5 @@
 /** KPR — Ortak arayüz yardımcıları: HTML kaçışı, alt sayfa (dialog), bildirim. */
+import { t } from "./i18n.js";
 
 const ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
 export const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ESC[c]);
@@ -42,11 +43,11 @@ export function armDelete(btn, onConfirm) {
   btn.addEventListener("click", () => {
     if (btn.classList.contains("armed")) return onConfirm();
     btn.classList.add("armed");
-    btn.textContent = "Emin misin?";
+    btn.textContent = t("Emin misin?");
     clearTimeout(timer);
     timer = setTimeout(() => {
       btn.classList.remove("armed");
-      btn.textContent = "Sil";
+      btn.textContent = t("Sil");
     }, 3000);
   });
 }

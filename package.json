@@ -5,7 +5,7 @@
   "description": "Köprü — syllabus'tan dönem planı (PWA). Derleme adımı yok; bu dosya sadece yerel geliştirme araçları için.",
   "scripts": {
     "dev": "wrangler pages dev . --port 8788 --kv KPR_LIMITS --compatibility-date 2026-09-01",
-    "test": "node test/shell.mjs && node test/check.mjs && node test/migrate.mjs && node test/asistan.mjs && node test/grade-sheet.mjs && node test/merge.mjs && node test/theme.mjs && node test/copy.mjs"
+    "test": "node test/shell.mjs && node test/check.mjs && node test/migrate.mjs && node test/asistan.mjs && node test/grade-sheet.mjs && node test/merge.mjs && node test/theme.mjs && node test/copy.mjs && node test/i18n.mjs"
   },
   "devDependencies": {
     "wrangler": "4.141.0"

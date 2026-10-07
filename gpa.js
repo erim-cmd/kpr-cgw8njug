@@ -10,6 +10,7 @@
  * S, U, EX, W, I, NI, PR ortalamaya girmez.
  */
 
+import { t, localize, decimal } from "./i18n.js";
 import { SEASONS } from "./store.js";
 
 export const COEF = {
@@ -17,17 +18,21 @@ export const COEF = {
   C: 2, "C-": 1.67, "D+": 1.33, D: 1, F: 0, NA: 0,
 };
 export const LETTERS = Object.keys(COEF);
-export const OTHER = {
+export const OTHER = localize({
   S: "Başarılı (kredisiz)", U: "Başarısız (kredisiz)", EX: "Muaf", W: "Dersten çekildi",
   I: "Eksik", NI: "Ortalama dışı", PR: "Devam ediyor",
-};
+}, {
+  S: "Pass (no credit)", U: "Fail (no credit)", EX: "Exempt", W: "Withdrew",
+  I: "Incomplete", NI: "Not in average", PR: "In progress",
+});
 
 /**
  * UMIS'in listesinde olup yönetmelikte (Md. 26) olmayan notlar.
  * Katsayıları doğrulanana kadar ortalamaya katılmaz ve kullanıcı uyarılır.
  * Doğrulama: UMIS not hesaplama ekranında bir derse bu notu verip HESAPLA'ya bas.
  */
-export const UNVERIFIED = { "D-": "katsayısı doğrulanmadı", E: "katsayısı doğrulanmadı", R: "anlamı doğrulanmadı" };
+export const UNVERIFIED = localize({ "D-": "katsayısı doğrulanmadı", E: "katsayısı doğrulanmadı", R: "anlamı doğrulanmadı" },
+  { "D-": "coefficient not verified", E: "coefficient not verified", R: "meaning not verified" });
 
 /** UMIS'teki harf listesi, sıralı. */
 export const UMIS_GRADES = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "E", "F", "NA", "S", "U", "EX", "W", "I", "R"];
@@ -52,7 +57,7 @@ export function passStatus(g) {
 /** İki hane, yarım yukarı. Kayan nokta hatasına karşı küçük tolerans. */
 export const round2 = (x) => Math.round((x + 1e-9) * 100) / 100;
 // Türkçe ondalık ayırıcı: 3,12
-export const fmtGpa = (x) => (x === null || x === undefined ? "—" : x.toFixed(2).replace(".", ","));
+export const fmtGpa = (x) => (x === null || x === undefined ? "—" : decimal(x.toFixed(2)));
 
 const SEASON_ORDER = Object.keys(SEASONS);
 export const termKey = (e) => e.year * 3 + SEASON_ORDER.indexOf(e.season);
@@ -117,9 +122,9 @@ export function terms(transcript) {
 
 export function standing(gno) {
   if (gno === null) return null;
-  if (gno >= 2) return { level: "ok", label: "Başarılı" };
-  if (gno >= 1.8) return { level: "warn", label: "Koşullu başarılı" };
-  return { level: "danger", label: "Sınamalı riski" };
+  if (gno >= 2) return { level: "ok", label: t("Başarılı") };
+  if (gno >= 1.8) return { level: "warn", label: t("Koşullu başarılı") };
+  return { level: "danger", label: t("Sınamalı riski") };
 }
 
 /** Bir dönem ortalamasına en yakın harf (sadece yorum için). */

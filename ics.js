@@ -10,6 +10,7 @@
 
 import { TASK_TYPES, isExam } from "./store.js";
 import { parseISO, toISO, todayISO } from "./dates.js";
+import { t } from "./i18n.js";
 
 const pad = (n) => String(n).padStart(2, "0");
 const stamp = (d) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
@@ -43,24 +44,25 @@ function at(iso, hhmm) {
   return d;
 }
 
-function taskEvent(t, course, now) {
-  const summary = `${course ? `${course.code || course.name} · ` : ""}${t.title}`;
-  const lines = ["BEGIN:VEVENT", `UID:${t.id}@kpr`, `DTSTAMP:${stamp(now)}`, `SUMMARY:${esc(summary)}`];
-  const desc = [TASK_TYPES[t.type], t.note].filter(Boolean).join(" — ");
+function taskEvent(task, course, now) {
+  const summary = `${course ? `${course.code || course.name} · ` : ""}${task.title}`;
+  const ad = summary;
+  const lines = ["BEGIN:VEVENT", `UID:${task.id}@kpr`, `DTSTAMP:${stamp(now)}`, `SUMMARY:${esc(summary)}`];
+  const desc = [TASK_TYPES[task.type], task.note].filter(Boolean).join(" — ");
   if (desc) lines.push(`DESCRIPTION:${esc(desc)}`);
 
-  if (t.time) {
-    const start = at(t.due, t.time);
-    const end = new Date(start.getTime() + (isExam(t) ? 120 : 30) * 60000);
+  if (task.time) {
+    const start = at(task.due, task.time);
+    const end = new Date(start.getTime() + (isExam(task) ? 120 : 30) * 60000);
     lines.push(`DTSTART:${local(start)}`, `DTEND:${local(end)}`);
-    if (isExam(t)) lines.push(...alarm("-P7D", `1 hafta kaldı: ${summary}`), ...alarm("-P1D", `Yarın: ${summary}`), ...alarm("-PT2H", `2 saat sonra: ${summary}`));
-    else lines.push(...alarm("-P1D", `Yarın teslim: ${summary}`), ...alarm("-PT3H", `3 saat kaldı: ${summary}`));
+    if (isExam(task)) lines.push(...alarm("-P7D", t("1 hafta kaldı: {ad}", { ad })), ...alarm("-P1D", t("Yarın: {ad}", { ad })), ...alarm("-PT2H", t("2 saat sonra: {ad}", { ad })));
+    else lines.push(...alarm("-P1D", t("Yarın teslim: {ad}", { ad })), ...alarm("-PT3H", t("3 saat kaldı: {ad}", { ad })));
   } else {
     // Tüm gün: tetikleyici günün 00:00'ına göre. -PT4H = önceki gün 20:00, PT8H = aynı gün 08:00
-    const next = new Date(parseISO(t.due).getTime() + 86400000);
-    lines.push(`DTSTART;VALUE=DATE:${dateOnly(t.due)}`, `DTEND;VALUE=DATE:${dateOnly(toISO(next))}`);
-    if (isExam(t)) lines.push(...alarm("-P6DT15H", `1 hafta kaldı: ${summary}`), ...alarm("-PT4H", `Yarın: ${summary}`), ...alarm("PT8H", `Bugün: ${summary}`));
-    else lines.push(...alarm("-P2DT4H", `3 gün kaldı: ${summary}`), ...alarm("-PT4H", `Yarın teslim: ${summary}`));
+    const next = new Date(parseISO(task.due).getTime() + 86400000);
+    lines.push(`DTSTART;VALUE=DATE:${dateOnly(task.due)}`, `DTEND;VALUE=DATE:${dateOnly(toISO(next))}`);
+    if (isExam(task)) lines.push(...alarm("-P6DT15H", t("1 hafta kaldı: {ad}", { ad })), ...alarm("-PT4H", t("Yarın: {ad}", { ad })), ...alarm("PT8H", t("Bugün: {ad}", { ad })));
+    else lines.push(...alarm("-P2DT4H", t("3 gün kaldı: {ad}", { ad })), ...alarm("-PT4H", t("Yarın teslim: {ad}", { ad })));
   }
   lines.push("END:VEVENT");
   return lines;
@@ -85,7 +87,7 @@ function classEvents(course, weeks, now) {
       `DTSTART:${local(start)}`,
       `DTEND:${local(end)}`,
       `RRULE:FREQ=WEEKLY;COUNT=${weeks}`,
-      ...alarm("-PT15M", `15 dk sonra: ${course.name}${s.room ? ` · ${s.room}` : ""}`),
+      ...alarm("-PT15M", t("{n} dk sonra: {ders}", { n: 15, ders: `${course.name}${s.room ? ` · ${s.room}` : ""}` })),
       "END:VEVENT"
     );
   });
@@ -94,7 +96,7 @@ function classEvents(course, weeks, now) {
 
 export function buildICS(state, { classes = false } = {}) {
   const now = new Date();
-  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//KPR//Ogrenci Asistani//TR", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:Köprü"];
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//KPR//Ogrenci Asistani//TR", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:Köprü"]; // i18n-ok — takvim adı marka adı, her dilde "Köprü"
   const today = todayISO();
   for (const t of state.tasks.filter((x) => !x.done && x.due >= today)) {
     lines.push(...taskEvent(t, state.courses.find((c) => c.id === t.courseId), now));
@@ -111,7 +113,7 @@ export async function deliverICS(text, filename = "kpr-takvim.ics") {
   const file = new File([text], filename, { type: "text/calendar" });
   if (navigator.canShare?.({ files: [file] })) {
     try {
-      await navigator.share({ files: [file], title: "Köprü takvimi" });
+      await navigator.share({ files: [file], title: t("Köprü takvimi") });
       return "shared";
     } catch (err) {
       if (err.name === "AbortError") return "cancelled";
