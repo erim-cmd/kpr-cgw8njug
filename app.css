@@ -65,8 +65,15 @@ body.onboarding .add-syllabus { display: none; }
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   font-size: var(--fs-2xs); font-weight: 500; color: var(--text-muted); text-decoration: none;
 }
-.tab[aria-current="page"] { color: var(--cyan); }
-.tab[aria-current="page"] svg { stroke-width: 2.2; }
+.tab { position: relative; }
+.tab:not(.tab-accent) .tab-ic { width: 56px; height: 30px; border-radius: var(--r-pill); transition: background 0.15s; }
+/* Seçili sekme belirgin (Erim geri bildirimi): simgenin arkasında renkli hap, kalın etiket, üstte çizgi */
+.tab[aria-current="page"] { color: var(--cyan); font-weight: 700; }
+.tab[aria-current="page"] svg { stroke-width: 2.4; }
+.tab[aria-current="page"]:not(.tab-accent) .tab-ic { background: color-mix(in srgb, var(--cyan) 20%, transparent); }
+.tab[aria-current="page"]::before { content: ""; position: absolute; top: -1px; left: 50%; width: 32px; height: 3px; transform: translateX(-50%); border-radius: 0 0 var(--r-sm) var(--r-sm); background: var(--cyan); }
+.tab-accent[aria-current="page"] { color: var(--violet); }
+.tab-accent[aria-current="page"]::before { background: var(--violet); }
 
 .fab {
   position: fixed; z-index: 11;
@@ -607,7 +614,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
   box-shadow: 0 6px 16px var(--shadow-1);
 }
 .tab-accent .tab-ic svg { width: 21px; height: 21px; stroke-width: 2.1; }
-.tab-accent[aria-current="page"] .tab-ic { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent); }
+.tab-accent[aria-current="page"] .tab-ic { box-shadow: 0 0 0 3px var(--bg-2), 0 0 0 5px var(--violet); }
 
 /* Bugün: [Bugün | Hafta] anahtarı */
 .today-seg { margin-top: -8px; }
