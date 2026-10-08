@@ -14,15 +14,20 @@ export const fmtNum = (n) => (Math.round(n * 10) / 10).toLocaleString(locale());
 
 /** Girilen notlara göre ağırlıklı ortalama ve hedef için gereken ortalama. */
 export function calcGrades(grading, target) {
-  const total = grading.reduce((s, g) => s + g.weight, 0);
-  const done = grading.filter((g) => g.score !== null);
+  // Bonus (ek puan) bileşenleri 100'lük dağılımın parçası değil: toplamda ve "kalan"da sayılmaz,
+  // notu girildiyse kazanılan puana eklenir. Girilmediyse gereken ortalama bonussuz (temkinli) hesaplanır.
+  const base = grading.filter((g) => !g.bonus);
+  const total = base.reduce((s, g) => s + g.weight, 0);
+  const done = base.filter((g) => g.score !== null);
   const doneWeight = done.reduce((s, g) => s + g.weight, 0);
-  const earned = done.reduce((s, g) => s + (g.score * g.weight) / 100, 0);
+  const bonusEarned = grading.filter((g) => g.bonus && g.score !== null).reduce((s, g) => s + (g.score * g.weight) / 100, 0);
+  const earned = done.reduce((s, g) => s + (g.score * g.weight) / 100, 0) + bonusEarned;
   const remaining = total - doneWeight;
   return {
     total,
     doneWeight,
-    average: doneWeight ? (earned / doneWeight) * 100 : null,
+    average: doneWeight ? ((earned - bonusEarned) / doneWeight) * 100 : null,
+    bonusEarned,
     earned,
     remaining,
     needed: remaining > 0 ? ((target - earned) / remaining) * 100 : null,
@@ -58,7 +63,7 @@ export function targetResult(c) {
     const tl = rows.find((x) => x.letter === c.targetLetter) || rows.find((x) => x.letter === "B") || rows[Math.floor(rows.length / 2)];
     out.letter = tl.letter;
     // Kalan bileşenlerin hepsi final mi? → "Finalden en az X"
-    const left = c.grading.filter((g) => g.score === null);
+    const left = c.grading.filter((g) => g.score === null && !g.bonus);
     const onlyFinal = left.length > 0 && left.every((g) => groupOf(g.name) === "final");
     out.onlyFinal = onlyFinal;
     out.status = tl.status;

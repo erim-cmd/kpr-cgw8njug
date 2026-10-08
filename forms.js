@@ -38,6 +38,7 @@ export function gradeRow(g = { name: "", weight: "" }) {
     <input data-f="name" value="${esc(g.name)}" maxlength="40" placeholder="${t("ör. Vize")}" aria-label="${t("Bileşen adı")}" required>
     <label class="pct"><input type="number" data-f="weight" value="${esc(g.weight)}" min="0" max="100" step="any" inputmode="decimal" aria-label="${t("Ağırlık yüzdesi")}" required><span>%</span></label>
     <button type="button" class="icon-btn sm" data-remove-row aria-label="${t("Bu bileşeni kaldır")}">${icon.close}</button>
+    <label class="g-bonus" title="${t("Bonus (100'e dahil değil)")}"><input type="checkbox" data-f="bonus" ${g.bonus ? "checked" : ""} aria-label="${t("Bonus (100'e dahil değil)")}"><span>${t("bonus")}</span></label>
   </div>`;
 }
 
@@ -78,7 +79,8 @@ export function readGrading(container, previous = []) {
     const name = row.querySelector('[data-f="name"]').value.trim();
     const weight = Number(row.querySelector('[data-f="weight"]').value);
     const old = previous.find((g) => g.name === name);
-    return { name, weight, score: old?.score ?? null };
+    const bonus = !!row.querySelector('[data-f="bonus"]')?.checked;
+    return { name, weight, score: old?.score ?? null, ...(bonus ? { bonus } : {}) };
   });
 }
 
@@ -162,6 +164,7 @@ export function openCourseForm(course = null) {
             </fieldset>
           </div>
         </details>
+        ${course ? `<p class="fine">${t("Hoca syllabus'u güncellediyse:")} <button type="button" class="link" data-reimport>${t("Yeni syllabus'u yükle")}</button></p>` : ""}
       </div>
       ${foot(!!course)}
     </form>`,
@@ -172,6 +175,8 @@ export function openCourseForm(course = null) {
       if (!course) sessions.insertAdjacentHTML("beforeend", sessionRow());
       bindRows(sessions, form.querySelector('[data-add="sessions"]'), nextSession);
       bindRows(grading, form.querySelector('[data-add="grading"]'), () => gradeRow());
+      // Yeniden yükleme ders özetinde değil burada: syllabus ders açılırken zaten yükleniyor (sadece eksikler eklenir)
+      form.querySelector("[data-reimport]")?.addEventListener("click", () => import("./importer.js").then((m) => m.openImport({ into: course.id })));
 
       form.addEventListener("submit", (e) => {
         e.preventDefault();
