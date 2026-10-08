@@ -285,12 +285,12 @@ function parseGrading(lines, flines) {
       }
     }
     if (shareRow(fold(line), line, shares)) continue;
-    for (const x of lineParts(line, inSection)) add(found, x.name, x.w, line);
+    for (const x of lineParts(line, inSection)) add(found, x.name, x.w, line, x.bonus);
   }
-  let out = [...found.values()].map(({ name, weight, source }) => ({ name: cut(name, 40), weight, source })).filter((g) => g.name);
+  let out = [...found.values()].map(({ name, weight, source, bonus }) => ({ name: cut(name, 40), weight, source, ...(bonus ? { bonus } : {}) })).filter((g) => g.name);
   // Bologna: bileşenler yarıyıl içinin kendi içindeki payları (toplam 100) ve final ayrı bir satırda → ölçekle
   const hasFinal = out.some((g) => /final|yariyil sonu|yil sonu/.test(fold(g.name)));
-  const sum = out.reduce((t, g) => t + g.weight, 0);
+  const sum = out.filter((g) => !g.bonus).reduce((t, g) => t + g.weight, 0);
   if (shares.fin !== null && !hasFinal && Math.abs(sum - 100) < 0.5) {
     const sem = shares.sem ?? 100 - shares.fin;
     out = out.map((g) => ({ ...g, weight: Math.round(g.weight * sem) / 100 }));
@@ -321,7 +321,7 @@ function lineParts(line, inSection) {
     // "%70 devam zorunlu", "devamsızlık %30'u geçemez" gibi kural cümlelerini ele
     if (/zorunlu|required|must|en az|at least|devam etmek|attend at least|minimum|gerekir|gerekmektedir|devamsiz|gecemez|asamaz|exceed|absen|kalir/.test(fp)) continue;
     if (part.length > 70 && !inSection) continue;
-    out.push({ name: componentName(part), w });
+    out.push({ name: componentName(part), w, bonus: BONUS_RE.test(fp) });
   }
   return out;
 }
@@ -349,10 +349,23 @@ function componentName(part) {
   return segs.find((x) => COMPONENT.test(fold(x))) || segs[0] || "";
 }
 
-function add(map, name, w, source) {
-  const key = fold(name).replace(/[^a-z0-9]/g, "");
+// "Quiz (Bonus**)", "Extra credit", "Ek puan": nota eklenen bonus — 100'lük dağılımın parçası değil
+const BONUS_RE = /\bbonus\b|extra credit|ek puan|ekstra puan|ilave puan/;
+
+/** Bileşen adını sadeleştir: "Video Project (details provided in the class)" → "Video Project", "Quiz (Bonus**)" → "Quiz". */
+export function tidyComponent(name) {
+  let s = (name || "").replace(/\*+/g, "");
+  s = s.replace(/\(([^()]*)\)/g, (m, inner) => (BONUS_RE.test(fold(inner)) || clean(inner).length > 12 ? "" : m));
+  s = s.replace(/\([^()]*$/, ""); // kapanmamış parantez (hücre kesilmiş)
+  return clean(s);
+}
+
+function add(map, name, w, source, bonus = false) {
+  const isBonus = bonus || BONUS_RE.test(fold(name));
+  const nm = tidyComponent(name) || clean(name);
+  const key = fold(nm).replace(/[^a-z0-9]/g, "") + (isBonus ? "+b" : "");
   if (!key || map.has(key)) return;
-  map.set(key, { name: clean(name), weight: w, source });
+  map.set(key, { name: nm, weight: w, source, ...(isBonus ? { bonus: true } : {}) });
 }
 const numIn = (s) => {
   const m = /(\d{1,3}(?:[.,]\d+)?)\s*%?/.exec(s || "");
@@ -943,6 +956,9 @@ function parsePolicies(sents, att, finalMin) {
     const s = sents.find((x) => /(attendance|devam)[^.]{0,30}(mandatory|compulsory|required|zorunlu|will be taken)|yoklama alin/.test(fold(x)));
     if (s) push({ kind: "devam", severity: "dikkat", rule: "Yoklama alınıyor; devam oranı syllabus'ta yazmıyor.", consequence: "Oranı hocana sor ve Dönem panelinde gir.", source: s });
   }
+  // "Attendance will be graded": devam yalnız şart değil, notun bir parçası
+  const graded = sents.find((x) => /(attendance|devam|yoklama)[^.]{0,30}(will be graded|is graded|are graded|counts? toward|part of (the|your) grade|notlandirilir|notlandirilacak|nota (dahil|etki))/.test(fold(x)));
+  if (graded) push({ kind: "devam", severity: "dikkat", rule: "Derse devam notlandırılıyor; gelmediğin her ders notunu düşürebilir.", consequence: "", source: graded });
   // Geç gelen / erken çıkan devamsız sayılır
   const late = sents.find((x) => {
     const f = fold(x);
@@ -1069,6 +1085,10 @@ function parsePolicies(sents, att, finalMin) {
       push({ kind: "diger", severity: "dikkat", rule: `Sınava/derse ${m[1] || m[5]} dakikadan fazla geç gelen alınmıyor.`, consequence: "", source: s });
     }
   }
+  // Aynı konuda iki kart gösterilmez: "yapay zekâ ile ödev intihal" varsa genel "yapay zekâ kuralları var" kartı fazladan
+  const AI_HARD = "Yapay zekâ ile ödev yazmak intihal sayılıyor.";
+  const AI_SOFT = "Yapay zekâ kullanımı için kurallar var.";
+  if (out.some((p) => p.rule === AI_HARD)) out.splice(0, out.length, ...out.filter((p) => p.rule !== AI_SOFT));
   const rank = { kritik: 0, dikkat: 1, bilgi: 2 };
   return out.sort((a, b) => rank[a.severity] - rank[b.severity]).slice(0, 8);
 }
@@ -1107,6 +1127,33 @@ function creditFrom(v) {
   m = /(\d+(?:[.,]5)?)/.exec(f);
   const n = m ? +m[1].replace(",", ".") : null;
   return n !== null && n >= 0 && n <= 30 ? n : null;
+}
+
+const TLD_OK = /^(tr|com|edu|org|net|gov|mil|int|io|ai|uk|de|us|co|info|me|ac|eu|fr|nl|it|es|ch|at|be|ca|au|jp|cn|ru|az|kz|biz)$/;
+export const emailLooksComplete = (e) => TLD_OK.test((e.split(".").pop() || "").toLowerCase());
+
+/** PDF'te satır/boşlukla bölünmüş adres: "…@bau.edu.t" + "r" → "…@bau.edu.tr". Devamı metinde yoksa olduğu gibi kalır (uyarı verilir). */
+function completeEmail(e, text) {
+  if (!e || emailLooksComplete(e)) return e;
+  const i = text.indexOf(e);
+  if (i < 0) return e;
+  const m = /^[ \t]*\n?[ \t]*([a-z]{1,3})(?![\w@.])/i.exec(text.slice(i + e.length));
+  return m && emailLooksComplete(e + m[1]) ? e + m[1] : e;
+}
+
+// "Tue 10:30-12:30, Thu 14:30–15:30" → "Salı 10:30–12:30, Perşembe 14:30–15:30"
+const TR_DAYS = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+const EN_DAY_RE = /\b(mon(?:day)?s?|tue(?:s(?:day)?)?s?|wed(?:nesday)?s?|thu(?:rs(?:day)?)?s?|thursdays?|fri(?:day)?s?|sat(?:urday)?s?|sun(?:day)?s?)\b\.?/gi;
+export function trOfficeHours(s) {
+  return (s || "")
+    .replace(EN_DAY_RE, (m) => {
+      const d = dayOf(fold(m.replace(/\.$/, "")));
+      return d >= 0 ? TR_DAYS[d] : m;
+    })
+    .replace(/(\d{1,2}[:.]\d{2})\s*[-–—]\s*(\d{1,2}[:.]\d{2})/g, "$1–$2")
+    .replace(/\bby appointment\b/gi, "randevuyla")
+    .replace(/\band\b/gi, "ve")
+    .replace(/\s*;\s*/g, ", ");
 }
 
 function parseCourse(lines, flines, pairsBy, text) {
@@ -1148,6 +1195,7 @@ function parseCourse(lines, flines, pairsBy, text) {
         CODE_RE.test(nxt) ||
         ALL_LABELS.some((x) => fnxt === x.l) ||
         /20\d{2}/.test(nxt) ||
+        /\b(syllabus|izlence|course outline|ders bilgi)/.test(fnxt) ||
         // "Thermodynamics" + "Grading" / "Devreler" + "Ara Sınav: 8. hafta": sonraki satır bir bölüm başlığı ya da etiketli satır
         /[:%]/.test(nxt) ||
         GRADING_HEAD.test(fnxt.replace(/^\d+[.)]\s*/, "")) ||
@@ -1231,13 +1279,30 @@ function parseCourse(lines, flines, pairsBy, text) {
   }
   if (ins && officeHours.startsWith(ins)) officeHours = clean(officeHours.slice(ins.length).replace(/^[\s:,-]+/, ""));
   if (office && officeHours.startsWith(office)) officeHours = clean(officeHours.slice(office.length).replace(/^[\s:;,-]+/, ""));
+  // "Office A326 — Tue 10:30-12:30": günden önceki kısım yer bilgisi → ofis alanına, saatlerden çıkar
+  {
+    const f2 = fold(officeHours);
+    const d2 = DAY_ONE.exec(f2);
+    if (d2 && d2.index > 0) {
+      const pre = f2.slice(0, d2.index);
+      if (/\b(ofis|office|oda|room|blok|building|kat|floor)\b/.test(pre) || (office && pre.includes(fold(office)))) {
+        if (!office) {
+          const pm = /([A-Za-zÇĞİÖŞÜçğıöşü]{0,4}-?\s?\d{1,4}[A-Za-z]?)/.exec(officeHours.slice(0, d2.index));
+          if (pm) office = pm[1];
+        }
+        officeHours = clean(officeHours.slice(d2.index));
+      }
+    }
+  }
+  course.email = completeEmail(course.email, text);
   course.office = cut(clean(office.replace(emailRe, "")), 60);
-  course.office_hours = cut(officeHours, 80);
+  course.office_hours = cut(trOfficeHours(officeHours), 80);
   course.credit = creditFrom(first("credit"));
   const ects = creditFrom(first("ects"));
   course.ects = ects !== null && ects <= 60 ? ects : null;
-  // Birleşik etiket: "Kredi/AKTS: 3/6" · "Credit / ECTS: 3 / 6" (tablo hali başka yoldan okunuyor)
-  if (course.credit === null && course.ects === null) {
+  // Birleşik etiket: "Kredi/AKTS: 3/6" · "Credit / ECTS: 3 / 6" (tablo hali başka yoldan okunuyor).
+  // Tek etiket ("ects") birleşik değerin ilk sayısını almış olabilir → birleşik okuma her zaman önce gelir.
+  {
     const m = /(?:kredi|credits?)\s*\/\s*(?:akts|ects)\s*:?\s*(\d{1,2}(?:[.,]5)?)\s*\/\s*(\d{1,2})\b/.exec(fold(text.slice(0, 4000)));
     if (m) {
       course.credit = parseFloat(m[1].replace(",", "."));
@@ -1473,7 +1538,8 @@ export function parseSyllabus(text, now = new Date()) {
     /final (exam|sinav)|yariyil sonu|yil sonu sinav|donem sonu sinav/.test(flines.join("\n")) ||
     grading.some((g) => /final|yariyil sonu|yil sonu/.test(fold(g.name)) && !/proje|project|rapor|report|paper|essay|odev|sunum|presentation|portfol/.test(fold(g.name)));
   if (!hasFinalExam) warnings.delete("Final tarihi bulunamadı; akademik takvimden kontrol et.");
-  const total = grading.reduce((s, g) => s + g.weight, 0);
+  const total = grading.filter((g) => !g.bonus).reduce((s, g) => s + g.weight, 0);
+  if (course.email && !emailLooksComplete(course.email)) warnings.add(`Hocanın e-posta adresi eksik okunmuş olabilir (${course.email}); kontrol et.`);
   if (!grading.length) warnings.add("Not dağılımı bulunamadı.");
   else if (Math.abs(total - 100) > 0.5) warnings.add(`Not ağırlıklarının toplamı %${Math.round(total * 10) / 10}, 100 değil; kontrol et.`);
   if (att.percent === null && att.max_absences === null)
@@ -1487,7 +1553,7 @@ export function parseSyllabus(text, now = new Date()) {
     sessions,
     items: items.slice(0, 60),
     weeks,
-    grading: grading.map(({ name, weight }) => ({ name, weight })).slice(0, 12),
+    grading: grading.map(({ name, weight, bonus }) => ({ name, weight, ...(bonus ? { bonus: true } : {}) })).slice(0, 12),
     attendance: { percent: att.percent, max_absences: att.max_absences, source: att.source },
     final_min: finalMin ? finalMin.value : null,
     policies,

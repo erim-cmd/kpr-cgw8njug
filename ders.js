@@ -4,7 +4,8 @@
  *   2. Sıradaki değerlendirme: tür · kalan gün · ağırlık %
  *   3. Bilgi kartı (2 sütun): saat + derslik, kredi/AKTS, e-posta, ofis + ofis saati
  *   4. Dikkat edilecekler: en kritik 2 kural (kaynak cümlesi dokununca), "Tümü (N)"
- *   5. "Bu hafta: H5 · konu" satırı → dokununca tüm haftalık plan; plan yoksa yeniden yükleme çağrısı
+ *   5. "Bu hafta: H5 · konu" satırı → dokununca tüm haftalık plan; plan yoksa bölüm gösterilmez
+ *      (syllabus yeniden yükleme Düzenle formunda: ders açılırken zaten yükleniyor)
  *   6. Değerlendirme: bileşen satırları (ad · ağırlık rozeti · not), dokununca not girişi
  *   7. Hedef harf
  * Altta: "Bilgiler syllabus'tan alındı · Düzenle".
@@ -19,7 +20,6 @@ import { icon } from "./icons.js";
 import { attendance, attendanceText } from "./attendance.js";
 import { sortFlags, SEV_LABEL, infoNote } from "./components.js";
 import { POLICY_KINDS } from "./store.js";
-import { openImport } from "./importer.js";
 import { SAMPLE_SCALE, neededByLetter } from "./gpa.js";
 import { openCourseForm, openTaskForm } from "./forms.js";
 import { calcGrades, targetResult, currentWeekOf, fmtNum, impactLine, letterNeedLine } from "./ders-calc.js";
@@ -108,7 +108,7 @@ function gradingBlock(c, tasks) {
     return `<section class="cd-sec"><h3 class="mini-title">${t("Değerlendirme")}</h3>
       <p class="calc-note">${t("Not dağılımı eklenmemiş. Alttaki <b>Düzenle</b>'den vize, final gibi bileşenleri ekle.")}</p></section>`;
   }
-  const total = c.grading.reduce((s, g) => s + g.weight, 0) || 1;
+  const total = c.grading.filter((g) => !g.bonus).reduce((s, g) => s + g.weight, 0) || 1;
   const r = calcGrades(c.grading, c.target);
   // Üstteki "sıradaki" kartında görünen görev burada tekrar etmez
   const top = nextTask(c, tasks);
@@ -118,7 +118,7 @@ function gradingBlock(c, tasks) {
       aria-label="${g.score !== null ? t("{name}, ağırlık yüzde {w}, notun {score}", { name: esc(g.name), w: fmtNum(g.weight), score: fmtNum(g.score) }) : t("{name}, ağırlık yüzde {w}, not girilmedi", { name: esc(g.name), w: fmtNum(g.weight) })}">
       <span class="gr-n">${esc(g.name)}</span>
       ${g.score !== null ? `<b class="gr-score">${fmtNum(g.score)}</b>` : `<span class="gr-add">${t("not gir")}</span>`}
-      <b class="gr-w">${pct(fmtNum(g.weight))}</b>
+      <b class="gr-w">${g.bonus ? `+${pct(fmtNum(g.weight))} <small>${t("bonus")}</small>` : pct(fmtNum(g.weight))}</b>
     </button></li>`).join("");
   return `<section class="cd-sec"><h3 class="mini-title">${t("Değerlendirme")}</h3>
     <ul class="grade-rows">${rows}</ul>
@@ -135,13 +135,8 @@ function gradingBlock(c, tasks) {
 const EXAM_RE = /sinav|sınav|exam|midterm|vize|final|quiz/i;
 
 function planBlock(c, st, state) {
-  // Plan yoksa bölüm gizlenmez: yeniden yükleme çağrısı (sadece eksikler eklenir, girdiler ezilmez)
-  if (!c.weeks.length) {
-    return `<section class="cd-sec cd-noplan">
-      <p class="calc-note">${t("Haftalık plan yok. Syllabus'u yeniden yükle, her haftanın konusu eklensin.")}</p>
-      <button type="button" class="btn btn-ghost btn-sm" data-reimport>${icon.upload}${t("Syllabus yükle")}</button>
-    </section>`;
-  }
+  // Syllabus'ta okunabilir haftalık plan yoksa bölüm yok: öğrenciden yeniden yükleme istemek okuma hatasını ona yükler
+  if (!c.weeks.length) return "";
   const cur = currentWeekOf(c, state);
   const now = c.weeks.find((w) => w.n === cur);
   const summary = now
@@ -258,7 +253,6 @@ export function openCourseDetail(courseId) {
       }
       if (e.target.closest("[data-edit]")) return openCourseForm(course);
       if (e.target.closest("[data-new-task]")) return openTaskForm(null, { courseId });
-      if (e.target.closest("[data-reimport]")) return openImport({ into: courseId });
       const label = course.code || course.name;
       // Bileşen notu: ortak not girişi (hızlı çip tek dokunuşta kaydeder)
       const row = e.target.closest("[data-grade-i]");

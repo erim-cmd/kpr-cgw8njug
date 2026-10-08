@@ -77,7 +77,8 @@ function normGrade(g) {
   const weight = num(g?.weight, 0, 100);
   if (!name || weight === null) return null;
   // score: öğrencinin bu bileşenden aldığı not (0–100), girilmediyse null
-  return { name, weight, score: num(g.score, 0, 100) };
+  // bonus: ek puan bileşeni (100'lük dağılıma katılmaz); yalnızca true ise saklanır
+  return { name, weight, score: num(g.score, 0, 100), ...(g.bonus === true ? { bonus: true } : {}) };
 }
 
 const grade = (g, list = GRADE_CODES) => (list.includes(g) ? g : "");
