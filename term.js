@@ -134,14 +134,15 @@ const ahead = (k) => (k === 0 ? t("bu hafta") : k === 1 ? t("gelecek hafta") : t
 /** Bir hafta "önemli": içinde sınav/teslim türünde (okuma/kişisel değil) bir iş var. */
 const important = (w) => w.items.some((t) => !isLight(t));
 
-/** Haftanın maddesi: "MCH 2016 · Ara sınav · 16 Kasım   %40" (o dersin içindeki ağırlık; bilinmiyorsa %?). */
+/** Haftanın maddesi: "MCH 2016 · Ara sınav · 16 Kasım   %40" (o dersin içindeki ağırlık; notu etkilemiyorsa ya da bilinmiyorsa boş). */
 function itemLine(t, byId) {
   const c = byId.get(t.courseId);
   const kind = labelOf(t) || TASK_TYPES[t.type];
-  const w = t.weight !== null && t.weight !== undefined ? pct(t.weight) : pctOf("?");
+  // Ağırlık yoksa (bilinmiyor) ya da 0 ise yüzde yazılmaz: "%?" kafa karıştırıyordu
+  const w = t.weight > 0 ? pct(t.weight) : "";
   return `<li><button type="button" class="fw-item" ${c ? `data-action="course-detail" data-id="${esc(c.id)}"` : `data-action="edit-task" data-id="${esc(t.id)}"`}>
       <span>${c ? `<i style="--c:${c.color}"></i><b>${esc(c.code || c.name)}</b> · ` : ""}${esc(kind)}${t.done ? " ✓" : ""}<small>${esc(t.title)} · ${fmtShort(t.due)}</small></span>
-      <em>${w}</em></button></li>`;
+      ${w ? `<em>${w}</em>` : ""}</button></li>`;
 }
 
 /** Hafta satırı. Yoğun hafta (density.js → busy: notun ≥%10'u, 2 sınav ya da 3+ teslim) çerçeveli ve etiketli. */
@@ -166,7 +167,7 @@ let pastOpen = false; // "Geçen haftalar" varsayılan kapalı
 /**
  * Dönem akışı: bu haftadan dönem sonuna her hafta; değerlendirmesi olan hafta maddeleriyle,
  * boş haftalar birleşik "sakin" satırı. Geçen haftalar katlı. Üstte "Notunun %X'i belli oldu".
- * Pay: weights.taskWeight / tüm derslerin toplamı (density.js). Ağırlığı bilinmeyen "%?" ve paya katılmaz.
+ * Pay: weights.taskWeight / tüm derslerin toplamı (density.js). Ağırlığı bilinmeyen ya da 0 olan madde yüzdesiz görünür, paya katılmaz.
  */
 function flowBlock(state) {
   const d = density(state.tasks, state.settings, state.courses);
@@ -203,7 +204,7 @@ function flowBlock(state) {
     ${past.length ? `<button type="button" class="fw-past-btn" data-action="toggle-past" aria-expanded="${pastOpen}">${t("Geçen haftalar ({n})", { n: past.length })} ${pastOpen ? "▴" : "▾"}</button>
       ${pastOpen ? `<ol class="tl past">${past.map((w) => weekRow(w, null, byId)).join("")}</ol>` : ""}` : ""}
     ${rows.length ? `<ol class="tl">${rows.join("")}</ol>` : `<p class="calc-note gap-t">${t("Önünde değerlendirme kalmadı.")}</p>`}
-    ${infoNote(t("Yüzdeler ne demek?"), t("Haftanın yanındaki yüzde: o haftadaki değerlendirmelerin ağırlığı ÷ tüm derslerinin toplamı, yani dönem notunun o hafta belirlenen kısmı. Maddelerdeki yüzde, o dersin notu içindeki ağırlık. Ağırlığı bilinmeyen teslim \"%?\" ile görünür, hesaba katılmaz. Yoğun hafta: dönem notunun en az %10'u, iki sınav ya da üç teslim."))}
+    ${infoNote(t("Yüzdeler ne demek?"), t("Haftanın yanındaki yüzde: o haftadaki değerlendirmelerin ağırlığı ÷ tüm derslerinin toplamı, yani dönem notunun o hafta belirlenen kısmı. Maddelerdeki yüzde, o dersin notu içindeki ağırlık. Notu etkilemeyen ya da ağırlığı bilinmeyen teslimde yüzde yazmaz, hesaba katılmaz. Yoğun hafta: dönem notunun en az %10'u, iki sınav ya da üç teslim."))}
     ${start}
   </section>`;
 }
