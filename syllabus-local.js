@@ -1376,6 +1376,38 @@ export function trOfficeHours(s) {
     .replace(/\s*;\s*/g, ", ");
 }
 
+// Başlık düzeninde olduğu gibi kalanlar: Romen rakamı ve bilinen kısaltmalar; sesli harfsiz 2–4 harf de kısaltmadır
+const ROMAN = /^(I|II|III|IV|V|VI|VII|VIII|IX|X)$/;
+const ACRONYMS = new Set(["AI", "IT", "CAD", "CAM", "ECF", "UX", "UI", "HR", "PR", "ML", "GIS", "CNC", "BIM", "MIS", "ERP", "CRM", "SQL", "API", "IOT", "ICT", "ESG", "SDG", "EU", "AB", "ABD", "USA", "UK", "TV", "PC", "AR", "VR", "NGO", "STK", "KOBİ", "R&D", "AR-GE", "AR&GE", "IIoT", "MBA", "CEO", "3D", "2D"]);
+// Başta değilse küçük yazılan bağlaçlar/edatlar ("Intro to AI", "Bilim ve Teknoloji")
+const SMALL_WORDS = new Set(["to", "of", "and", "or", "in", "on", "for", "the", "a", "an", "at", "by", "ve", "ile", "veya", "ya"]);
+
+/**
+ * Tamamı büyük harf ders adını başlık düzenine çevirir ("PHYSICS II" → "Physics II", "INTRO TO AI" → "Intro to AI",
+ * "TÜRK DİLİ I" → "Türk Dili I"). Karışık yazılmış ad olduğu gibi kalır. Romen rakamı küçültülmez: Türkçe yerelde
+ * "II".toLocaleLowerCase("tr") → "ıı" olurdu. Kelime Türkçe harf içeriyorsa (ya da adın tamamı Türkçeyse) tr yereli.
+ */
+export function titleCase(name) {
+  if (!(name.length > 4 && name === name.toLocaleUpperCase("tr-TR") && /[A-ZÇĞİÖŞÜ]{4}/.test(name))) return name;
+  // Türkçe ad: Türkçe harf ya da Türkçe bağlaç ("KADIN VE TOPLUM" → "Kadın", İngilizce yerelde "Kadin" olurdu)
+  const tr = /[ÇĞİÖŞÜ]/.test(name) || /(^|\s)(VE|İLE|ILE|VEYA|İÇİN|ICIN|GİRİŞ)(\s|$)/.test(name);
+  let first = true;
+  return name
+    .split(/(\s+)/)
+    .map((w) => {
+      if (!w.trim()) return w;
+      const bare = w.replace(/^[(“"']+|[)”"',.:;]+$/g, "");
+      const lead = first;
+      first = false;
+      if (ROMAN.test(bare) || ACRONYMS.has(bare) || /\d/.test(bare) || (/^[A-Z&]{2,4}$/.test(bare) && !/[AEIOUÇĞİÖŞÜ]/.test(bare))) return w;
+      const loc = tr || /[ÇĞİÖŞÜ]/.test(w) ? "tr-TR" : "en";
+      const low = w.toLocaleLowerCase(loc);
+      if (!lead && SMALL_WORDS.has(low)) return low;
+      return w.charAt(0) + w.slice(1).toLocaleLowerCase(loc);
+    })
+    .join("");
+}
+
 function parseCourse(lines, flines, pairsBy, text) {
   const first = (k) => (pairsBy[k] || []).map((p) => p.v).find(Boolean) || "";
   const course = { name: "", code: "", instructor: "", email: "", office: "", office_hours: "", credit: null, ects: null };
@@ -1433,9 +1465,7 @@ function parseCourse(lines, flines, pairsBy, text) {
       .replace(/,\s*\d{4,6}\s*$/, "")
       .replace(/^[\s–—\-:,]+/, ""),
   );
-  // Tamamı büyük harf ad ("PHYSICS I") başlık düzenine; Romen rakamı ve kısaltma (≤3 harf) olduğu gibi
-  if (name.length > 4 && name === name.toLocaleUpperCase("tr-TR") && /[A-ZÇĞİÖŞÜ]{4}/.test(name))
-    name = name.split(/(\s+)/).map((w) => (/^[IVX]+$|^[A-ZÇĞİÖŞÜ&]{1,3}$/.test(w) ? w : w.charAt(0) + w.slice(1).toLocaleLowerCase(/[ÇĞİÖŞÜ]/.test(name) ? "tr-TR" : "en"))).join("");
+  name = titleCase(name);
   course.name = cut(name, 80);
 
   // Hoca: etiket; yoksa "Instructor Information" gibi bölüm başlığından sonraki isim satırı
