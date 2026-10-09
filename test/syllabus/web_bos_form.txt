@@ -1,0 +1,16 @@
+DERS TANIMLAMA FORMU
+Dersin Kodu ve Adı	
+Dersin Yarıyılı	
+Dersin Kredisi (AKTS)	
+Dersin Önkoşulları (Ders devam zorunlulukları, bu maddede belirtilmelidir.)	
+Dersin Haftalık Dağılımı	
+Değerlendirme Ölçütleri	Sayısı	Toplam Katkısı (%)
+Ara sınav		
+Ödev		
+Kısa Sınav		
+Dönem içi Çalışmaların Yıl İçi Başarıya Oranı (%)		
+Finalin Başarıya Oranı (%)		
+Dersin İş Yükü
+Etkinlik	Toplam Hafta Sayısı	Süre (Haftalık Saat)	Dönem Sonu Toplam İş Yükü
+Ara sınav ve ara sınava hazırlık			
+Final sınavı ve final sınavına hazırlık			

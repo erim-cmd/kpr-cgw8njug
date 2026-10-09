@@ -1,0 +1,10 @@
+CS 224 Computer Organization
+Spring 2027
+Office hours: by appointment.
+Grading
+Homeworks: 20%
+Midterm: 40%
+Final: 40%
+To be eligible to take the final exam, a student must earn at least 30% of each of the first three homework grades and at least 30% on the midterm. Otherwise the student receives an FZ grade.
+Attendance is recorded and reported to the department, but it has no direct effect on grades or FZ status.
+Any code that fails to compile will receive a zero grade.

@@ -1,21 +1,24 @@
 /**
- * KPR — "Seçmeli Keşfi" (sadece arayüz): ilgi alanlarına göre seçmeli ders uyumu.
+ * KPR — "Seçmeli Keşfi": Ekle/Sil (Add/Drop) haftasında seçmeli dersleri değerlendirme.
  *
- * Bu sürümde:
- *   - İlgi alanı seçimi (çoklu çip + Tamam); seçimler cihazda, store → settings.interests.
- *   - Ders kartı bileşeni (kod, ad, uyum çubuğu, yüzde, eşleşen konular) hazır ama liste boş.
- * PDF yükleme, ders verisi, eşleştirme, arama ve yapay zekâ YOK; ağ isteği yok.
+ *   1. Adaylar: öğrenci düşündüğü seçmelinin syllabus'unu yükler (isteğe bağlı) → cihazda okunur, özeti
+ *      (sınav sayısı, devam şartı, not dağılımı, kritik kurallar) yan yana karşılaştırılır. Aday ders değildir:
+ *      takvime, görevlere ve GNO'ya girmez. Dosya saklanmaz, yalnızca özet (store → electives).
+ *   2. İlgi alanı seçimi (çoklu çip + Tamam); seçimler cihazda, store → settings.interests.
+ *   3. Öneriler: eşleştirme gelene kadar küçük "Önizleme" listesi (sahte ders öneri gibi gösterilmez).
+ * Yapay zekâ ve ağ isteği yok.
  */
 
 import { store, INTERESTS } from "./store.js";
-import { esc } from "./ui.js";
+import { esc, toast } from "./ui.js";
 import { icon } from "./icons.js";
 import { t, pct, localize } from "./i18n.js";
+import { infoNote } from "./components.js";
 
 // Öneri listesi: eşleştirme gelene kadar boş (sahte ders öneri gibi gösterilmez)
 const SUGGESTIONS = [];
 
-// Eşleştirme gelene kadar arayüzün nasıl görüneceğini gösteren ÖRNEK kartlar.
+// Eşleştirme gelene kadar arayüzün nasıl görüneceğini gösteren ÖRNEK satırlar.
 // "Önizleme" etiketiyle ve soluk çizilir; gerçek bir ders önerisi değildir, okul verisi içermez.
 const PREVIEW = [
   localize({ code: "ÖRN 301", name: "Ürün yönetimine giriş", fit: 92, matches: ["girisimcilik", "teknoloji"] }, { code: "EX 301", name: "Intro to product management" }),
@@ -29,33 +32,73 @@ const PREVIEW = [
 
 let editing = false; // kayıtlı seçim varken kart yeniden açıldı mı
 let draft = null; // açık karttaki seçim (Tamam'a basılınca kaydedilir)
+let reading = false; // syllabus okunuyor
 
 /**
- * Ders kartı: { code, name, fit: 0–100, matches: [INTERESTS anahtarı] }.
- * Eşleştirme gelince SUGGESTIONS bununla çizilecek.
+ * Öneri satırı (tek satır): { code, name, fit: 0–100 }. Eşleştirme gelince SUGGESTIONS bununla çizilecek.
  */
 export function courseCard(c, preview = false) {
   const fit = Math.max(0, Math.min(100, Math.round(Number(c.fit) || 0)));
-  return `<li class="el-card${preview ? " is-preview" : ""}">
-    <div class="el-top">
-      <div class="el-title"><b>${esc(c.code)}</b><span>${esc(c.name)}</span></div>
-      <span class="el-fit">${pct(fit)}</span>
-    </div>
-    <div class="el-bar" role="img" aria-label="${t("Uyum yüzde {n}", { n: fit })}"><i style="width:${fit}%"></i></div>
-    ${c.matches?.length ? `<div class="el-tags">${c.matches.map((k) => `<span class="match-tag">${esc(INTERESTS[k] || k)}</span>`).join("")}</div>` : ""}
+  return `<li class="el-row${preview ? " is-preview" : ""}">
+    <b>${esc(c.code)}</b><span>${esc(c.name)}</span><em aria-label="${t("Uyum yüzde {n}", { n: fit })}">${pct(fit)}</em>
   </li>`;
 }
+
+/* ------------------------------------------------------------------ */
+/* Adaylar                                                             */
+/* ------------------------------------------------------------------ */
+
+function candidateCard(e) {
+  const g = e.grading.filter((x) => !x.bonus);
+  const bonus = e.grading.filter((x) => x.bonus);
+  // Devamsızlık hakkı saat ya da hafta olarak verildiyse birimiyle ("en fazla 8 saat devamsızlık")
+  const abs = e.absUnit === "saat" ? t("en fazla {n} saat devamsızlık", { n: e.absLimit }) : e.absUnit === "hafta" ? t("en fazla {n} hafta devamsızlık", { n: e.absLimit }) : t("en fazla {n} devamsızlık", { n: e.absLimit }); // i18n-ok
+  const att = e.attendPct !== null ? t("en az {p} devam", { p: pct(e.attendPct) }) : e.absLimit !== null ? abs : t("devam şartı yazmıyor");
+  const stats = [
+    e.ects !== null && t("{n} AKTS", { n: e.ects }),
+    e.exams ? t("{n} sınav", { n: e.exams }) : null,
+    e.deadlines ? t("{n} teslim", { n: e.deadlines }) : null,
+    att,
+  ].filter(Boolean);
+  return `<li class="cand">
+    <div class="cand-head">
+      <div class="cand-title"><b>${esc(e.code || e.name)}</b>${e.code ? `<span>${esc(e.name)}</span>` : ""}</div>
+      <button type="button" class="icon-btn sm" data-action="remove-elective" data-id="${esc(e.id)}" aria-label="${t("{name} adayını kaldır", { name: esc(e.code || e.name) })}">${icon.close}</button>
+    </div>
+    <p class="cand-stats">${stats.map(esc).join(" · ")}</p>
+    ${g.length ? `<p class="cand-grading">${g.map((x) => `${esc(x.name)} ${pct(x.weight)}`).join(" · ")}${bonus.length ? ` · ${bonus.map((x) => `${esc(x.name)} +${pct(x.weight)}`).join(" · ")}` : ""}</p>` : `<p class="cand-grading muted">${t("Not dağılımı syllabus'ta bulunamadı.")}</p>`}
+    ${e.finalMin !== null ? `<p class="cand-rule">${t("Final barajı {n}", { n: e.finalMin })}</p>` : ""}
+    ${e.rules.filter((r) => !/^Derslerin en az/.test(r) && !/^En fazla \d+/.test(r) && !/^Finalden en az/.test(r)).map((r) => `<p class="cand-rule">${esc(r)}</p>`).join("")}
+  </li>`;
+}
+
+function candidatesBlock(list) {
+  const upload = `<label class="btn btn-ghost el-upload${reading ? " is-busy" : ""}">
+      ${icon.upload}${reading ? t("Okunuyor…") : t("Seçmeli syllabus'u yükle")}
+      <input type="file" class="visually-hidden" data-change="elective-file" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.txt,text/plain" ${reading ? "disabled" : ""}>
+    </label>`;
+  return `<section class="section">
+    <div class="section-head"><h2>${t("Düşündüğün seçmeliler")}</h2></div>
+    ${list.length
+      ? `<ul class="cands">${list.map(candidateCard).join("")}</ul>`
+      : `<p class="fine">${t("Aklındaki seçmelinin syllabus'unu yükle; sınavlarını, devam şartını ve not dağılımını diğerleriyle yan yana gör.")}</p>`}
+    ${list.length < 8 ? upload : ""}
+  </section>`;
+}
+
+/* ------------------------------------------------------------------ */
+/* İlgi alanları ve öneriler                                           */
+/* ------------------------------------------------------------------ */
 
 function interestCard(selected) {
   const chips = Object.entries(INTERESTS)
     .map(([k, label]) => `<button type="button" class="pick-chip" data-action="toggle-interest" data-key="${k}" aria-pressed="${selected.has(k)}">${label}</button>`)
     .join("");
-  return `<section class="card-box interest-card">
-    <h2 class="sub-title">${t("İlgi alanların")}</h2>
+  return `<div class="card-box interest-card">
     <p class="fine">${t("Hangi konular ilgini çekiyor? Birden fazla seçebilirsin.")}</p>
     <div class="pick-chips" role="group" aria-label="${t("İlgi alanları")}">${chips}</div>
     <button type="button" class="btn btn-primary" data-action="save-interests" ${selected.size ? "" : "disabled"}>${t("Tamam")}</button>
-  </section>`;
+  </div>`;
 }
 
 function interestTags(saved) {
@@ -65,34 +108,35 @@ function interestTags(saved) {
   </button>`;
 }
 
-/** İlgi alanına uyan örnek kartlar (en fazla 3), üstünde "Önizleme" açıklaması. */
+/** İlgi alanına uyan örnek satırlar (en fazla 3), tek kutuda "Önizleme" etiketiyle. */
 function previewList(saved) {
   const keys = new Set(saved);
   const list = PREVIEW.filter((c) => !keys.size || c.matches.some((k) => keys.has(k))).slice(0, 3);
-  return `<p class="preview-note"><span class="badge soft">${t("Önizleme")}</span>${t("Gerçek öneriler ders listesi eklenince gelecek. Kartlar böyle görünecek:")}</p>
-    <ul class="list" aria-label="${t("Örnek kartlar")}">${list.map((c) => courseCard(c, true)).join("")}</ul>`;
+  return `<div class="el-preview">
+    <p class="preview-note"><span class="badge soft">${t("Önizleme")}</span>${t("Ders listesi eklenince öneriler böyle görünecek.")}</p>
+    <ul class="el-rows" aria-label="${t("Örnek öneriler")}">${list.map((c) => courseCard(c, true)).join("")}</ul>
+  </div>`;
 }
 
 export function view() {
-  const saved = store.get().settings.interests;
+  const st = store.get();
+  const saved = st.settings.interests;
   const open = editing || !saved.length;
   if (open && !draft) draft = new Set(saved);
   return `
     <header class="page-head">
       <h1 class="page-title">${t("Seçmeli Keşfi")}</h1>
-      <p class="page-sub">${t("İlgi alanlarına göre seçmeli ders uyumu")}</p>
+      <p class="page-sub">${t("Ekle/Sil (Add/Drop) haftasında seçmelilerine karar vermen için")}</p>
+      ${infoNote(t("Bu ekran ne işe yarar?"), t("Ekle/Sil haftasında hangi seçmeliyi tutacağına karar vermene yardım eder: düşündüğün derslerin syllabus'larını yükleyip iş yükünü yan yana karşılaştırırsın, ilgi alanına göre öneri görürsün. Syllabus yüklemek isteğe bağlıdır; dosya cihazında okunur ve saklanmaz. Bu bir öneridir, kayıt değildir; kayıt okulunun kendi sisteminde yapılır."))}
     </header>
 
-    ${open ? interestCard(draft) : interestTags(saved)}
+    ${candidatesBlock(st.electives)}
 
     <section class="section">
       <div class="section-head"><h2>${t("Öneriler")}</h2></div>
-      ${SUGGESTIONS.length
-        ? `<ul class="list">${SUGGESTIONS.map(courseCard).join("")}</ul>`
-        : previewList(saved)}
-    </section>
-
-    <p class="fine el-note">${t("Bu bir öneridir, kayıt değildir. Kayıt okulunun kendi sisteminde yapılır.")}</p>`;
+      ${open ? interestCard(draft) : interestTags(saved)}
+      ${SUGGESTIONS.length ? `<ul class="el-rows">${SUGGESTIONS.map((c) => courseCard(c)).join("")}</ul>` : previewList(saved)}
+    </section>`;
 }
 
 export const actions = {
@@ -114,5 +158,39 @@ export const actions = {
     editing = true;
     draft = new Set(store.get().settings.interests);
     render();
+  },
+  "remove-elective"(el) {
+    const e = store.get().electives.find((x) => x.id === el.dataset.id);
+    if (!e) return;
+    store.deleteElective(e.id);
+    toast(t("Aday kaldırıldı"), { label: t("Geri al"), onClick: () => store.saveElective(e) });
+  },
+};
+
+export const changes = {
+  async "elective-file"(el, { render }) {
+    const file = el.files?.[0];
+    if (!file || reading) return;
+    reading = true;
+    render();
+    try {
+      // Okuyucu yalnızca gerektiğinde yüklenir (Seçmeli ekranı hızlı açılsın)
+      const [{ extractText, DocError }, { parseSyllabus, electiveFrom }] = await Promise.all([import("./doc-text.js"), import("./syllabus-local.js")]);
+      try {
+        const { text } = await extractText(file);
+        const e = electiveFrom(parseSyllabus(text));
+        if (!e.name && !e.code) toast(t("Bu dosyada ders adı ya da kodu bulunamadı."));
+        else {
+          store.saveElective(e);
+          toast(t("{name} adaylara eklendi", { name: e.code || e.name }));
+        }
+      } catch (err) {
+        toast(err instanceof DocError ? err.message : t("Dosya okunamadı. Başka bir dosya dene."));
+        if (!(err instanceof DocError)) console.error(err);
+      }
+    } finally {
+      reading = false;
+      render();
+    }
   },
 };

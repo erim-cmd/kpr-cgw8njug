@@ -13,7 +13,7 @@ const FILES = [
   "app.js", "today.js", "tasks.js", "courses.js", "settings.js", "term.js", "asistan.js", "secmeli.js",
   "forms.js", "importer.js", "onboarding.js", "components.js", "ders.js", "gpa-view.js", "grade-sheet.js",
   "notify.js", "alerts.js", "install.js", "attendance.js", "ics.js", "asistan-core.js", "density.js", "ui.js",
-  "gpa.js", "weights.js", "ders-calc.js", "course-merge.js", "dates.js", "store.js", "schedule.js", "theme.js",
+  "gpa.js", "weights.js", "ders-calc.js", "course-merge.js", "dates.js", "store.js", "schedule.js", "theme.js", "mail.js",
 ];
 
 /** Basit JS tarayıcı: metin sabitlerini ve şablon parçalarını konumlarıyla döndürür. */
