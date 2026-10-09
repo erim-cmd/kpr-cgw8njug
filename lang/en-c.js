@@ -125,8 +125,8 @@ export default {
   "Geçen haftalar ({n})": "Past weeks ({n})",
   "Önünde değerlendirme kalmadı.": "No more assessments ahead.",
   "Yüzdeler ne demek?": "What do the percentages mean?",
-  "Haftanın yanındaki yüzde: o haftadaki değerlendirmelerin ağırlığı ÷ tüm derslerinin toplamı, yani dönem notunun o hafta belirlenen kısmı. Maddelerdeki yüzde, o dersin notu içindeki ağırlık. Ağırlığı bilinmeyen teslim \"%?\" ile görünür, hesaba katılmaz. Yoğun hafta: dönem notunun en az %10'u, iki sınav ya da üç teslim.":
-    "The percentage next to a week: the weight of that week's assessments ÷ the total for all your courses, so the share of your term grade decided that week. The percentage on each item is its weight within that course's grade. A deadline with unknown weight shows as \"?%\" and isn't counted. Busy week: at least 10% of your term grade, two exams or three deadlines.",
+  "Haftanın yanındaki yüzde: o haftadaki değerlendirmelerin ağırlığı ÷ tüm derslerinin toplamı, yani dönem notunun o hafta belirlenen kısmı. Maddelerdeki yüzde, o dersin notu içindeki ağırlık. Notu etkilemeyen ya da ağırlığı bilinmeyen teslimde yüzde yazmaz, hesaba katılmaz. Yoğun hafta: dönem notunun en az %10'u, iki sınav ya da üç teslim.":
+    "The percentage next to a week: the weight of that week's assessments ÷ the total for all your courses, so the share of your term grade decided that week. The percentage on each item is its weight within that course's grade. A deadline that doesn't affect your grade, or whose weight is unknown, shows no percentage and isn't counted. Busy week: at least 10% of your term grade, two exams or three deadlines.",
   "Dönem": "Term",
   "Hedefin, devamsızlığın ve dönemin akışı": "Your target, absences and term timeline",
   "Hedef GNO hesabı, devamsızlık hakların ve dönemin hafta hafta akışı derslerinden çıkar.":
