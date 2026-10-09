@@ -16,6 +16,15 @@ const cases = [
   ["CAD FOR ARCHITECTS", "CAD for Architects"],
   ["RISK MANAGEMENT IN IT", "Risk Management in IT"],
   ["MATHEMATICS IV", "Mathematics IV"],
+  // TDK: ve, ile, veya, ya da, de/da, ki, mi/mı/mu/mü küçük
+  ["MATEMATİK VEYA İSTATİSTİK", "Matematik veya İstatistik"],
+  ["TARİH YA DA EDEBİYAT", "Tarih ya da Edebiyat"],
+  ["MİMARLIKTA DA ETİK", "Mimarlıkta da Etik"],
+  ["SANATTA DE STİL", "Sanatta de Stil"],
+  ["BİLİM Kİ YOL GÖSTERİR", "Bilim ki Yol Gösterir"],
+  ["BİLİM Mİ SANAT MI", "Bilim mi Sanat mı"],
+  ["DOĞA MU KÜLTÜR MÜ", "Doğa mu Kültür mü"],
+  ["MÜZİK İLE TOPLUM", "Müzik ile Toplum"],
   ["Physics II", "Physics II"], // karışık yazılmış ad olduğu gibi
   ["Intro to AI", "Intro to AI"],
 ];

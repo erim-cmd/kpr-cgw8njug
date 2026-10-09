@@ -1380,7 +1380,8 @@ export function trOfficeHours(s) {
 const ROMAN = /^(I|II|III|IV|V|VI|VII|VIII|IX|X)$/;
 const ACRONYMS = new Set(["AI", "IT", "CAD", "CAM", "ECF", "UX", "UI", "HR", "PR", "ML", "GIS", "CNC", "BIM", "MIS", "ERP", "CRM", "SQL", "API", "IOT", "ICT", "ESG", "SDG", "EU", "AB", "ABD", "USA", "UK", "TV", "PC", "AR", "VR", "NGO", "STK", "KOBİ", "R&D", "AR-GE", "AR&GE", "IIoT", "MBA", "CEO", "3D", "2D"]);
 // Başta değilse küçük yazılan bağlaçlar/edatlar ("Intro to AI", "Bilim ve Teknoloji")
-const SMALL_WORDS = new Set(["to", "of", "and", "or", "in", "on", "for", "the", "a", "an", "at", "by", "ve", "ile", "veya", "ya"]);
+// Türkçe (TDK): ve, ile, veya, ya da, de/da, ki, mi/mı/mu/mü küçük yazılır; "için" büyük kalır
+const SMALL_WORDS = new Set(["to", "of", "and", "or", "in", "on", "for", "the", "a", "an", "at", "by", "ve", "ile", "veya", "ya", "da", "de", "ki", "mi", "mı", "mu", "mü"]);
 
 /**
  * Tamamı büyük harf ders adını başlık düzenine çevirir ("PHYSICS II" → "Physics II", "INTRO TO AI" → "Intro to AI",
@@ -1390,7 +1391,7 @@ const SMALL_WORDS = new Set(["to", "of", "and", "or", "in", "on", "for", "the", 
 export function titleCase(name) {
   if (!(name.length > 4 && name === name.toLocaleUpperCase("tr-TR") && /[A-ZÇĞİÖŞÜ]{4}/.test(name))) return name;
   // Türkçe ad: Türkçe harf ya da Türkçe bağlaç ("KADIN VE TOPLUM" → "Kadın", İngilizce yerelde "Kadin" olurdu)
-  const tr = /[ÇĞİÖŞÜ]/.test(name) || /(^|\s)(VE|İLE|ILE|VEYA|İÇİN|ICIN|GİRİŞ)(\s|$)/.test(name);
+  const tr = /[ÇĞİÖŞÜ]/.test(name) || /(^|\s)(VE|İLE|ILE|VEYA|YA|DA|DE|Kİ|Mİ|MI|MU|MÜ|İÇİN|ICIN|GİRİŞ)(\s|$)/.test(name);
   let first = true;
   return name
     .split(/(\s+)/)
