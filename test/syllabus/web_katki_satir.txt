@@ -1,0 +1,14 @@
+DERS ÖĞRETİM PLANI
+Dersin Adı	Malzeme Bilimi
+Dersin Kodu	MAK 205
+Dersin AKTS Kredisi	5
+Dersin Öğretim Üyesi	Doç. Dr. Ayla Örnek
+Haftalık Ayrıntılı Ders İçeriği (16 haftalık)
+HAFTA	KONULAR	Kapsam	Uygulama Süreci
+1	Giriş ve atom yapısı		
+2	Kristal yapılar		
+Değerlendirme
+Yarıyıl (Yıl) İçi Etkinlikleri	Sayısı	Katkı Yüzdesi
+Yarıyıl (Yıl) Ara Sınavının Başarı Notuna Katkısı	40
+Yarıyıl (Yıl) Sonu Sınavının Başarı Notuna Katkısı	60
+TOPLAM	100

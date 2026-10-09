@@ -1640,5 +1640,369 @@
     "policies_kritik": [
       "durustluk"
     ]
+  },
+  "web_bologna_yatay": {
+    "code": "DSE 510",
+    "name": "Veri Bilimi Araçlarına Giriş",
+    "instructor": "Dr. Öğr. Üyesi Can Örnek",
+    "email": "",
+    "office": "",
+    "credit": 3,
+    "ects": 7.5,
+    "sessions": [],
+    "grading": {
+      "Ödev": 20,
+      "Ara Sınav": 30,
+      "Final": 50
+    },
+    "attendance": null,
+    "final_min": null,
+    "items": [
+      [
+        "Ara Sınav",
+        ""
+      ],
+      [
+        "Final",
+        ""
+      ]
+    ],
+    "policies": [],
+    "policies_kritik": [],
+    "weeks": [
+      [
+        1,
+        null,
+        "Veri bilimine giriş"
+      ],
+      [
+        2,
+        null,
+        "Python temelleri"
+      ],
+      [
+        3,
+        null,
+        "Pandas ile veri işleme"
+      ]
+    ],
+    "warnings_count": 4
+  },
+  "web_bos_form": {
+    "code": "",
+    "name": "",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "sessions": [],
+    "grading": {},
+    "attendance": null,
+    "final_min": null,
+    "items": [],
+    "policies": [],
+    "policies_kritik": [],
+    "weeks": [],
+    "warnings_count": 8
+  },
+  "web_eng_tablo": {
+    "code": "ENG 101",
+    "name": "Academic English I",
+    "instructor": "Lect. Ece Deneme",
+    "email": "ece.deneme@ornek.edu.tr",
+    "office": "A220",
+    "credit": null,
+    "ects": null,
+    "office_hours": "Randevuyla",
+    "sessions": [
+      [
+        3,
+        "09:00",
+        "11:00",
+        ""
+      ]
+    ],
+    "grading": {
+      "MIDTERM EXAM": 40,
+      "FINAL EXAM": 60
+    },
+    "attendance": null,
+    "max_absences": 8,
+    "final_min": null,
+    "items": [
+      [
+        "Placement Exam",
+        "2025-09-26"
+      ],
+      [
+        "Midterm Exam",
+        "2025-11-14"
+      ],
+      [
+        "Final Exam",
+        "2026-01-09"
+      ]
+    ],
+    "policies": [
+      "devam"
+    ],
+    "policies_kritik": [
+      "devam"
+    ],
+    "weeks": [
+      [
+        1,
+        "2025-09-26",
+        "Placement Exam"
+      ],
+      [
+        2,
+        "2025-10-03",
+        "Induction & Unit 1 – Nice to meet you!"
+      ],
+      [
+        3,
+        "2025-10-10",
+        "Unit 1 – Nice to meet you!"
+      ],
+      [
+        8,
+        "2025-11-14",
+        "Midterm Exam Week"
+      ],
+      [
+        9,
+        "2025-11-21",
+        "Unit 3 – Time off"
+      ],
+      [
+        16,
+        "2026-01-09",
+        "Final Exam Week"
+      ]
+    ],
+    "warnings_count": 2
+  },
+  "web_fz_kurali": {
+    "code": "CS 224",
+    "name": "Computer Organization",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "office_hours": "Randevuyla",
+    "sessions": [],
+    "grading": {
+      "Homeworks": 20,
+      "Midterm": 40,
+      "Final": 40
+    },
+    "attendance": null,
+    "final_min": null,
+    "items": [
+      [
+        "Midterm",
+        ""
+      ],
+      [
+        "Final",
+        ""
+      ]
+    ],
+    "policies": [
+      "baraj"
+    ],
+    "policies_kritik": [
+      "baraj"
+    ],
+    "weeks": [],
+    "warnings_count": 5
+  },
+  "web_haftalik_liste": {
+    "code": "İFMB 304",
+    "name": "Eğitimde Ölçme ve Değerlendirme",
+    "instructor": "Prof. Dr. Ali Deneme",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": 4,
+    "sessions": [],
+    "grading": {
+      "Ara sınav": 40,
+      "Yarıyıl sonu sınavı": 60
+    },
+    "attendance": null,
+    "final_min": null,
+    "items": [
+      [
+        "Ara sınav",
+        "",
+        "",
+        9
+      ],
+      [
+        "Yarıyıl sonu sınavı",
+        "",
+        "",
+        16
+      ]
+    ],
+    "policies": [],
+    "policies_kritik": [],
+    "weeks": [
+      [
+        1,
+        null,
+        "Ölçme ve değerlendirmenin temel kavramları"
+      ],
+      [
+        2,
+        null,
+        "Geleneksel ölçme araçları"
+      ],
+      [
+        3,
+        null,
+        "Çoktan seçmeli testler"
+      ],
+      [
+        9,
+        null,
+        "Ara sınav haftası"
+      ],
+      [
+        16,
+        null,
+        "Yarıyıl sonu sınavı haftası"
+      ]
+    ],
+    "warnings_count": 5
+  },
+  "web_html_ozet": {
+    "code": "SYE 356",
+    "name": "Signals and Systems",
+    "instructor": "Assist. Prof. Mert Deneme",
+    "email": "",
+    "office": "4207",
+    "credit": null,
+    "ects": null,
+    "sessions": [
+      [
+        1,
+        "14:00",
+        "17:00",
+        "D425"
+      ]
+    ],
+    "grading": {
+      "Midterm (2)": 40,
+      "Homework": 20,
+      "Final": 40
+    },
+    "attendance": null,
+    "final_min": null,
+    "items": [
+      [
+        "Midterm 1",
+        ""
+      ],
+      [
+        "Midterm 2",
+        ""
+      ],
+      [
+        "Final",
+        ""
+      ]
+    ],
+    "policies": [],
+    "policies_kritik": [],
+    "weeks": [],
+    "warnings_count": 4
+  },
+  "web_katki_satir": {
+    "code": "MAK 205",
+    "name": "Malzeme Bilimi",
+    "instructor": "Doç. Dr. Ayla Örnek",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": 5,
+    "sessions": [],
+    "grading": {
+      "Ara Sınav": 40,
+      "Yarıyıl Sonu Sınavı": 60
+    },
+    "attendance": null,
+    "final_min": null,
+    "items": [
+      [
+        "Ara Sınav",
+        ""
+      ],
+      [
+        "Yarıyıl Sonu Sınavı",
+        ""
+      ]
+    ],
+    "policies": [],
+    "policies_kritik": [],
+    "weeks": [
+      [
+        1,
+        null,
+        "Giriş ve atom yapısı"
+      ],
+      [
+        2,
+        null,
+        "Kristal yapılar"
+      ]
+    ],
+    "warnings_count": 5
+  },
+  "web_paragraf_puan": {
+    "code": "MATH 100",
+    "name": "Elements of Finite Mathematics and Calculus",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "sessions": [],
+    "grading": {
+      "Quizzes": 10,
+      "Midterm (2)": 50,
+      "Final": 40
+    },
+    "attendance": null,
+    "final_min": null,
+    "items": [
+      [
+        "Midterm 1",
+        "",
+        "",
+        6
+      ],
+      [
+        "Midterm 2",
+        "",
+        "",
+        11
+      ],
+      [
+        "Final sınavı",
+        ""
+      ]
+    ],
+    "policies": [
+      "not_kurali",
+      "telafi"
+    ],
+    "policies_kritik": [],
+    "weeks": [],
+    "warnings_count": 5
   }
 }
