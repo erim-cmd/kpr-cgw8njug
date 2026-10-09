@@ -1562,3 +1562,21 @@ export function parseSyllabus(text, now = new Date()) {
     term,
   };
 }
+
+/** Seçmeli Keşfi (secmeli.js): okuma sonucundan aday özeti — yalnızca karşılaştırmaya yetecek kadar. */
+export function electiveFrom(r) {
+  return {
+    name: r.course.name,
+    code: r.course.code,
+    instructor: r.course.instructor,
+    credit: r.course.credit,
+    ects: r.course.ects,
+    grading: r.grading,
+    attendPct: r.attendance.percent,
+    absLimit: r.attendance.max_absences,
+    finalMin: r.final_min,
+    exams: r.items.filter((x) => x.type === "sinav").length,
+    deadlines: r.items.filter((x) => x.type !== "sinav").length,
+    rules: r.policies.filter((p) => p.severity === "kritik").map((p) => p.rule),
+  };
+}

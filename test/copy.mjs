@@ -9,7 +9,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const FILES = [
   "app.html", "app.js", "today.js", "tasks.js", "courses.js", "settings.js", "term.js", "asistan.js", "secmeli.js",
   "forms.js", "importer.js", "onboarding.js", "components.js", "ders.js", "gpa-view.js", "grade-sheet.js",
-  "notify.js", "alerts.js", "install.js", "attendance.js", "ics.js", "asistan-core.js", "density.js",
+  "notify.js", "alerts.js", "install.js", "attendance.js", "ics.js", "asistan-core.js", "density.js", "mail.js",
 ];
 
 const RULES = [
