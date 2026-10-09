@@ -99,7 +99,7 @@ const head = (title) => `<header class="sheet-head">
 /* 1) Dosya seçme ekranı                                               */
 /* ------------------------------------------------------------------ */
 
-// Ders ekranındaki "Syllabus yükle" (boş haftalık plan): okunan syllabus bu derse BİRLEŞTİRİLİR
+// Ders düzenleme formundaki "Yeni syllabus'u yükle": okunan syllabus bu derse BİRLEŞTİRİLİR
 let target = null;
 
 /** into: var olan dersin id'si → okununca tam kontrol ekranı yerine sadece eksikleri ekleyen onay. */

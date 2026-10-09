@@ -26,6 +26,9 @@ for (const [name, e] of Object.entries(exp)) {
     ok(JSON.stringify(ses) === JSON.stringify(e.sessions), `sessions: ${JSON.stringify(ses)} ≠ ${JSON.stringify(e.sessions)}`);
     const g = Object.fromEntries(r.grading.map((x) => [x.name, x.weight]));
     ok(JSON.stringify(g) === JSON.stringify(e.grading), `grading: ${JSON.stringify(g)} ≠ ${JSON.stringify(e.grading)}`);
+    // Bonus bileşenler (ek puan): 100'lük dağılıma katılmaz; listede olmayan hiçbir bileşen bonus sayılmamalı
+    const gb = r.grading.filter((x) => x.bonus).map((x) => x.name);
+    ok(JSON.stringify(gb) === JSON.stringify(e.grading_bonus || []), `bonus: ${JSON.stringify(gb)} ≠ ${JSON.stringify(e.grading_bonus || [])}`);
     ok(r.attendance.percent === e.attendance, `attendance %: ${r.attendance.percent} ≠ ${e.attendance}`);
     if ("max_absences" in e) ok(r.attendance.max_absences === e.max_absences, `max_absences: ${r.attendance.max_absences} ≠ ${e.max_absences}`);
     ok(r.final_min === e.final_min, `final_min: ${r.final_min} ≠ ${e.final_min}`);

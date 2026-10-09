@@ -51,7 +51,7 @@ export function taskWeight(task, course, tasks) {
   if (!course?.grading?.length) return null;
   const g = taskGroup(task);
   if (!g || g === "katilim") return null;
-  const comps = course.grading.filter((c) => groupOf(c.name) === g);
+  const comps = course.grading.filter((c) => groupOf(c.name) === g && !c.bonus);
   if (!comps.length) return null;
   const same = tasks.filter((t) => t.courseId === course.id && taskGroup(t) === g).sort((a, b) => a.due.localeCompare(b.due));
   const idx = same.findIndex((t) => t.id === task.id);
