@@ -1,0 +1,24 @@
+DERS TANITIM ve UYGULAMA BİLGİLERİ
+Dersin Adı	Kodu	Yarıyıl	T+U+L (saat/hafta)	Türü (Z / S)	Yerel Kredi	AKTS
+Veri Bilimi Araçlarına Giriş	DSE 510	Güz	03+00+00	Zorunlu	3	7.5
+Ön Koşullar	Yok
+Öğrenim Dili	İngilizce
+Dersin Koordinatörü	Dr. Öğr. Üyesi Can Örnek
+HAFTALIK PROGRAM
+Hafta	Konular	Ön Hazırlık
+1	Veri bilimine giriş	Okuma 1
+2	Python temelleri	Okuma 2
+3	Pandas ile veri işleme	
+Kadir Has Üniversitesi'nde bir dönem 14 haftadır, 15. ve 16. hafta sınav haftalarıdır.
+DEĞERLENDİRME SİSTEMİ
+Yarıyıl İçi Çalışmaları	Sayı	Katkı Payı (%)
+Ödev	4	20
+Ara Sınav	1	30
+Final	1	50
+Total	6	100
+İŞ YÜKÜ HESAPLAMASI
+Etkinlikler	Sayısı	Süresi (saat)	Toplam İş Yükü (saat)
+Ders Saati	14	3	42
+Ara Sınav	1	2	2
+Toplam İş Yükü (saat): 187
+1 AKTS = 25 saatlik iş yükü

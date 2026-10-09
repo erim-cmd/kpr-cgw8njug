@@ -48,6 +48,12 @@ jobs:
       - name: Not hesabı (bonus bileşenler)
         run: node test/grades.mjs
 
+      - name: Seçmeli adayları
+        run: node test/electives.mjs
+
+      - name: Hocaya mail taslağı
+        run: node test/mail.mjs
+
       - name: Syllabus'u var olan derse birleştirme
         run: node test/merge.mjs
 

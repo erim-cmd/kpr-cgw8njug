@@ -59,10 +59,11 @@ export const uid = () =>
 // interests: Seçmeli Keşfi'nde seçilen ilgi alanları (INTERESTS anahtarları)
 // theme: görünüm tercihi — "sistem" (telefonu izler) | "acik" | "koyu" (theme.js)
 // lang: arayüz dili — "tr" | "en" (i18n.js)
-const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false, todayView: "bugun", interests: [], theme: "sistem", lang: "tr" });
+// studentNo: hocaya mail taslağına eklenen öğrenci numarası (mail.js; isteğe bağlı, cihazda)
+const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false, todayView: "bugun", interests: [], theme: "sistem", lang: "tr", studentNo: "" });
 // version: veri şeması sürümü (göçler migrate.js'te; v2 = geçmiş dönemler gpaBase'e çevrildi)
 // archive: göçte arayüzden kaldırılan ama silinmeyen veri (geri dönüş için)
-const empty = () => ({ version: 1, profile: { name: "" }, courses: [], tasks: [], transcript: [], gpaBase: null, settings: defaultSettings(), archive: { transcript: [] } });
+const empty = () => ({ version: 1, profile: { name: "" }, courses: [], tasks: [], transcript: [], gpaBase: null, settings: defaultSettings(), archive: { transcript: [] }, electives: [] });
 
 function normSession(s) {
   if (!s || !Number.isInteger(s.day) || s.day < 0 || s.day > 6) return null;
@@ -159,7 +160,7 @@ function normCourse(c) {
     scale: normScale(c.scale),
     finalMin: num(c.finalMin, 0, 100),
     // Syllabus'tan çıkarılan kurallar (kırmızı bayraklar); öğrenci gizleyebilir
-    policies: arr(c.policies).map(normPolicy).filter(Boolean).slice(0, 8),
+    policies: arr(c.policies).map(normPolicy).filter(Boolean).slice(0, 10),
     prevGrade: grade(c.prevGrade),
     // Devamsızlık: devam zorunluluğu (%) ya da elle girilen hak (ders sayısı)
     attendPct: num(c.attendPct, 0, 100),
@@ -210,6 +211,31 @@ function normSettings(s) {
     interests: Array.isArray(s.interests) ? [...new Set(s.interests.filter((k) => typeof k === "string" && Object.hasOwn(INTERESTS, k)))] : [],
     theme: s.theme === "acik" || s.theme === "koyu" ? s.theme : "sistem",
     lang: s.lang === "en" ? "en" : "tr",
+    studentNo: str(s.studentNo, 20),
+  };
+}
+
+// Seçmeli adayı (Seçmeli Keşfi): Add/Drop'ta karşılaştırmak için yüklenen syllabus'un özeti. Ders değildir,
+// takvime ve GNO'ya girmez; en fazla 8 aday.
+function normElective(e) {
+  const name = str(e?.name, 80);
+  const code = str(e?.code, 20);
+  if (!name && !code) return null;
+  return {
+    id: str(e.id, 64) || uid(),
+    name,
+    code,
+    instructor: str(e.instructor, 60),
+    credit: num(e.credit, 0, 30),
+    ects: num(e.ects, 0, 60),
+    grading: arr(e.grading).map(normGrade).filter(Boolean).slice(0, 12),
+    attendPct: num(e.attendPct, 0, 100),
+    absLimit: Number.isInteger(e.absLimit) && e.absLimit >= 0 && e.absLimit <= 200 ? e.absLimit : null,
+    absUnit: ["saat", "hafta"].includes(e.absUnit) ? e.absUnit : "", // i18n-ok
+    finalMin: num(e.finalMin, 0, 100),
+    exams: Number.isInteger(e.exams) && e.exams >= 0 && e.exams <= 60 ? e.exams : 0,
+    deadlines: Number.isInteger(e.deadlines) && e.deadlines >= 0 && e.deadlines <= 60 ? e.deadlines : 0,
+    rules: arr(e.rules).map((r) => str(r, 160)).filter(Boolean).slice(0, 4),
   };
 }
 
@@ -231,6 +257,7 @@ export function normalize(data) {
   out.settings = normSettings(data.settings);
   out.version = Number.isInteger(data.version) && data.version >= 1 && data.version <= 99 ? data.version : 1;
   out.archive = { transcript: arr(data.archive?.transcript).map(normEntry).filter(Boolean).slice(0, 400) };
+  out.electives = arr(data.electives).map(normElective).filter(Boolean).slice(0, 8);
   return out;
 }
 
@@ -330,6 +357,16 @@ export const store = {
   removeAbsence(courseId, absenceId) {
     const c = state.courses.find((x) => x.id === courseId);
     if (c) this.saveCourse({ ...c, absences: c.absences.filter((a) => a.id !== absenceId) });
+  },
+
+  saveElective(input) {
+    const e = normElective(input);
+    if (e) commit({ ...state, electives: upsert(state.electives, e).slice(-8) });
+    return e;
+  },
+
+  deleteElective(id) {
+    commit({ ...state, electives: state.electives.filter((e) => e.id !== id) });
   },
 
   saveEntry(input) {

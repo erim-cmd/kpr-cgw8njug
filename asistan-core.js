@@ -62,12 +62,17 @@ export function findCourse(q, courses) {
   const flat = f.replace(/\s+/g, "");
   // Önce kod ("MCH 2016", "mch2016", "2016"); kod geçiyorsa ad kelimelerine bakılmaz
   // ("GEP 1020'de yapay zeka…" sorusu "Yapay Zeka" adlı başka derse de uymasın)
-  const byCode = courses.filter((c) => {
+  // Tam kod ("BIL 101") geçiyorsa yalnız numarası tutan diğer ders ("ENG 101") aday olmaz
+  const exact = courses.filter((c) => {
     const code = fold(c.code || "").replace(/\s+/g, "");
-    if (code && flat.includes(code)) return true;
-    const num = (c.code || "").match(/\d{3,4}/)?.[0];
-    return !!num && new RegExp(`\\b${num}\\b`).test(f);
+    return code && flat.includes(code);
   });
+  const byCode = exact.length
+    ? exact
+    : courses.filter((c) => {
+        const num = (c.code || "").match(/\d{3,4}/)?.[0];
+        return !!num && new RegExp(`\\b${num}\\b`).test(f);
+      });
   const hits = byCode.length
     ? byCode
     : courses.filter((c) => {

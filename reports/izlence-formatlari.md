@@ -119,3 +119,31 @@ Cihaz içi ayrıştırıcı (`syllabus-local.js`) bu kalıplarla test edildi. Ka
 - Tıp ders kurulu ızgarasında ders saatleri oturum olarak okunmuyor (#14, D türü)
 - Taranmış/fotoğraf syllabus: cihaz içi okuyucu metin katmanı olmayan dosyayı okuyamaz; bu yol AI sunucusuna bağlı (#27)
 - AI sunucusu (`functions/api/syllabus.js`) gerçek API ile hiç ölçülmedi
+
+## 8. Web taraması — 9 Eki 2026 (v2.24)
+
+Yeni kaynaklar (belgeler repo'ya girmedi; yapıları hoca bilgisi olmadan sentetik `test/syllabus/web_*.txt` olarak taklit edildi):
+[Kadir Has Bologna PDF](https://bologna.khas.edu.tr/pdf/30003520/program/50258556),
+[29 Mayıs ENG 101](https://filehost.29mayis.edu.tr/upload/2025/10/22/eng101.pdf),
+[Ordu Üni. İlahiyat izlencesi](https://ilahiyat.odu.edu.tr/files/other/Olcme-izlence_-_2026.pdf),
+[Ege Fen Bilimleri ders öğretim planı](https://fenbilimleri.ege.edu.tr/files/fenbilimleri/icerik/ders-icerik-formutr.pdf),
+[Bayburt ders tanımlama formu (boş)](https://bayburt.edu.tr/uploads/.ckeditor/F7EADF4CBAAB4199B3B83A83469F9179.pdf),
+[İTÜ ders sayfası](https://web.itu.edu.tr/soylemezm/eski/sye356/essential.htm),
+[Koç MATH 100](https://mysite.ku.edu.tr/emengi/wp-content/uploads/sites/323/2023/04/syllabus-3.pdf),
+[Bilkent CS 202](https://cs.bilkent.edu.tr/~calkan/teaching/cs202).
+
+**Bulunan ve düzeltilen hatalar:**
+| Örnek | Hata | Şimdi |
+|---|---|---|
+| `web_haftalik_liste` (Ordu) | "İFMB304" → kod "FMB 304", ad "Ders Kodu / Adı: İ…" | Türkçe harfle başlayan kod; birleşik "Ders Kodu / Adı" etiketi |
+| `web_haftalik_liste` | "Ara sınav: %40 (sınav %100, ödev %0)" hiç okunmuyordu | Parantez içi alt kırılım ad sayılmıyor |
+| `web_haftalik_liste` | Numaralı "Haftalık Konular" listesi okunmuyordu; "9. Ara sınav haftası" haftasız | Liste → haftalık plan; sınav 9. haftaya bağlı |
+| `web_katki_satir` (Ege) | "Ara Sınavının Başarı Notuna Katkısı \| 40" atlanıyordu; "Dersin AKTS Kredisi \| 5" yerel kredi sanılıyordu | Ara sınav %40 / yarıyıl sonu %60; 5 → AKTS |
+| `web_bologna_yatay` (KHAS) | "15. ve 16. hafta sınav haftalarıdır" sahte sınav öğesi | Genel takvim cümlesi öğe üretmiyor |
+| `web_eng_tablo` (29 Mayıs) | WEEK \| DATE \| UNIT tablosu okunmuyordu; "By appointment…" ofis saati siliniyordu | "Unit/Ünite/Chapter" konu sütunu; "Randevuyla" |
+| `web_html_ozet` (İTÜ) | "Midterm: 2 x 20% = 40%" → %20; "D425 - Tuesday" dersliği; "Room No: 4207, Tel:" | "Midterm (2)" %40 → iki tarihsiz sınav; derslik D425; ofis 4207 |
+| `web_paragraf_puan` (Koç) | Adlar "each midterm", "and final."; Midterm 2 (11. hafta) kayıp; "The final exam covers…" başlık; bonus yoklama "zorunlu devam" sanılıyordu | "Midterm (2)" %50 (metindeki Midterm 1/2'den), iki sınav 6./11. hafta, "Final sınavı"; "en iyi 4 quiz" kuralı |
+| `web_bos_form` (Bayburt) | Şablon yönergesi ("…bu maddede belirtilmelidir") devam kuralı sanılıyordu | Yönerge cümleleri kural değil |
+| Asistan | "BIL 101" sorusu "ENG 101"i de aday sayıp "Hangi ders?" diyordu | Tam kod geçiyorsa yalnız numara eşleşmesi aday olmaz |
+
+**Sınır:** Web aracı belgeleri birebir değil özetleyerek okuyabildiği için bu turda örnekler yapıyı taklit eden sentetik metinler. Gerçek PDF'lerle ölçüm (sütun kayması, sayfa bölünmesi, OCR) hâlâ gerçek dosya ister.

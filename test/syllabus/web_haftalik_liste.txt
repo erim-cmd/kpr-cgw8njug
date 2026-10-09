@@ -1,0 +1,18 @@
+Ders İzlencesi
+Bölüm: İlahiyat
+Ders Kodu / Adı: İFMB304 Eğitimde Ölçme ve Değerlendirme
+Tür / Seviye: Seçmeli / Lisans
+AKTS: 4
+Haftalık Ders Saati: 3
+Öğretim Elemanı: Prof. Dr. Ali Deneme
+Haftalık Konular
+1. Ölçme ve değerlendirmenin temel kavramları
+2. Geleneksel ölçme araçları
+3. Çoktan seçmeli testler
+9. Ara sınav haftası
+16. Yarıyıl sonu sınavı haftası
+Değerlendirme
+Ara sınav: %40 (sınav %100, ödev %0)
+Yarıyıl sonu sınavı: %60 (sınav %100, ödev %0)
+Öğrenci Sorumlulukları
+Derse devam sınırını aşmamak.

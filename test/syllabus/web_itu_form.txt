@@ -1,0 +1,38 @@
+DERS PROGRAMI FORMU
+COURSE SYLLABUS FORM
+Dersin Adı: Sayısal Yöntemlere Giriş
+Course Name: Introduction to Numerical Methods
+Ders Uygulaması, Saat/Hafta
+Kod	Yarıyıl	Kredi	AKTS Kredi	(Course Implementation, Hours/Week)
+(Code)	(Semester) (Local Credits)	(ECTS Credits)	Ders	Uygulama	Laboratuar
+(Theoretical)	(Tutorial)	(Laboratory)
+XYZ205E	3	3	5,5	2	0	2
+Dersin Tanımı	Course content: interpolation, curve fitting using the least-squares method, numerical integration.
+COURSE PLAN
+Weeks	Topics	Learning Outcomes
+1	Introduction to numerical analysis	1-2
+2	Root finding	1-2
+3	Interpolation and curve fitting	1-2
+8	Linear systems, Mid-term exam I	2-3-4
+12	Numerical integration, Mid-term exam II	2-3-4
+14	Review	2-4
+Ders kaynakları ve Başarı değerlendirme sistemi (Course materials and Assessment criteria)
+Adedi
+Faaliyetler	Genel Nota Katkı, %
+(Quantity
+(Activities)	(Effects on Grading, %)
+)
+Yıl İçi Sınavları
+2	30
+(Midterm Exams)
+Kısa Sınavlar
+(Quizzes)
+Başarı Değerlendirme	Ödevler
+3	15
+Sistemi	(Homework)
+Dönem Ödevi/Projesi
+1	15
+(Term Paper/Project)
+Final Sınavı
+1	40
+(Final Exam)

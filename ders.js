@@ -25,6 +25,7 @@ import { openCourseForm, openTaskForm } from "./forms.js";
 import { calcGrades, targetResult, currentWeekOf, fmtNum, impactLine, letterNeedLine } from "./ders-calc.js";
 import { openNumberSheet, openLetterSheet } from "./grade-sheet.js";
 import { taskWeight, labelOf } from "./weights.js";
+import { openMailSheet } from "./mail.js";
 import { t, pct, locale } from "./i18n.js";
 
 const ONLINE = /teams|zoom|online|cevrimici|çevrimiçi|uzaktan|meet\b/i;
@@ -69,7 +70,7 @@ function infoBlock(c) {
   const cells = [
     times && `<div class="cd-cell"><small>${t("Ders saati")}</small>${times}</div>`,
     (c.credit !== null || c.ects !== null) && `<div class="cd-cell"><small>${t("Kredi / AKTS")}</small><span>${c.credit ?? "—"} / ${c.ects ?? "—"}</span></div>`,
-    c.email && `<div class="cd-cell"><small>${t("E-posta")}</small><a href="mailto:${esc(c.email)}">${esc(c.email)}</a></div>`,
+    c.email && `<div class="cd-cell"><small>${t("E-posta")}</small><span>${esc(c.email)}</span><button type="button" class="link cd-mail" data-mail>${t("Mail taslağı yaz")}</button></div>`,
     (c.office || c.officeHours) && `<div class="cd-cell"><small>${t("Ofis")}</small>${c.office ? `<span>${esc(c.office)}</span>` : ""}${c.officeHours ? `<span class="muted">${esc(c.officeHours)}</span>` : ""}</div>`,
   ].filter(Boolean);
   return cells.length ? `<section class="cd-info">${cells.join("")}</section>` : "";
@@ -252,6 +253,7 @@ export function openCourseDetail(courseId) {
         return redraw();
       }
       if (e.target.closest("[data-edit]")) return openCourseForm(course);
+      if (e.target.closest("[data-mail]")) return openMailSheet(course);
       if (e.target.closest("[data-new-task]")) return openTaskForm(null, { courseId });
       const label = course.code || course.name;
       // Bileşen notu: ortak not girişi (hızlı çip tek dokunuşta kaydeder)
