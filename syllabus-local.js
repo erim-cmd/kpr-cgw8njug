@@ -455,7 +455,12 @@ const SCHEDULE_WORDS = /\bhafta\b|\bweek\b|\btba\b|\btbd\b|ilan edilecek|announc
 // Ders olmayan gün ("No class Apr 20", "20 Nisan ders yok", "HOLIDAY") hiçbir zaman sınav/teslim tarihi değildir.
 // Katlanmış (fold) metinde, tarihin hemen önündeki ~30 karakterde aranır.
 const NO_CLASS = /(no class(?:es)?|no lecture|ders yok|ders yapilmayacak|holiday|tatil|break)[^\d]{0,12}$/;
-const noClassAt = (ftext, idx) => NO_CLASS.test(ftext.slice(Math.max(0, idx - 30), idx));
+// Telafi dersinde geçen ESKİ tarih ("Make-up for 28.10", "28 Ekim dersinin telafisi") o satırın tarihi değildir:
+// asıl tarih satırın tarih sütunundadır. Bu tarih de "ders yok" gibi atlanır.
+const MAKEUP_BEFORE = /(make-?up (?:class |lecture |session )?for|in place of|instead of|rescheduled from|moved from|postponed from)[^\d]{0,6}$/;
+const MAKEUP_AFTER = /^[^\d]{0,20}?(telafi|yerine)/;
+const noClassAt = (ftext, idx, end = idx) =>
+  NO_CLASS.test(ftext.slice(Math.max(0, idx - 30), idx)) || MAKEUP_BEFORE.test(ftext.slice(Math.max(0, idx - 30), idx)) || MAKEUP_AFTER.test(ftext.slice(end, end + 30));
 // "ders saatinde" yapılacak sınav (katlanmış metin)
 const CLASS_TIME_RE = /(during class time|during class|in class|ders saatinde|ders saati icinde|derste)\)?\s*$/;
 // Tarihin sonradan ilan edileceğini söyleyen ifadeler
@@ -479,6 +484,8 @@ function titleFrom(orig, fk, kind, datesInCell) {
   for (const re of drop) for (const m of fseg.matchAll(re)) for (let i = m.index; i < m.index + m[0].length; i++) mask[i] = false;
   seg = clean([...seg].map((c, i) => (mask[i] ? c : " ")).join(""));
   seg = clean(seg.replace(/["“”'‘’\[\]{}]/g, " ")).replace(/\s+(week|haftası|haftasi)$/i, "");
+  // Ölçme sütunu etiketleri başta: "In-class activity Graded Project presentation" → "Project presentation"
+  for (let m; (m = /^(in-class activity|in class activity|case activity|graded|notlandirilan)\s+/.exec(fold(seg))); ) seg = seg.slice(m[0].length);
   // Yüklemli cümle başlık olmaz: "The final exam covers all topics." → "Final sınavı"
   const sentence = seg.split(/\s+/).length > 3 && /\b(will|is|are|covers?|includes?|be|olacak|yapilacak|yapilir|kapsar|kapsayacak|icerir)\b/.test(fold(seg));
   if (!seg || seg.length > 60 || !/[A-Za-zÇĞİÖŞÜçğıöşü]/.test(seg) || sentence) seg = kind.tr;
@@ -574,6 +581,7 @@ function parseItems(lines, flines, termYear, warnings) {
     return bestDist <= 3 ? best : null;
   };
 
+  let carryDate = null; // tek başına satırda duran tarih (çok satırlı hücre) → bir sonraki tablo satırı
   for (let i = 0; i < lines.length; i++) {
     const cells = lines[i].split("\t");
     const fcells = cells.map(fold);
@@ -588,6 +596,15 @@ function parseItems(lines, flines, termYear, warnings) {
       }
     } else if (!lines[i].trim()) {
       // boş satır tabloyu bitirmez (PDF'te sayfa geçişi), ama başlık satırı gelirse sıfırlanır
+    }
+    // Çok satırlı hücre (Word/PDF): "8" / "14.11.2026" / "Make-up for 28.10 · … · Graded presentation".
+    // Haftalık tabloda tek başına bir tarih olan satır, hemen altındaki satırın tarihidir.
+    if (weekCol >= 0 && cells.length === 1) {
+      const only = findDates(fcells[0], termYear);
+      if (only.length === 1 && fcells[0].trim().length <= only[0].end - only[0].index + 2) {
+        carryDate = { d: only[0], i };
+        continue;
+      }
     }
     const rowWeek = weekCol >= 0 && cells.length >= 2 ? weekCellNum(cells[weekCol]) : NaN;
     const rowDates = dateCol >= 0 && cells[dateCol] ? findDates(fcells[dateCol], termYear) : [];
@@ -652,19 +669,23 @@ function parseItems(lines, flines, termYear, warnings) {
 
     for (const r of picks) {
       const fc = fcells[r.ci];
+      // Ölçme sütunundaki derste yapılan çalışma ("Project topic development", "Case analysis / project development",
+      // "Project workshop") teslim değildir; öğe üretmez
+      if (r.kind.group === "proje" && /\b(topic development|project development|workshop)\b/.test(fc) && !/\b(due|submi\w*|graded|teslim\w*|presentations?|sunum\w*|report|rapor\w*)\b/.test(fc)) continue;
       // Tarih: hücrenin kendi tarihi (anahtar kelimeden sonraki ilk), yoksa satırın tarih sütunu, yoksa satırdaki herhangi bir tarih
       const kpos = r.kind.re.exec(fc).index;
-      const own = r.dates.filter((x) => !noClassAt(fc, x.index));
+      const own = r.dates.filter((x) => !noClassAt(fc, x.index, x.end));
       let d = own.find((x) => x.index >= kpos) || own[0];
       let dsrc = fc; // tarihin alındığı hücre (katlanmış)
       if (!d && rowDates.length) {
-        d = rowDates.find((x) => !noClassAt(fcells[dateCol], x.index));
+        d = rowDates.find((x) => !noClassAt(fcells[dateCol], x.index, x.end));
         dsrc = fcells[dateCol];
       }
       if (!d && cells.length > 1) {
-        const any = cells.flatMap((c, k) => (k === r.ci ? [] : findDates(fcells[k], termYear).filter((x) => !noClassAt(fcells[k], x.index)).map((x) => ({ x, k }))));
+        const any = cells.flatMap((c, k) => (k === r.ci ? [] : findDates(fcells[k], termYear).filter((x) => !noClassAt(fcells[k], x.index, x.end)).map((x) => ({ x, k }))));
         if (any[0]) ({ x: d, k: dsrc } = { x: any[0].x, k: fcells[any[0].k] });
       }
+      if (!d && cells.length > 1 && carryDate && i - carryDate.i <= 2) d = carryDate.d;
       // "Mid-Term Exam 1 · TBA (Midterms Week) – No class Apr 20": sınavın kendi hücresi ya da tarihin
       // ödünç alındığı hücre tarihin ilan edileceğini söylüyorsa, ödünç tarih uydurma olur → tarihsiz.
       // (Satırın başka bir hücresindeki "final … will be announced" bu öğeyi etkilemez.)
@@ -1139,9 +1160,24 @@ function parsePolicies(sents, att, finalMin) {
       push({ kind: "not_kurali", severity: "dikkat", rule: "Habersiz quiz yapılabiliyor.", consequence: "Derse hazırlıksız gelirsen puan kaybedebilirsin.", source: s });
       continue;
     }
+    // "Ödev içeriklerinin ya da sınav yanıtlarının aynı olması halinde ilgili tüm öğrenciler başarısız sayılır"
+    if (/(ayni|benzer|identical|same)[^.]{0,60}(ilgili tum|tum ogrenciler|all (the )?students|both students)[^.]{0,40}(basarisiz|fail|sifir|zero)|(identical|ayni)[^.]{0,40}(submission|odev|cevap|yanit|answer)[^.]{0,60}(fail|basarisiz|sifir|zero)/.test(f)) {
+      push({ kind: "durustluk", severity: "kritik", rule: "Aynı ödev ya da sınav cevabını veren herkes başarısız sayılıyor.", consequence: "Ödevini paylaşma; benzer çıkarsa iki taraf da kaybeder.", source: s });
+      continue;
+    }
+    // "The maximum Turnitin similarity ratio is 30%" / "benzerlik oranı en fazla %20"
+    if ((m = /(turnitin|similarity|benzerlik)[^.]{0,50}?(?:%\s?(\d{1,2})|(\d{1,2})\s?%)|(\d{1,2})\s?%[^.]{0,30}(similarity|benzerlik)/.exec(f))) {
+      push({ kind: "durustluk", severity: "dikkat", rule: `Benzerlik (Turnitin) oranı en fazla %${m[2] || m[3] || m[4]} olmalı.`, consequence: "Üstündeyse ödevin intihal sayılabilir.", source: s });
+      continue;
+    }
     // Akademik dürüstlük
     if (/kopya|intihal|plagiar|cheat|academic (dishonesty|integrity|misconduct)|yapay zeka|artificial intelligence|\bai\b|chatgpt|generative/.test(f)) {
-      const ai = /yapay zeka|artificial intelligence|\bai\b|chatgpt|generative/.test(f);
+      // "kopya, intihal, yapay zekânın izinsiz kullanımı … incelenir": BAU şablonundaki genel usulsüzlük listesi.
+      // Yapay zekâ yasağı değil (aynı izlence ödevlerde sınırlı kullanıma izin verebilir) → genel kopya kuralı.
+      const aiInList = /unauthori[sz]ed use of ai|unauthori[sz]ed (use of )?(generative )?ai|yapay zeka(nin)? izinsiz|izinsiz (yapay zeka|yz)/.test(f) && /cheat|kopya|plagiar|intihal/.test(f);
+      const ai = !aiInList && /yapay zeka|artificial intelligence|\bai\b|chatgpt|generative/.test(f);
+      // "You may use Microsoft Copilot … to support your learning": izin cümlesi, kural değil (kart yer kaplamasın)
+      if (ai && /you may use|you can use|kullanabilirsiniz|kullanabilirsin|yararlanabilirsiniz/.test(f) && !/yasak|not allowed|prohibited|not permitted|izin verilmez|plagiar|intihal|kopya|en dusuk|lowest|fail|sifir|zero/.test(f)) continue;
       const hard = /\bf\b|\bff\b|disiplin|disciplinary|referred to|sevk edil|fail|sifir|zero|0 puan/.test(f);
       push({
         kind: "durustluk",
@@ -1166,7 +1202,7 @@ function parsePolicies(sents, att, finalMin) {
   const AI_SOFT = "Yapay zekâ kullanımı için kurallar var.";
   if (out.some((p) => p.rule === AI_HARD)) out.splice(0, out.length, ...out.filter((p) => p.rule !== AI_SOFT));
   const rank = { kritik: 0, dikkat: 1, bilgi: 2 };
-  return out.sort((a, b) => rank[a.severity] - rank[b.severity]).slice(0, 8);
+  return out.sort((a, b) => rank[a.severity] - rank[b.severity]).slice(0, 10);
 }
 const unitTr = (u) => (/saat|hour/.test(u) ? "saat" : /hafta|week/.test(u) ? "hafta" : "ders");
 
@@ -1352,6 +1388,16 @@ function parseCourse(lines, flines, pairsBy, text) {
         const rm = j >= 0 && /(?:room|oda|ofis|office)\s*:?\s*([A-Za-zÇĞİÖŞÜçğıöşü]{0,4}-?\s?\d{1,4}[A-Za-z]?)/i.exec(lines[j]);
         if (rm) office = rm[1];
       }
+    }
+  }
+  // "Office & Office Hours · …, Office D434" ve alt satırda yalnız "Wednesday 11:00–12:00" (Word'de çok satırlı hücre)
+  if (!officeHours) {
+    const li = flines.findIndex((l) => /\b(office hours?|ofis saat\w*|gorusme saat\w*)\b/.test(l));
+    for (let j = li + 1; li >= 0 && j <= li + 2 && j < lines.length; j++) {
+      const fl = flines[j].trim();
+      if (!fl) continue;
+      if (!lines[j].includes("\t") && fl.length <= 60 && DAY_ONE.test(fl) && /\d{1,2}[:.]\d{2}/.test(fl)) officeHours = clean(lines[j]);
+      break;
     }
   }
   if (ins && officeHours.startsWith(ins)) officeHours = clean(officeHours.slice(ins.length).replace(/^[\s:,-]+/, ""));
@@ -1678,7 +1724,7 @@ export function parseSyllabus(text, now = new Date()) {
     items: items.slice(0, 60),
     weeks,
     grading: grading.map(({ name, weight, bonus }) => ({ name, weight, ...(bonus ? { bonus: true } : {}) })).slice(0, 12),
-    attendance: { percent: att.percent, max_absences: att.max_absences, source: att.source },
+    attendance: { percent: att.percent, max_absences: att.max_absences, unit: att.unit && unitTr(att.unit) !== "ders" ? unitTr(att.unit) : "", source: att.source },
     final_min: finalMin ? finalMin.value : null,
     policies,
     // Metin bozuksa "… bulunamadı" uyarıları gürültü: nedeni söyleyen tek uyarı kalır
@@ -1698,6 +1744,7 @@ export function electiveFrom(r) {
     grading: r.grading,
     attendPct: r.attendance.percent,
     absLimit: r.attendance.max_absences,
+    absUnit: r.attendance.unit || "", // "saat" | "hafta" | "" (ders)
     finalMin: r.final_min,
     exams: r.items.filter((x) => x.type === "sinav").length,
     deadlines: r.items.filter((x) => x.type !== "sinav").length,

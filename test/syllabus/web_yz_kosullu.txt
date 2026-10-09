@@ -1,0 +1,23 @@
+Course Code & Title
+ABC4101 Applied Risk Analysis
+Instructor	Dr. Deneme Örnek
+E-mail	deneme.ornek@example.edu
+Credits/ ECTS	3 / 6
+Classroom & Time	B101 / Tuesday 09:30–12:20
+6. CLO, Assessment and AI Use
+CLO No.	Assessment Component	Weight (%)	AI Use Level of the student *
+1–3	Midterm Exam	30%	AI Not Permitted
+1–4	Homework (2)	20%	Limited and Conditional Use
+1–4	Final Exam	50%	AI Not Permitted
+8. Generative AI Policy
+In courses, you may use Microsoft Copilot and other generative AI tools to support your learning, in accordance with the guidelines set by your instructor.
+9. Academic Integrity
+If there is a reasonable concern that you may have engaged in cheating, attempted cheating, plagiarism, unauthorized use of AI, or any other form of academic misconduct in an examination, assignment, project, or other assessment, the matter will be reviewed in accordance with the relevant university regulations.
+10. Course Policies
+Attendance is mandatory and will be taken. Arriving late or leaving early may result in that session's attendance not being recorded.
+Absence from the quizzes/exams will result in a grade of 0 for that exam. Resit exam serves as the make-up for the final exam.
+Late submissions are graded 0 with no exceptions.
+No make-ups are granted for connectivity, hardware, or power failures.
+The maximum Turnitin similarity ratio is 30%.
+If the contents of two homeworks are identical, all students involved will fail the assignment.
+This course applies a relative grading system, meaning letter grades are assigned based on each student's performance relative to the rest of the class.

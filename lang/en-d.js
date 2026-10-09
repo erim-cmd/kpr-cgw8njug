@@ -107,6 +107,8 @@ export default {
   "Bunu derslerinin bilgilerinde bulamadım.": "I couldn't find that in your course info.",
   "Hangi ders?": "Which course?",
   "en fazla {n} devamsızlık": { one: "at most {n} absence", other: "at most {n} absences" },
+  "en fazla {n} saat devamsızlık": { one: "at most {n} hour of absence", other: "at most {n} hours of absence" },
+  "en fazla {n} hafta devamsızlık": { one: "at most {n} week of absence", other: "at most {n} weeks of absence" },
   "hesaplama": "calculation",
   "{ders} için not dağılımı girilmemiş; hesaplayamıyorum.": "No grade breakdown entered for {ders}, so I can't calculate it.",
   "{ders} için hocanın harf tablosu girilmemiş. Ders ekranında \"Hedef harf\" bölümünden tabloyu gir; sonra hesaplarım.":

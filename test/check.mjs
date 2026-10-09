@@ -41,6 +41,9 @@ for (const [name, e] of Object.entries(exp)) {
     // Uyarılar (isteğe bağlı): olması gerekenler ve kesinlikle olmaması gerekenler
     for (const w of e.warnings_include || []) ok(r.warnings.some((x) => fold(x).includes(fold(w))), `uyarı yok: "${w}" · var olanlar: ${r.warnings.join(" / ")}`);
     for (const w of e.warnings_exclude || []) ok(!r.warnings.some((x) => fold(x).includes(fold(w))), `olmaması gereken uyarı var: "${w}"`);
+    // Kural metinleri (isteğe bağlı): görünmesi / asla görünmemesi gereken kural cümleleri
+    for (const w of e.rules_include || []) ok(r.policies.some((p) => fold(p.rule).includes(fold(w))), `kural yok: "${w}" · var olanlar: ${r.policies.map((p) => p.rule).join(" / ")}`);
+    for (const w of e.rules_exclude || []) ok(!r.policies.some((p) => fold(p.rule).includes(fold(w))), `olmaması gereken kural var: "${w}"`);
     if ("warnings_count" in e) ok(r.warnings.length === e.warnings_count, `uyarı sayısı ${r.warnings.length} ≠ ${e.warnings_count}: ${r.warnings.join(" / ")}`);
     // Öğenin kaynak cümlesi (isteğe bağlı): [başlıktaki kelime, kaynakta geçmesi gereken metin]
     for (const [t, src] of e.items_source || []) {

@@ -1,0 +1,27 @@
+Course Code & Title
+XYZ4120 – Product Design Studio
+Instructor	Dr. Örnek Deneme
+Office & Office Hours	Faculty of Engineering, 3rd Floor, Office D101
+Wednesday 11:00–12:00
+E-mail	ornek.deneme@example.edu
+Semester	2026–2027 Fall
+Credits/ ECTS	3 / 6
+Classroom & Time	D201 / Wednesday 12:30–15:20
+6. CLO, Assessment and AI Use
+CLO No.	Assessment Component	Weight (%)
+1–4	Assignment/Project	40
+1–3	Midterm Exam	20
+1–4	Final Exam	40
+12. Weekly Learning Plan
+Week	Course Learning Outcome No	Topic	Learning Activities	Before Class	Assessment
+3
+07.10.2026	1, 4	Investigation of Sample Projects	Project workshop; Q&A		Project topic development
+6
+04.11.2026	2	Differentiation Basics	Lecture; problem solving		In-class activity Graded Project presentation
+7
+11.11.2026	1–3	Midterm Exam (Tentative)	Face-to-face midterm examination		Midterm Exam (20%)
+8
+14.11.2026
+Make-up for 28.10	2, 4	Differentiation in Action	Case application; presentations	Review Weeks 1–7	Case activity Graded Project presentation
+9
+18.11.2026	3, 4	Strategic Planning	Case study; brainstorming		Case analysis / project development

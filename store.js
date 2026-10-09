@@ -160,7 +160,7 @@ function normCourse(c) {
     scale: normScale(c.scale),
     finalMin: num(c.finalMin, 0, 100),
     // Syllabus'tan çıkarılan kurallar (kırmızı bayraklar); öğrenci gizleyebilir
-    policies: arr(c.policies).map(normPolicy).filter(Boolean).slice(0, 8),
+    policies: arr(c.policies).map(normPolicy).filter(Boolean).slice(0, 10),
     prevGrade: grade(c.prevGrade),
     // Devamsızlık: devam zorunluluğu (%) ya da elle girilen hak (ders sayısı)
     attendPct: num(c.attendPct, 0, 100),
@@ -231,6 +231,7 @@ function normElective(e) {
     grading: arr(e.grading).map(normGrade).filter(Boolean).slice(0, 12),
     attendPct: num(e.attendPct, 0, 100),
     absLimit: Number.isInteger(e.absLimit) && e.absLimit >= 0 && e.absLimit <= 200 ? e.absLimit : null,
+    absUnit: ["saat", "hafta"].includes(e.absUnit) ? e.absUnit : "", // i18n-ok
     finalMin: num(e.finalMin, 0, 100),
     exams: Number.isInteger(e.exams) && e.exams >= 0 && e.exams <= 60 ? e.exams : 0,
     deadlines: Number.isInteger(e.deadlines) && e.deadlines >= 0 && e.deadlines <= 60 ? e.deadlines : 0,

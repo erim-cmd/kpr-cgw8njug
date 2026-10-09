@@ -626,13 +626,7 @@
     "final_min": null,
     "items": [
       [
-        "Project topic development",
-        "2026-10-07",
-        "",
-        null
-      ],
-      [
-        "In-class activity Graded Project presentation",
+        "Project presentation",
         "2026-11-04",
         "",
         null
@@ -644,25 +638,19 @@
         null
       ],
       [
-        "Case activity Graded Project presentation",
-        "2026-10-28",
+        "Project presentation",
+        "2026-11-14",
         "",
         null
       ],
       [
-        "Case analysis / project development",
-        "2026-11-18",
-        "",
-        null
-      ],
-      [
-        "Graded Project presentation",
+        "Project presentation",
         "2026-11-25",
         "",
         null
       ],
       [
-        "Graded project presentation",
+        "Project presentation",
         "2026-12-02",
         "",
         null
@@ -2004,5 +1992,145 @@
     "policies_kritik": [],
     "weeks": [],
     "warnings_count": 5
+  },
+  "web_yz_kosullu": {
+    "code": "ABC 4101",
+    "name": "Applied Risk Analysis",
+    "instructor": "Dr. Deneme Örnek",
+    "email": "deneme.ornek@example.edu",
+    "office": "",
+    "credit": 3,
+    "ects": 6,
+    "sessions": [
+      [
+        1,
+        "09:30",
+        "12:20",
+        "B101"
+      ]
+    ],
+    "grading": {
+      "Midterm Exam": 30,
+      "Homework (2)": 20,
+      "Final Exam": 50
+    },
+    "attendance": null,
+    "max_absences": null,
+    "final_min": null,
+    "items": [
+      [
+        "Midterm Exam",
+        "",
+        ""
+      ],
+      [
+        "Final Exam",
+        "",
+        ""
+      ]
+    ],
+    "policies": [
+      "telafi",
+      "gec_teslim",
+      "durustluk",
+      "devam",
+      "butunleme",
+      "not_kurali"
+    ],
+    "policies_kritik": [
+      "durustluk",
+      "gec_teslim",
+      "telafi"
+    ],
+    "rules_include": [
+      "Aynı ödev ya da sınav cevabını veren herkes başarısız",
+      "Turnitin) oranı en fazla %30",
+      "bağıl",
+      "Kopya ve intihal"
+    ],
+    "rules_exclude": [
+      "Yapay zekâ ile ödev yazmak intihal",
+      "Yapay zekâ kullanımı için kurallar var"
+    ],
+    "weeks": []
+  },
+  "web_telafi_hucre": {
+    "code": "XYZ 4120",
+    "name": "Product Design Studio",
+    "instructor": "Dr. Örnek Deneme",
+    "email": "ornek.deneme@example.edu",
+    "office": "D101",
+    "office_hours": "Çarşamba 11:00–12:00",
+    "credit": 3,
+    "ects": 6,
+    "sessions": [
+      [
+        2,
+        "12:30",
+        "15:20",
+        "D201"
+      ]
+    ],
+    "grading": {
+      "Assignment/Project": 40,
+      "Midterm Exam": 20,
+      "Final Exam": 40
+    },
+    "attendance": null,
+    "max_absences": null,
+    "final_min": null,
+    "items": [
+      [
+        "Project presentation",
+        "2026-11-04",
+        ""
+      ],
+      [
+        "Midterm Exam",
+        "2026-11-11",
+        ""
+      ],
+      [
+        "Project presentation",
+        "2026-11-14",
+        ""
+      ],
+      [
+        "Final Exam",
+        "",
+        ""
+      ]
+    ],
+    "policies": [],
+    "warnings_exclude": [
+      "yıl yazmıyor"
+    ],
+    "weeks": [
+      [
+        3,
+        "2026-10-07",
+        "Investigation of Sample Projects"
+      ],
+      [
+        6,
+        "2026-11-04",
+        "Differentiation Basics"
+      ],
+      [
+        7,
+        "2026-11-11",
+        "Midterm Exam (Tentative)"
+      ],
+      [
+        8,
+        "2026-11-14",
+        "Differentiation in Action"
+      ],
+      [
+        9,
+        "2026-11-18",
+        "Strategic Planning"
+      ]
+    ]
   }
 }

@@ -51,7 +51,9 @@ export function courseCard(c, preview = false) {
 function candidateCard(e) {
   const g = e.grading.filter((x) => !x.bonus);
   const bonus = e.grading.filter((x) => x.bonus);
-  const att = e.attendPct !== null ? t("en az {p} devam", { p: pct(e.attendPct) }) : e.absLimit !== null ? t("en fazla {n} devamsızlık", { n: e.absLimit }) : t("devam şartı yazmıyor");
+  // Devamsızlık hakkı saat ya da hafta olarak verildiyse birimiyle ("en fazla 8 saat devamsızlık")
+  const abs = e.absUnit === "saat" ? t("en fazla {n} saat devamsızlık", { n: e.absLimit }) : e.absUnit === "hafta" ? t("en fazla {n} hafta devamsızlık", { n: e.absLimit }) : t("en fazla {n} devamsızlık", { n: e.absLimit }); // i18n-ok
+  const att = e.attendPct !== null ? t("en az {p} devam", { p: pct(e.attendPct) }) : e.absLimit !== null ? abs : t("devam şartı yazmıyor");
   const stats = [
     e.ects !== null && t("{n} AKTS", { n: e.ects }),
     e.exams ? t("{n} sınav", { n: e.exams }) : null,
@@ -66,7 +68,7 @@ function candidateCard(e) {
     <p class="cand-stats">${stats.map(esc).join(" · ")}</p>
     ${g.length ? `<p class="cand-grading">${g.map((x) => `${esc(x.name)} ${pct(x.weight)}`).join(" · ")}${bonus.length ? ` · ${bonus.map((x) => `${esc(x.name)} +${pct(x.weight)}`).join(" · ")}` : ""}</p>` : `<p class="cand-grading muted">${t("Not dağılımı syllabus'ta bulunamadı.")}</p>`}
     ${e.finalMin !== null ? `<p class="cand-rule">${t("Final barajı {n}", { n: e.finalMin })}</p>` : ""}
-    ${e.rules.filter((r) => !/^Derslerin en az/.test(r) && !/^Finalden en az/.test(r)).map((r) => `<p class="cand-rule">${esc(r)}</p>`).join("")}
+    ${e.rules.filter((r) => !/^Derslerin en az/.test(r) && !/^En fazla \d+/.test(r) && !/^Finalden en az/.test(r)).map((r) => `<p class="cand-rule">${esc(r)}</p>`).join("")}
   </li>`;
 }
 

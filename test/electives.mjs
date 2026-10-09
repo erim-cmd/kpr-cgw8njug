@@ -15,6 +15,12 @@ ok(e.exams === 2, `sınav sayısı ${e.exams} ≠ 2`);
 ok(e.grading.some((g) => g.name === "Quiz" && g.bonus), "bonus bileşen korunmalı");
 ok(e.rules.includes("Yapay zekâ ile ödev yazmak intihal sayılıyor."), `kritik kural yok: ${e.rules}`);
 
+// "Absence of more than 8 hours": hak saat olarak verilmiş → kartta "en fazla 8 saat devamsızlık", "8 devamsızlık" değil
+const h = electiveFrom(parseSyllabus(readFileSync(dir + "web_eng_tablo.txt", "utf8"), new Date(2026, 8, 26)));
+ok(h.absLimit === 8 && h.absUnit === "saat", `devamsızlık birimi: ${h.absLimit} ${JSON.stringify(h.absUnit)}`);
+ok(normalize({ electives: [h] }).electives[0].absUnit === "saat", "absUnit normalize sonrası kalmalı");
+ok(normalize({ electives: [{ ...h, absUnit: "gün" }] }).electives[0].absUnit === "", "bilinmeyen birim boş olmalı");
+
 const st = normalize({ profile: { name: "T" }, courses: [], tasks: [], electives: [e, { name: "" }, ...Array.from({ length: 10 }, (_, i) => ({ code: "X " + i }))] });
 ok(st.electives.length === 8, `en fazla 8 aday: ${st.electives.length}`);
 ok(st.electives[0].id && st.electives[0].grading[2].bonus === true, "id ve bonus normalize sonrası kalmalı");
