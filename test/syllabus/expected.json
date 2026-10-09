@@ -452,12 +452,12 @@
       "bozuk okunuyor"
     ]
   },
-  "en_bau_real1": {
+  "en_bau_syn1": {
     "code": "MAT 2045",
     "name": "Numerical Methods for Engineers",
-    "instructor": "Lavdie Rada Ülgen",
-    "email": "lavdie.rada@bau.edu.tr",
-    "office": "D310",
+    "instructor": "Deniz Örnek Yıldız",
+    "email": "ornek.hoca1@bau.edu.tr",
+    "office": "D100",
     "credit": 4,
     "ects": 5,
     "sessions": [
@@ -550,11 +550,11 @@
       "bağıl"
     ]
   },
-  "tr_bau_real2": {
+  "tr_bau_syn2": {
     "code": "GEP 1020",
     "name": "Herkes İçin Yapay Zeka",
-    "instructor": "Dr.Sezin Eşfer Öndünç",
-    "email": "sezin.esferondunc@bau.edu.tr",
+    "instructor": "Dr.Ceren Örnek Kaplan",
+    "email": "ornek.hoca2@bau.edu.tr",
     "office": "",
     "credit": null,
     "ects": null,
@@ -603,12 +603,12 @@
       "bozuk okunuyor"
     ]
   },
-  "en_bau_real3": {
+  "en_bau_syn3": {
     "code": "ENM 4116",
     "name": "New Product and Service Development",
-    "instructor": "Assoc. Prof. Dr. Çağlar Sivri",
-    "email": "caglar.sivri@bau.edu.tr",
-    "office": "D434",
+    "instructor": "Assoc. Prof. Dr. Kerem Örnek",
+    "email": "ornek.hoca3@bau.edu.tr",
+    "office": "D100",
     "credit": 3,
     "ects": 6,
     "sessions": [
