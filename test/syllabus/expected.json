@@ -540,17 +540,19 @@
     "policies": [
       "devam",
       "durustluk",
-      "not_kurali",
       "telafi"
     ],
     "weeks": [],
     "warnings_exclude": [
       "bozuk okunuyor"
+    ],
+    "rules_exclude": [
+      "bağıl"
     ]
   },
   "tr_bau_real2": {
     "code": "GEP 1020",
-    "name": "HERKES İÇİN YAPAY ZEKA",
+    "name": "Herkes İçin Yapay Zeka",
     "instructor": "Dr.Sezin Eşfer Öndünç",
     "email": "sezin.esferondunc@bau.edu.tr",
     "office": "",
@@ -2131,6 +2133,167 @@
         "2026-11-18",
         "Strategic Planning"
       ]
+    ]
+  },
+  "web_itu_form": {
+    "code": "XYZ 205E",
+    "name": "Sayısal Yöntemlere Giriş",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "sessions": [],
+    "max_absences": null,
+    "final_min": null,
+    "credit": 3,
+    "ects": 5.5,
+    "grading": {
+      "Ara sınavlar (2)": 30,
+      "Ödevler (3)": 15,
+      "Dönem Ödevi/Projesi": 15,
+      "Final Sınavı": 40
+    },
+    "attendance": null,
+    "items": [
+      [
+        "Mid-term exam I",
+        "",
+        "",
+        8
+      ],
+      [
+        "Mid-term exam II",
+        "",
+        "",
+        12
+      ],
+      [
+        "Final Sınavı",
+        "",
+        ""
+      ]
+    ],
+    "policies": [],
+    "rules_exclude": [
+      "bağıl"
+    ]
+  },
+  "web_ortak_ders": {
+    "code": "KIM 101E",
+    "name": "Chemistry I",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "sessions": [],
+    "max_absences": null,
+    "final_min": null,
+    "credit": null,
+    "ects": null,
+    "grading": {
+      "Midterm": 40,
+      "Final Exam": 40,
+      "Quizzes": 20
+    },
+    "attendance": 70,
+    "items": [
+      [
+        "Quiz 1",
+        "2026-10-09",
+        ""
+      ],
+      [
+        "Quiz 2",
+        "2026-11-27",
+        ""
+      ],
+      [
+        "Quiz 3",
+        "2026-12-04",
+        ""
+      ],
+      [
+        "Midterm",
+        "",
+        ""
+      ],
+      [
+        "Final Exam",
+        "",
+        ""
+      ]
+    ],
+    "policies": [
+      "devam",
+      "baraj",
+      "not_kurali",
+      "telafi"
+    ],
+    "rules_include": [
+      "Ara sınava girmezsen finale giremezsin",
+      "4 yanlış 1 doğruyu götürüyor",
+      "yoklamada olman gerekiyor",
+      "en iyi 3/4"
+    ],
+    "rules_exclude": [
+      "en az 70 alman"
+    ]
+  },
+  "web_proje_studyo": {
+    "code": "MIM 499E",
+    "name": "Studio Project",
+    "instructor": "Dr. Örnek Deneme",
+    "email": "ornek.deneme@example.edu",
+    "office": "101B",
+    "credit": 5,
+    "ects": 12,
+    "sessions": [
+      [
+        1,
+        "13:30",
+        "17:29",
+        ""
+      ],
+      [
+        4,
+        "08:30",
+        "12:29",
+        ""
+      ]
+    ],
+    "grading": {
+      "Term-time works": 40,
+      "Final submission": 60
+    },
+    "attendance": 80,
+    "max_absences": null,
+    "final_min": null,
+    "items": [
+      [
+        "Mid-term Submission 1",
+        "2026-11-03",
+        ""
+      ],
+      [
+        "Submission of the project",
+        "2026-10-30",
+        ""
+      ],
+      [
+        "Final submission",
+        "",
+        ""
+      ]
+    ],
+    "policies": [
+      "devam",
+      "baraj"
+    ],
+    "rules_include": [
+      "Dönem içi notun en az 40",
+      "Final teslimi zorunlu"
+    ],
+    "warnings_exclude": [
+      "toplamı",
+      "Final tarihi bulunamadı"
     ]
   }
 }

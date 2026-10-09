@@ -402,6 +402,9 @@ const CP1252 = {
   156: "œ", 158: "ž", 159: "Ÿ",
 };
 
+// MacRomanEncoding 128–255 (Mac'te üretilmiş PDF'ler: "Ð" → "–", "…zge" → "Özge", "¥" → "•")
+const MACROMAN = [..."ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€‹›ﬁﬂ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ"];
+
 // /Differences için glif adları (Türkçe ve sık görülen işaretler)
 const GLYPHS = {
   space: " ", Gbreve: "Ğ", gbreve: "ğ", Scedilla: "Ş", scedilla: "ş", Idotaccent: "İ", Idot: "İ", dotlessi: "ı",
@@ -500,6 +503,8 @@ async function loadFont(doc, ref) {
     const w = doc.get(f.Widths);
     font.widths = Array.isArray(w) ? w.map((x) => doc.get(x)) : null;
     const enc = doc.get(f.Encoding);
+    const base = enc instanceof Name ? enc.v : enc && typeof enc === "object" ? doc.get(enc.BaseEncoding)?.v : "";
+    font.mac = base === "MacRomanEncoding";
     if (enc && typeof enc === "object" && !(enc instanceof Name)) {
       const diffs = doc.get(enc.Differences) || [];
       let code = 0;
@@ -521,6 +526,7 @@ function decodeText(font, str) {
     let ch;
     if (font.uni && font.uni.has(code)) ch = font.uni.get(code);
     else if (!font.composite && code in font.diff) ch = font.diff[code];
+    else if (!font.composite && font.mac && code >= 128) ch = MACROMAN[code - 128] || "";
     else if (!font.composite) ch = CP1252[code] || String.fromCharCode(code);
     else ch = "";
     let w;
@@ -732,6 +738,19 @@ function layout(runs, rules = []) {
   return out.join("\n");
 }
 
+/**
+ * LaTeX PDF'lerinde Türkçe harf, harf + ayrı aksan işareti olarak gelir: "I˙STANBUL", "Yes¸im", "U¨ NI˙VERSI˙TESI˙".
+ * Aksan harfle birleştirilir; büyük harften sonra araya giren boşluk (LaTeX aralığı) atılır ("O¨ ztu¨rk" → "Öztürk").
+ * Küçük harften sonraki boşluk kelime sınırıdır, kalır ("Kabulu¨ ve" → "Kabulü ve").
+ */
+const SPACING_ACCENT = { "˙": "̇", "¨": "̈", "¸": "̧", "˘": "̆", "ˆ": "̂" };
+export function joinAccents(text) {
+  if (!/[A-Za-z][˙¨¸˘ˆ]/.test(text)) return text;
+  return text
+    .replace(/([A-Z])([˙¨¸˘ˆ]) (?=[A-Za-z])/g, "$1$2")
+    .replace(/([A-Za-z])([˙¨¸˘ˆ])/g, (_, c, a) => (c + SPACING_ACCENT[a]).normalize("NFC"));
+}
+
 export async function pdfText(bytes) {
   const doc = new PdfDoc(bytes);
   await doc.load();
@@ -750,7 +769,7 @@ export async function pdfText(bytes) {
     await runContent(doc, content, pg.resources, [1, 0, 0, 1, 0, 0], runs);
     texts.push(layout(runs, runs.rules || []));
   }
-  const text = texts.join("\n\n");
+  const text = joinAccents(texts.join("\n\n"));
   if (text.replace(/\s/g, "").length < 40) {
     throw new DocError("Bu PDF'te okunabilir metin yok (taranmış ya da fotoğraf olabilir). Word dosyasını ya da metin seçilebilen bir PDF'i yükle.");
   }
