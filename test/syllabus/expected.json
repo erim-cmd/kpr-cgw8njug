@@ -809,7 +809,7 @@
     "instructor": "Dr. Ada Deneme",
     "email": "ada.deneme@example.edu",
     "office": "C312",
-    "office_hours": "Tuesdays 11:30 – 12:20; Monday 11:30 – 12:20; Thursdays 14:30 – 15:20",
+    "office_hours": "Salı 11:30–12:20, Pazartesi 11:30–12:20, Perşembe 14:30–15:20",
     "credit": 3,
     "ects": 6,
     "sessions": [
@@ -909,7 +909,7 @@
     "instructor": "Dr. Deniz Örnek",
     "email": "deniz.ornek@example.edu",
     "office": "A Blok 2. Kat No: 5",
-    "office_hours": "Salı 10:00-12:00",
+    "office_hours": "Salı 10:00–12:00",
     "credit": 3,
     "ects": 4,
     "sessions": [],
@@ -1588,6 +1588,57 @@
       "requests",
       "grades",
       "bozuk okunuyor"
+    ]
+  },
+  "en_bonus_ofis": {
+    "code": "MAN 3011",
+    "name": "Operations Management",
+    "instructor": "Dr. Deniz Örnek",
+    "email": "deniz.ornek@bau.edu.tr",
+    "office": "A326",
+    "credit": 3,
+    "ects": 5,
+    "office_hours": "Salı 10:30–12:30, Perşembe 14:30–15:30, Cuma 10:30–11:30",
+    "sessions": [
+      [
+        2,
+        "12:00",
+        "14:20",
+        ""
+      ]
+    ],
+    "grading": {
+      "Video Project": 20,
+      "Midterm Exam": 40,
+      "Quiz": 20,
+      "Final Exam": 40
+    },
+    "grading_bonus": [
+      "Quiz"
+    ],
+    "attendance": null,
+    "final_min": null,
+    "items": [
+      [
+        "Midterm Exam",
+        ""
+      ],
+      [
+        "Final",
+        ""
+      ]
+    ],
+    "warnings_exclude": [
+      "toplamı",
+      "e-posta"
+    ],
+    "policies": [
+      "devam",
+      "durustluk",
+      "not_kurali"
+    ],
+    "policies_kritik": [
+      "durustluk"
     ]
   }
 }
