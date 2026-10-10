@@ -60,7 +60,7 @@ export const uid = () =>
 // theme: görünüm tercihi — "sistem" (telefonu izler) | "acik" | "koyu" (theme.js)
 // lang: arayüz dili — "tr" | "en" (i18n.js)
 // studentNo: hocaya mail taslağına eklenen öğrenci numarası (mail.js; isteğe bağlı, cihazda)
-const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false, todayView: "bugun", interests: [], theme: "sistem", lang: "tr", studentNo: "" });
+const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false, todayView: "bugun", interests: [], theme: "sistem", lang: "tr", studentNo: "", aiReading: false });
 // version: veri şeması sürümü (göçler migrate.js'te; v2 = geçmiş dönemler gpaBase'e çevrildi)
 // archive: göçte arayüzden kaldırılan ama silinmeyen veri (geri dönüş için)
 const empty = () => ({ version: 1, profile: { name: "" }, courses: [], tasks: [], transcript: [], gpaBase: null, settings: defaultSettings(), archive: { transcript: [] }, electives: [] });
@@ -212,6 +212,9 @@ function normSettings(s) {
     theme: s.theme === "acik" || s.theme === "koyu" ? s.theme : "sistem",
     lang: s.lang === "en" ? "en" : "tr",
     studentNo: str(s.studentNo, 20),
+    // Uyuyan yapay zekâ ile okuma yolu (importer.js): yalnız açıkça true ise. Arayüzde düğmesi yok;
+    // sunucu yapılandırılmış olsa bile bu ayar olmadan sunucu sorulmaz, seçenek görünmez.
+    aiReading: s.aiReading === true,
   };
 }
 
