@@ -98,6 +98,8 @@ function shownAt(st, now, only = /^r:(t1|e\d):/) {
 {
   const root = fileURLToPath(new URL("../", import.meta.url));
   const norm = (src, name) => {
+    // Windows'ta core.autocrlf=true ile klonlanınca dosyalar CRLF gelir; "\n}\n" araması kaymasın
+    src = src.replace(/\r\n/g, "\n");
     const i = src.indexOf(`function ${name}(`);
     return src.slice(i, src.indexOf("\n}\n", i) + 3).replace(/\s+/g, " ").trim();
   };

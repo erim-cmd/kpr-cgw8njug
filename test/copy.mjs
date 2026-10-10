@@ -31,6 +31,7 @@ const RULES = [
 let fail = 0, scanned = 0;
 for (const f of FILES) {
   const src = readFileSync(root + f, "utf8")
+    .replace(/\r\n/g, "\n") // Windows'ta autocrlf ile CRLF gelir; "." \r ile eşleşmez, yorum silme kayar
     .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " ")) // blok yorum (satır sayısı korunur)
     .replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, " "));
   const texts = []; // [satır, metin]
