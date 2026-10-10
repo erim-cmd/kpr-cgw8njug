@@ -11,6 +11,7 @@
 import { TASK_TYPES, isExam } from "./store.js";
 import { parseISO, toISO, todayISO } from "./dates.js";
 import { t } from "./i18n.js";
+import { density } from "./density.js";
 
 const pad = (n) => String(n).padStart(2, "0");
 const stamp = (d) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
@@ -68,14 +69,20 @@ function taskEvent(task, course, now) {
   return lines;
 }
 
-/** Her ders saati için haftalık tekrar eden etkinlik, dönemin kalan haftaları kadar. */
-function classEvents(course, weeks, now) {
+/**
+ * Her ders saati için haftalık tekrar eden etkinlik, dönem sonuna kadar (termEnd dahil, YYYY-AA-GG).
+ * Dönem sonu geçmişse o ders saati yazılmaz.
+ */
+function classEvents(course, termEnd, now) {
   const out = [];
   const today = parseISO(todayISO());
+  const endDay = parseISO(termEnd);
   course.sessions.forEach((s, i) => {
     const first = new Date(today);
     const delta = (s.day - ((today.getDay() + 6) % 7) + 7) % 7;
     first.setDate(first.getDate() + delta);
+    if (first > endDay) return;
+    const weeks = Math.floor(Math.round((endDay - first) / 86400000) / 7) + 1;
     const start = at(toISO(first), s.start);
     const end = at(toISO(first), s.end);
     out.push(
@@ -101,7 +108,12 @@ export function buildICS(state, { classes = false } = {}) {
   for (const t of state.tasks.filter((x) => !x.done && x.due >= today)) {
     lines.push(...taskEvent(t, state.courses.find((c) => c.id === t.courseId), now));
   }
-  if (classes) for (const c of state.courses) lines.push(...classEvents(c, state.settings.termWeeks, now));
+  if (classes) {
+    // Dönem sonu = dönem başlangıcının pazartesisi + termWeeks hafta (Dönem ekranıyla aynı hesap: density.js)
+    const end = parseISO(density(state.tasks, state.settings).start);
+    end.setDate(end.getDate() + (state.settings.termWeeks || 14) * 7 - 1);
+    for (const c of state.courses) lines.push(...classEvents(c, toISO(end), now));
+  }
   lines.push("END:VCALENDAR");
   return lines.map(fold).join("\r\n") + "\r\n";
 }

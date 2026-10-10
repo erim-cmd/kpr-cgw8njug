@@ -103,7 +103,7 @@ function shownAt(st, now, only = /^r:(t1|e\d):/) {
   };
   const a = readFileSync(root + "alerts.js", "utf8");
   const s = readFileSync(root + "sw.js", "utf8");
-  for (const name of ["describeReminder", "pickDueReminders"]) ok(norm(a, name) === norm(s, name) && norm(s, name).length > 100, `sw.js ${name} kopyası alerts.js ile aynı olmalı`);
+  for (const name of ["describeReminder", "pickDueReminders", "digestNotice"]) ok(norm(a, name) === norm(s, name) && norm(s, name).length > 100, `sw.js ${name} kopyası alerts.js ile aynı olmalı`);
   const ctx = { self: { addEventListener() {}, registration: {}, location: { origin: "http://x" } }, URL, Response: class {}, console };
   vm.createContext(ctx);
   vm.runInContext(s, ctx);
@@ -139,6 +139,31 @@ function shownAt(st, now, only = /^r:(t1|e\d):/) {
   const LEN = JSON.parse(JSON.stringify(reminderStrings()));
   ok(ctx.describeReminder(exR, D(10, 13, 7, 30).getTime(), LEN).title === enTitle, "worker EN çıktısı aynı");
   setLang("tr");
+}
+
+// 7) Toplu bildirim: 4'ten fazla hatırlatma birikince fazlası "+N tane daha" (kaybolmaz)
+{
+  const L = reminderStrings();
+  const six = Array.from({ length: 6 }, (_, i) => ({ title: `İş ${i}` }));
+  const d = A.digestNotice(six, L);
+  ok(d.title === "6 hatırlatman var", `toplu başlık: ${d.title}`);
+  ok(d.body.split("\n").length === 5 && d.body.endsWith("+2 tane daha"), `ilk 4 + "+2 tane daha": ${JSON.stringify(d.body)}`);
+  ok(!A.digestNotice(six.slice(0, 4), L).body.includes("tane daha"), "tam 4 iş: ek satır yok");
+  // Worker uçtan uca: önbellekteki 6 hatırlatmadan tek toplu bildirim, "+2 tane daha" ile
+  const now = D(10, 13, 21, 0).getTime();
+  const many = Array.from({ length: 6 }, (_, i) => task({ id: "m" + i, title: "Ödev " + i, due: "2026-10-14" }));
+  const list = flat(buildReminders(state(many, { notifyClasses: false }), new Date(now - CATCH), 2)).filter((r) => r.kind !== "day");
+  const shown = [];
+  const cache = { match: async () => ({ json: async () => ({ strings: reminderStrings(), reminders: list, sent: {} }) }), put: async () => {} };
+  const wctx = { self: { addEventListener() {}, registration: { showNotification: async (title, o) => shown.push({ title, body: o.body }) } }, caches: { open: async () => cache }, Response: class {}, Date: class extends Date { static now() { return now; } }, URL, console };
+  vm.createContext(wctx);
+  vm.runInContext(readFileSync(fileURLToPath(new URL("../sw.js", import.meta.url)), "utf8"), wctx);
+  await wctx.showDueReminders();
+  ok(shown.length === 1 && shown[0].title === "6 hatırlatman var" && shown[0].body.endsWith("+2 tane daha"), `worker toplu bildirim: ${JSON.stringify(shown)}`);
+  // Eski önbellek ("more" yok): çökmez, Türkçe yedek
+  const oldL = { ...reminderStrings() };
+  delete oldL.more;
+  ok(A.digestNotice(six, { ...oldL, more: "+{n} tane daha" }).body.endsWith("+2 tane daha"), "yedek metinle");
 }
 
 console.log(`\nbildirim zamanı\n\n${pass} doğru, ${fail} hata`);

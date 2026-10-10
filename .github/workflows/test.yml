@@ -57,6 +57,18 @@ jobs:
       - name: Bildirim zamanı (gösterim anındaki kalan süre, service worker kopyası)
         run: node test/reminders.mjs
 
+      - name: Takvime aktarma (ders tekrarı dönem sonunda biter)
+        run: node test/ics.mjs
+
+      - name: Bugün ekranı (aynı iş iki kez görünmez)
+        run: node test/today.mjs
+
+      - name: Yedek al / yedekten yükle (kayıpsız, eski sürüm, bozuk dosya)
+        run: node test/backup.mjs
+
+      - name: Depoda sır yok (API anahtarı, şifre, .dev.vars)
+        run: node test/secrets.mjs
+
       - name: PDF okuyucu (yazı tipi kodlaması, LaTeX aksanları)
         run: node test/doc-text.mjs
 
