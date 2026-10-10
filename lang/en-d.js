@@ -203,6 +203,6 @@ export default {
   "{n} saat sonra": "in {n} hr",
   "bugün {saat}": "today {saat}",
   "yarın {saat}": "tomorrow {saat}",
-  "Sınav {when}: {ad}": "Exam {when}: {ad}",
-  "Teslim {when}: {ad}": "Due {when}: {ad}",
+  "{ad} · sınav {when}": "{ad} · exam {when}",
+  "{ad} · teslim {when}": "{ad} · due {when}",
 };

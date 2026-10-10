@@ -39,6 +39,7 @@ function shownAt(st, now, only = /^r:(t1|e\d):/) {
   const evening = describe(three, D(10, 12, 20).getTime());
   ok(/yarın 10:00/.test(evening.title) && !/3 saat/.test(evening.title), `20:00'de "yarın 10:00" yazmalı, "3 saat" değil: ${evening.title}`);
   ok(three.title === evening.title, `planlanan metin = fireAt anındaki metin: ${three.title}`);
+  ok(evening.title === "MAT 1001 · Ödev 1 · teslim yarın 10:00", `başlık biçimi "{ad} · teslim {ne zaman}": ${evening.title}`);
   const dayOf = describe(three, D(10, 13, 7, 0).getTime());
   ok(/3 saat sonra/.test(dayOf.title), `sabah 07:00'de "3 saat sonra": ${dayOf.title}`);
   ok(/45 dk sonra/.test(describe(three, D(10, 13, 9, 15).getTime()).title), "09:15'te 45 dk sonra");
@@ -55,7 +56,7 @@ function shownAt(st, now, only = /^r:(t1|e\d):/) {
   ok(show.length === 1, `aynı sınav için tek bildirim (en yenisi): ${show.map((s) => s.id)}`);
   ok(show[0] && show[0].id === "r:e1:2h", `en yeni hatırlatma gösterilmeli: ${show[0]?.id}`);
   ok(show.every((s) => !/yarın sınav/i.test(s.title) && !/^Yarın/.test(s.title)), `"Yarın sınav" çıkmamalı: ${show.map((s) => s.title)}`);
-  ok(show[0] && /^Sınav 90 dk sonra:/.test(show[0].title), `kalan süre yazmalı: ${show[0]?.title}`);
+  ok(show[0] && /^MAT 1001 · Ara sınav · sınav 90 dk sonra$/.test(show[0].title), `kalan süre yazmalı: ${show[0]?.title}`);
   ok(skip.includes("r:e1:1d"), "eski (dünkü) hatırlatma gösterilmeden gönderildi sayılmalı");
   // Yalnız dünkü hatırlatma pencerede kalmışsa (06:55'te 2 saat önceki henüz yok) metin "bugün 09:00" der, "yarın" demez
   const early = shownAt(st, D(10, 13, 6, 55));
@@ -85,7 +86,7 @@ function shownAt(st, now, only = /^r:(t1|e\d):/) {
 {
   const st = state([task({ time: "15:00" })]);
   const live = shownAt(st, D(10, 13, 12, 30));
-  ok(live.show.some((s) => s.id === "r:t1:3h" && /^Teslim (3|2) saat sonra:/.test(s.title)), `teslimden önce gösterilir: ${live.show.map((s) => s.title)}`);
+  ok(live.show.some((s) => s.id === "r:t1:3h" && /^MAT 1001 · Ödev 1 · teslim (3|2) saat sonra$/.test(s.title)), `teslimden önce gösterilir: ${live.show.map((s) => s.title)}`);
   const late = shownAt(st, D(10, 13, 15, 30));
   ok(!late.show.some((s) => s.id === "r:t1:3h"), `teslim geçtikten sonra gelmemeli: ${late.show.map((s) => s.title)}`);
   ok(late.skip.includes("r:t1:3h"), "geçmiş teslim hatırlatması gönderildi sayılmalı");
@@ -125,8 +126,18 @@ function shownAt(st, now, only = /^r:(t1|e\d):/) {
   setLang("en");
   const st = state([task({ time: "10:00" })]);
   const three = byId(buildReminders(st, D(10, 12, 0), 3), "r:t1:3h");
-  ok(/^Due tomorrow 10:00:/.test(describe(three, D(10, 12, 20).getTime()).title), `EN: ${describe(three, D(10, 12, 20).getTime()).title}`);
-  ok(/^Due in 3 hr:/.test(describe(three, D(10, 13, 7).getTime()).title), `EN: ${describe(three, D(10, 13, 7).getTime()).title}`);
+  ok(/^MAT 1001 · Ödev 1 · due tomorrow 10:00$/.test(describe(three, D(10, 12, 20).getTime()).title), `EN: ${describe(three, D(10, 12, 20).getTime()).title}`);
+  ok(/^MAT 1001 · Ödev 1 · due in 3 hr$/.test(describe(three, D(10, 13, 7).getTime()).title), `EN: ${describe(three, D(10, 13, 7).getTime()).title}`);
+  // Sınav İngilizce + worker kopyası İngilizce metin parçalarıyla da aynı çıktı
+  const ex = state([task({ id: "e1", type: "sinav", title: "Midterm", time: "09:00" })]);
+  const exR = byId(buildReminders(ex, D(10, 12, 0), 3), "r:e1:2h");
+  const enTitle = describe(exR, D(10, 13, 7, 30).getTime()).title;
+  ok(enTitle === "MAT 1001 · Midterm · exam in 90 min", `EN sınav: ${enTitle}`);
+  const ctx = { self: { addEventListener() {} }, URL, Response: class {}, console };
+  vm.createContext(ctx);
+  vm.runInContext(readFileSync(fileURLToPath(new URL("../sw.js", import.meta.url)), "utf8"), ctx);
+  const LEN = JSON.parse(JSON.stringify(reminderStrings()));
+  ok(ctx.describeReminder(exR, D(10, 13, 7, 30).getTime(), LEN).title === enTitle, "worker EN çıktısı aynı");
   setLang("tr");
 }
 
