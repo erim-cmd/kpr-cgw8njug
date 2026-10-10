@@ -54,6 +54,15 @@ jobs:
       - name: Hocaya mail taslağı
         run: node test/mail.mjs
 
+      - name: Bildirim zamanı (gösterim anındaki kalan süre, service worker kopyası)
+        run: node test/reminders.mjs
+
+      - name: PDF okuyucu (yazı tipi kodlaması, LaTeX aksanları)
+        run: node test/doc-text.mjs
+
+      - name: Ders adı başlık düzeni
+        run: node test/title-case.mjs
+
       - name: Syllabus'u var olan derse birleştirme
         run: node test/merge.mjs
 

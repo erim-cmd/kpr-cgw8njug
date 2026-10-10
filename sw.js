@@ -11,7 +11,7 @@
  * Uygulamada "Yeni sürüm hazır → Yenile" uyarısı çıkar (bkz. js/app.js).
  */
 
-const VERSION = "2.24.4";
+const VERSION = "2.24.5";
 const SHELL_CACHE = `kpr-shell-${VERSION}`;
 
 const SHELL = [
@@ -147,6 +147,53 @@ const REMINDER_CACHE = "kpr-reminders";
 const REMINDER_URL = "./__kpr-reminders.json";
 
 /**
+ * Bildirim metni ve "şimdi gösterilecekler" mantığı: alerts.js'teki describeReminder / pickDueReminders'ın
+ * BİREBİR kopyası (worker modül değil, import edemez). Değişirse ikisi birlikte değişir;
+ * test/reminders.mjs iki kopyanın kaynak metnini ve çıktısını karşılaştırır.
+ */
+function describeReminder(r, now, L) {
+  var f = function (s, v) { return s.replace(/\{(\w+)\}/g, function (m, k) { return v && k in v ? String(v[k]) : m; }); };
+  var pad = function (n) { return (n < 10 ? "0" : "") + n; };
+  if (r.kind === "day" || !L) return { title: r.title, body: r.body };
+  var tg = new Date(r.target);
+  var nw = new Date(now);
+  var days = Math.round((new Date(tg.getFullYear(), tg.getMonth(), tg.getDate()) - new Date(nw.getFullYear(), nw.getMonth(), nw.getDate())) / 86400000);
+  var ms = r.target - now;
+  var hhmm = pad(tg.getHours()) + ":" + pad(tg.getMinutes());
+  var mins = Math.max(1, Math.ceil(ms / 60000));
+  var when;
+  if (r.kind === "class") return { title: f(L.cls, { n: mins, ders: r.ad }), body: r.body };
+  if (r.hasTime && ms < 2 * 3600000) when = f(L.min, { n: mins });
+  else if (r.hasTime && days === 0 && ms < 6 * 3600000) when = f(L.hour, { n: Math.max(1, Math.round(ms / 3600000)) });
+  else if (days <= 0) when = r.hasTime ? f(L.todayAt, { saat: hhmm }) : L.today;
+  else if (days === 1) when = r.hasTime ? f(L.tomorrowAt, { saat: hhmm }) : L.tomorrow;
+  else when = f(L.days, { n: days });
+  if (r.kind === "exam") {
+    var body = days >= 2 ? L.examPlan
+      : days === 1 ? (r.hasTime ? f(L.examEve, { saat: r.time }) : L.examEveNoTime)
+        : (r.hasTime ? f(L.examStart, { saat: r.time }) : L.examToday);
+    return { title: f(L.exam, { when: when, ad: r.ad }), body: body };
+  }
+  return { title: f(L.due, { when: when, ad: r.ad }), body: f(L.dueBody, { tur: r.tur, saat: r.hasTime ? r.time : L.dayEnd }) };
+}
+
+function pickDueReminders(list, sent, now, catchUp) {
+  var show = [];
+  var skip = [];
+  list.forEach(function (r) {
+    if (sent[r.id] || r.fireAt > now || now - r.fireAt > catchUp) return;
+    if (now >= r.target) skip.push(r);
+    else show.push(r);
+  });
+  var latest = show.filter(function (r) {
+    return !r.taskId || !show.some(function (o) { return o !== r && o.taskId === r.taskId && o.fireAt > r.fireAt; });
+  });
+  show.forEach(function (r) { if (latest.indexOf(r) < 0) skip.push(r); });
+  return { show: latest, skip: skip };
+}
+
+
+/**
  * Android Chrome: uygulama kapalıyken tarayıcı ara ara bu olayı tetikler.
  * Uygulamanın yazdığı hatırlatma listesinden zamanı gelenleri gösterir.
  */
@@ -157,16 +204,22 @@ async function showDueReminders() {
   const data = await res.json();
   const sent = data.sent || {};
   const now = Date.now();
-  const due = (data.reminders || []).filter((r) => r.fireAt <= now && now - r.fireAt <= 12 * 3600 * 1000 && !sent[r.id]);
-  if (!due.length) return;
-  if (due.length > 3) {
-    await self.registration.showNotification(`${due.length} hatırlatman var`, {
-      body: due.slice(0, 4).map((r) => r.title).join("\n"), tag: "kpr-digest", icon: "icon-192.png", data: { url: "#/bugun" },
-    });
-  } else {
-    for (const r of due) await self.registration.showNotification(r.title, { body: r.body, tag: r.id, icon: "icon-192.png", data: { url: r.url } });
-  }
-  for (const r of due) sent[r.id] = now;
+  // Hedefi geçmiş ya da yenisi gelmiş hatırlatma gösterilmez, gönderildi sayılır (notify.js ile aynı mantık)
+  const { show, skip } = pickDueReminders(data.reminders || [], sent, now, 12 * 3600 * 1000);
+  for (const r of skip) sent[r.id] = now;
+  if (show.length) {
+    // Metin gösterim anındaki kalan süreye göre; eski önbellekte "strings" yoksa planlanan metin kalır
+    const texts = show.map((r) => Object.assign({}, r, describeReminder(r, now, data.strings)));
+    const digest = data.strings && data.strings.digest ? data.strings.digest : "{n} hatırlatman var";
+    if (texts.length > 3) {
+      await self.registration.showNotification(digest.replace("{n}", texts.length), {
+        body: texts.slice(0, 4).map((r) => r.title).join("\n"), tag: "kpr-digest", icon: "icon-192.png", data: { url: "#/bugun" },
+      });
+    } else {
+      for (const r of texts) await self.registration.showNotification(r.title, { body: r.body, tag: r.id, icon: "icon-192.png", data: { url: r.url } });
+    }
+  } else if (!skip.length) return;
+  for (const r of show) sent[r.id] = now;
   await cache.put(REMINDER_URL, new Response(JSON.stringify({ ...data, sent }), { headers: { "content-type": "application/json" } }));
 }
 
