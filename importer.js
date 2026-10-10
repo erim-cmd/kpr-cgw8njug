@@ -36,7 +36,15 @@ let apiState = null; // "ready" | "off" | "none"
  * günlük sayacı artırmadan 200 + { ready } döner. Yanıtta hata kodu olmadığı için konsola hata düşmez.
  * GitHub Pages'te hiç sorulmaz (statik; sunucu yok) → "none".
  */
-async function aiStatus() {
+/**
+ * Uyuyan yol kapalı mı? Yapay zekâ ile okuma ancak ayarlarda AÇIKÇA açılmışsa (settings.aiReading === true)
+ * denenir. Kapalıyken sunucu hiç sorulmaz (ağ isteği yok), seçenek görünmez, dosya gönderilmez —
+ * sunucu yapılandırılmış olsa bile. Syllabus her zaman cihaz içinde okunur. test/ai-gate.mjs
+ */
+export const aiAllowed = (settings = store.get().settings) => settings?.aiReading === true;
+
+export async function aiStatus() {
+  if (!aiAllowed()) return "off";
   if (apiState) return apiState;
   // GitHub Pages yalnızca statik dosya sunar: sunucu yok. Yoklama orada 405 döner ve
   // tarayıcı konsoluna kırmızı hata yazar; hiç sormadan "none" say.
@@ -66,7 +74,8 @@ const mediaTypeOf = (file) =>
   file.type || (/\.pdf$/i.test(file.name) ? "application/pdf" : /\.png$/i.test(file.name) ? "image/png" : /\.jpe?g$/i.test(file.name) ? "image/jpeg" : "");
 
 /** Yapay zekâ ile okur. Başarısızsa { error } döner (asla fırlatmaz), çağıran cihaz içine düşer. */
-async function readWithAI(file) {
+export async function readWithAI(file) {
+  if (!aiAllowed()) return { error: "off" }; // ayar kapalı: dosya hiçbir yere gitmez
   const mediaType = mediaTypeOf(file);
   if (!AI_TYPES.has(mediaType)) return { error: t("Word ve metin dosyaları yapay zekâya gönderilmiyor") };
   if (file.size > AI_MAX_BYTES) return { error: t("dosya 4 MB'tan büyük") };
@@ -157,10 +166,12 @@ export function openImport({ into = null } = {}) {
         run(input.files[0], { ai: !!ai && !ai.closest("[hidden]") && ai.checked });
       });
 
-      // Sunucu hazırsa yapay zekâ seçeneğini göster (yoksa ekran değişmez)
-      aiStatus().then((st) => {
-        if (st === "ready") form.querySelector("[data-ai]").hidden = false;
-      });
+      // Yalnız ayar açıksa ve sunucu hazırsa yapay zekâ seçeneğini göster (yoksa sunucu sorulmaz, ekran değişmez)
+      if (aiAllowed()) {
+        aiStatus().then((st) => {
+          if (st === "ready") form.querySelector("[data-ai]").hidden = false;
+        });
+      }
     }
   );
 }
@@ -218,6 +229,7 @@ function showError(message, file) {
 
 async function run(file, { ai = false } = {}) {
   if (!file) return;
+  ai = ai && aiAllowed();
   const stop = showProgress(ai);
   try {
     // 1) Rıza verildiyse yapay zekâ; olmazsa sebebiyle birlikte cihaz içine düş

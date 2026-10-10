@@ -69,6 +69,9 @@ jobs:
       - name: Depoda sır yok (API anahtarı, şifre, .dev.vars)
         run: node test/secrets.mjs
 
+      - name: Yapay zekâ ile okuma ayarsız çalışmaz (sunucu hazır olsa bile)
+        run: node test/ai-gate.mjs
+
       - name: PDF okuyucu (yazı tipi kodlaması, LaTeX aksanları)
         run: node test/doc-text.mjs
 
