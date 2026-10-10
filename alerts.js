@@ -166,6 +166,11 @@ const at = (iso, hhmm) => {
   d.setHours(h, m, 0, 0);
   return d;
 };
+const dayEnd = (iso) => {
+  const d = parseISO(iso);
+  d.setHours(23, 59, 59, 999);
+  return d;
+};
 const addDays = (d, n) => new Date(d.getTime() + n * 86400000);
 const addMin = (d, n) => new Date(d.getTime() + n * 60000);
 
@@ -178,30 +183,127 @@ function quiet(d) {
 }
 
 /**
+ * Bildirim metni PLANLANDIĞI an değil GÖSTERİLDİĞİ an hesaplanır: 10:00 teslim için önceki akşam 20:00'de
+ * "Teslim yarın 10:00", sabah 07:00'de "3 saat sonra". Metin parçaları (reminderStrings) çevrilmiş olarak
+ * hatırlatma listesiyle birlikte service worker'a gider; worker'daki kopya (sw.js) aynı çıktıyı verir
+ * (test/reminders.mjs iki kopyanın birebir aynı olduğunu denetler).
+ */
+export function reminderStrings() {
+  return {
+    min: t("{n} dk sonra"),
+    hour: t("{n} saat sonra"),
+    days: t("{n} gün sonra"),
+    todayAt: t("bugün {saat}"),
+    tomorrowAt: t("yarın {saat}"),
+    today: t("bugün"),
+    tomorrow: t("yarın"),
+    exam: t("Sınav {when}: {ad}"),
+    due: t("Teslim {when}: {ad}"),
+    cls: t("{n} dk sonra: {ders}"),
+    examPlan: t("Çalışma planını bugün yap."),
+    examEve: t("Saat {saat}. Son tekrar zamanı."),
+    examEveNoTime: t("Son tekrar zamanı."),
+    examStart: t("Başlangıç {saat}."),
+    examToday: t("Bugün sınavın var."),
+    dueBody: t("{tur} teslimi {saat}."),
+    dayEnd: t("gün sonu"),
+    digest: t("{n} hatırlatman var"),
+  };
+}
+
+/**
+ * { title, body } — r.target (ms) ve now (ms) arasındaki kalan süreye göre.
+ * Saatli iş: <2 saat "X dk sonra", aynı gün ve <6 saat "X saat sonra", aynı gün "bugün HH:MM", ertesi gün
+ * "yarın HH:MM", sonrası "N gün sonra". Saatsiz iş: yalnız "bugün" / "yarın" / "N gün sonra".
+ * DİKKAT: bu fonksiyon sw.js içinde birebir kopyalıdır (ES5 yazım; değişirse ikisi birlikte değişir).
+ */
+export function describeReminder(r, now, L) {
+  var f = function (s, v) { return s.replace(/\{(\w+)\}/g, function (m, k) { return v && k in v ? String(v[k]) : m; }); };
+  var pad = function (n) { return (n < 10 ? "0" : "") + n; };
+  if (r.kind === "day" || !L) return { title: r.title, body: r.body };
+  var tg = new Date(r.target);
+  var nw = new Date(now);
+  var days = Math.round((new Date(tg.getFullYear(), tg.getMonth(), tg.getDate()) - new Date(nw.getFullYear(), nw.getMonth(), nw.getDate())) / 86400000);
+  var ms = r.target - now;
+  var hhmm = pad(tg.getHours()) + ":" + pad(tg.getMinutes());
+  var mins = Math.max(1, Math.ceil(ms / 60000));
+  var when;
+  if (r.kind === "class") return { title: f(L.cls, { n: mins, ders: r.ad }), body: r.body };
+  if (r.hasTime && ms < 2 * 3600000) when = f(L.min, { n: mins });
+  else if (r.hasTime && days === 0 && ms < 6 * 3600000) when = f(L.hour, { n: Math.max(1, Math.round(ms / 3600000)) });
+  else if (days <= 0) when = r.hasTime ? f(L.todayAt, { saat: hhmm }) : L.today;
+  else if (days === 1) when = r.hasTime ? f(L.tomorrowAt, { saat: hhmm }) : L.tomorrow;
+  else when = f(L.days, { n: days });
+  if (r.kind === "exam") {
+    var body = days >= 2 ? L.examPlan
+      : days === 1 ? (r.hasTime ? f(L.examEve, { saat: r.time }) : L.examEveNoTime)
+        : (r.hasTime ? f(L.examStart, { saat: r.time }) : L.examToday);
+    return { title: f(L.exam, { when: when, ad: r.ad }), body: body };
+  }
+  return { title: f(L.due, { when: when, ad: r.ad }), body: f(L.dueBody, { tur: r.tur, saat: r.hasTime ? r.time : L.dayEnd }) };
+}
+
+/** Şu anki dile göre metin: { title, body }. */
+export const describe = (r, now = Date.now(), L = reminderStrings()) => describeReminder(r, typeof now === "number" ? now : now.getTime(), L);
+
+/**
+ * Hangi hatırlatmalar şimdi gösterilir? list: fireAt/target ms. Dönüş { show, skip }:
+ *   show — zamanı gelmiş, hedefi henüz geçmemiş, gönderilmemiş (aynı görevin birden çok hatırlatması
+ *          birikmişse yalnız en yenisi: "yarın sınav" ile "bugün sınav" aynı sabah ikisi birden gelmesin)
+ *   skip — hedef zamanı geçmiş ya da yenisi tarafından geçersiz kılınmış: GÖSTERİLMEZ, gönderildi sayılır
+ * DİKKAT: sw.js içinde birebir kopyalıdır (ES5 yazım).
+ */
+export function pickDueReminders(list, sent, now, catchUp) {
+  var show = [];
+  var skip = [];
+  list.forEach(function (r) {
+    if (sent[r.id] || r.fireAt > now || now - r.fireAt > catchUp) return;
+    if (now >= r.target) skip.push(r);
+    else show.push(r);
+  });
+  var latest = show.filter(function (r) {
+    return !r.taskId || !show.some(function (o) { return o !== r && o.taskId === r.taskId && o.fireAt > r.fireAt; });
+  });
+  show.forEach(function (r) { if (latest.indexOf(r) < 0) skip.push(r); });
+  return { show: latest, skip: skip };
+}
+
+/**
  * Önümüzdeki `days` gün içindeki bildirimler.
  * Sınav: 7 gün önce, 1 gün önce 20:00, sınavdan 2 saat önce (saat yoksa 08:00).
  * Ödev/proje: 3 gün önce, 1 gün önce, teslimden 3 saat önce (saat yoksa 23:59 kabul).
  * Her sabah 08:00: bugünün özeti. İsteğe bağlı: dersten 15 dk önce.
+ * Her kayıt: id, fireAt (planlanan an), target (olayın kendisi, ms), kind ("exam" | "due" | "day" | "class"),
+ * title/body (fireAt anındaki metin; gösterimde describe() yeniden hesaplar).
  */
 export function buildReminders(state, from = new Date(), days = 8) {
   const { courses, tasks, settings } = state;
   const until = addDays(from, days);
   const out = [];
-  const push = (r) => { if (r.fireAt > addDays(from, -1) && r.fireAt <= until) out.push(r); };
+  const L = reminderStrings();
+  const push = (r) => {
+    if (!(r.fireAt > addDays(from, -1) && r.fireAt <= until)) return;
+    out.push({ ...r, ...describeReminder(r, r.fireAt.getTime(), L) });
+  };
 
   for (const task of tasks.filter((x) => !x.done)) {
     const ad = label(task, courses);
+    const hasTime = !!task.time;
+    const base = { taskId: task.id, hasTime, time: task.time || "", ad, url: "#/gorevler" };
     if (isExam(task)) {
       const exam = at(task.due, task.time || "09:00");
-      push({ id: `r:${task.id}:7d`, fireAt: at(toISO(addDays(exam, -7)), "09:00"), title: t("1 hafta kaldı: {ad}", { ad }), body: t("Çalışma planını bugün yap."), url: "#/gorevler" });
-      push({ id: `r:${task.id}:1d`, fireAt: at(toISO(addDays(exam, -1)), "20:00"), title: t("Yarın sınav: {ad}", { ad }), body: task.time ? t("Saat {saat}. Son tekrar zamanı.", { saat: task.time }) : t("Son tekrar zamanı."), url: "#/gorevler" });
-      push({ id: `r:${task.id}:2h`, fireAt: task.time ? addMin(exam, -120) : at(task.due, "08:00"), title: t("Bugün sınav: {ad}", { ad }), body: task.time ? t("Başlangıç {saat}.", { saat: task.time }) : t("Bugün sınavın var."), url: "#/gorevler" });
+      const target = (hasTime ? exam : dayEnd(task.due)).getTime();
+      const e = { ...base, kind: "exam", target };
+      push({ ...e, id: `r:${task.id}:7d`, fireAt: at(toISO(addDays(exam, -7)), "09:00") });
+      push({ ...e, id: `r:${task.id}:1d`, fireAt: at(toISO(addDays(exam, -1)), "20:00") });
+      push({ ...e, id: `r:${task.id}:2h`, fireAt: task.time ? addMin(exam, -120) : at(task.due, "08:00") });
     } else {
       const due = at(task.due, task.time || "23:59");
-      const tur = TASK_TYPES[task.type];
-      push({ id: `r:${task.id}:3d`, fireAt: quiet(addDays(due, -3)), title: t("3 gün kaldı: {ad}", { ad }), body: t("{tur} teslimi {saat}.", { tur, saat: task.time || t("gün sonu") }), url: "#/gorevler" });
-      push({ id: `r:${task.id}:1d`, fireAt: quiet(addDays(due, -1)), title: t("Yarın teslim: {ad}", { ad }), body: `${tur} · ${task.time || t("gün sonu")}`, url: "#/gorevler" });
-      push({ id: `r:${task.id}:3h`, fireAt: quiet(addMin(due, -180)), title: t("3 saat kaldı: {ad}", { ad }), body: t("{tur} teslimi {saat}.", { tur, saat: task.time || t("bu gece") }), url: "#/gorevler" });
+      const target = (hasTime ? due : dayEnd(task.due)).getTime();
+      const d = { ...base, kind: "due", target, tur: TASK_TYPES[task.type] };
+      push({ ...d, id: `r:${task.id}:3d`, fireAt: quiet(addDays(due, -3)) });
+      push({ ...d, id: `r:${task.id}:1d`, fireAt: quiet(addDays(due, -1)) });
+      push({ ...d, id: `r:${task.id}:3h`, fireAt: quiet(addMin(due, -180)) });
     }
   }
 
@@ -220,7 +322,9 @@ export function buildReminders(state, from = new Date(), days = 8) {
       const first = classes.sort((a, b) => toMin(a.s.start) - toMin(b.s.start))[0];
       push({
         id: `r:day:${iso}`,
+        kind: "day",
         fireAt: at(iso, "08:00"),
+        target: dayEnd(iso).getTime(), // günün özeti gün boyu geçerli
         title: t("Bugün: {ad}", { ad: parts.join(", ") }),
         body: first ? t("İlk ders {saat} · {ders}", { saat: first.s.start, ders: `${first.c.name}${first.s.room ? ` · ${first.s.room}` : ""}` }) : due.map((x) => label(x, courses)).join(", "),
         url: "#/bugun",
@@ -228,10 +332,14 @@ export function buildReminders(state, from = new Date(), days = 8) {
     }
     if (settings.notifyClasses) {
       for (const { c, s } of classes) {
+        const start = at(iso, s.start);
         push({
           id: `r:class:${c.id}:${iso}:${s.start}`,
-          fireAt: addMin(at(iso, s.start), -15),
-          title: t("{n} dk sonra: {ders}", { n: 15, ders: c.name }),
+          kind: "class",
+          fireAt: addMin(start, -15),
+          target: start.getTime(), // ders başladıktan sonra "15 dk sonra" gösterilmez
+          hasTime: true,
+          ad: c.name,
           body: [s.start, s.room].filter(Boolean).join(" · "),
           url: "#/program",
         });

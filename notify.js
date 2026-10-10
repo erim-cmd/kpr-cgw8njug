@@ -13,7 +13,7 @@
  */
 
 import { store } from "./store.js";
-import { buildReminders } from "./alerts.js";
+import { buildReminders, describeReminder, pickDueReminders, reminderStrings } from "./alerts.js";
 import { isIOS, isStandalone } from "./install.js";
 import { t, getLang } from "./i18n.js";
 
@@ -91,19 +91,24 @@ export async function checkReminders() {
     ? await caches.open(SW_CACHE).then((c) => c.match(SW_URL)).then((r) => r?.json()).then((d) => d?.sent || {}).catch(() => ({}))
     : {};
   const sent = { ...readSent(), ...swSent };
-  const due = buildReminders(store.get(), new Date(now - CATCH_UP_MS), 2)
-    .filter((r) => r.fireAt.getTime() <= now && now - r.fireAt.getTime() <= CATCH_UP_MS && !sent[r.id]);
-  if (!due.length) return;
+  const all = buildReminders(store.get(), new Date(now - CATCH_UP_MS), 2).map((r) => ({ ...r, fireAt: r.fireAt.getTime() }));
+  // Hedefi geçmiş ("ders başladı", "teslim geçti") ve yenisi gelmiş hatırlatmalar gösterilmez, gönderildi sayılır
+  const { show: due, skip } = pickDueReminders(all, sent, now, CATCH_UP_MS);
+  for (const r of skip) sent[r.id] = now;
+  if (!due.length) return skip.length ? writeSent(sent) : undefined;
 
+  // Metin planlandığı an değil şimdiki süreye göre
+  const L = reminderStrings();
+  const texts = due.map((r) => ({ ...r, ...describeReminder(r, now, L) }));
   // Uzun süre açılmadıysa birikenleri tek bildirimde topla
-  if (due.length > 3) {
-    await show(t("{n} hatırlatman var", { n: due.length }), {
-      body: due.slice(0, 4).map((r) => r.title).join("\n"),
+  if (texts.length > 3) {
+    await show(t("{n} hatırlatman var", { n: texts.length }), {
+      body: texts.slice(0, 4).map((r) => r.title).join("\n"),
       tag: "kpr-digest",
       data: { url: "#/bugun" },
     });
   } else {
-    for (const r of due) await show(r.title, { body: r.body, tag: r.id, data: { url: r.url } });
+    for (const r of texts) await show(r.title, { body: r.body, tag: r.id, data: { url: r.url } });
   }
   for (const r of due) sent[r.id] = now;
   writeSent(sent);
@@ -124,7 +129,8 @@ export async function sync() {
     const list = isActive()
       ? buildReminders(store.get()).map((r) => ({ ...r, fireAt: r.fireAt.getTime() }))
       : [];
-    await cache.put(SW_URL, new Response(JSON.stringify({ updated: Date.now(), reminders: list, sent }), { headers: { "content-type": "application/json" } }));
+    // strings: çevrilmiş metin parçaları; worker gösterim anında kalan süreyi bunlarla yazar (sw.js describeReminder)
+    await cache.put(SW_URL, new Response(JSON.stringify({ updated: Date.now(), strings: reminderStrings(), reminders: list, sent }), { headers: { "content-type": "application/json" } }));
 
     const reg = await registration();
     if (!reg?.periodicSync) return;
