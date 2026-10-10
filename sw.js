@@ -11,7 +11,7 @@
  * Uygulamada "Yeni sürüm hazır → Yenile" uyarısı çıkar (bkz. js/app.js).
  */
 
-const VERSION = "2.24.6";
+const VERSION = "2.25.0";
 const SHELL_CACHE = `kpr-shell-${VERSION}`;
 
 const SHELL = [
@@ -177,6 +177,11 @@ function describeReminder(r, now, L) {
   return { title: f(L.due, { when: when, ad: r.ad }), body: f(L.dueBody, { tur: r.tur, saat: r.hasTime ? r.time : L.dayEnd }) };
 }
 
+function digestNotice(texts, L) {
+  var lines = texts.slice(0, 4).map(function (r) { return r.title; });
+  if (texts.length > 4) lines.push(L.more.replace("{n}", texts.length - 4));
+  return { title: L.digest.replace("{n}", texts.length), body: lines.join("\n") };
+}
 function pickDueReminders(list, sent, now, catchUp) {
   var show = [];
   var skip = [];
@@ -210,11 +215,11 @@ async function showDueReminders() {
   if (show.length) {
     // Metin gösterim anındaki kalan süreye göre; eski önbellekte "strings" yoksa planlanan metin kalır
     const texts = show.map((r) => Object.assign({}, r, describeReminder(r, now, data.strings)));
-    const digest = data.strings && data.strings.digest ? data.strings.digest : "{n} hatırlatman var";
+    // Eski önbellekte strings ya da "more" yoksa Türkçe yedek
+    const L = Object.assign({ digest: "{n} hatırlatman var", more: "+{n} tane daha" }, data.strings || {});
     if (texts.length > 3) {
-      await self.registration.showNotification(digest.replace("{n}", texts.length), {
-        body: texts.slice(0, 4).map((r) => r.title).join("\n"), tag: "kpr-digest", icon: "icon-192.png", data: { url: "#/bugun" },
-      });
+      const d = digestNotice(texts, L);
+      await self.registration.showNotification(d.title, { body: d.body, tag: "kpr-digest", icon: "icon-192.png", data: { url: "#/bugun" } });
     } else {
       for (const r of texts) await self.registration.showNotification(r.title, { body: r.body, tag: r.id, icon: "icon-192.png", data: { url: r.url } });
     }

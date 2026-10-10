@@ -205,4 +205,5 @@ export default {
   "yarın {saat}": "tomorrow {saat}",
   "{ad} · sınav {when}": "{ad} · exam {when}",
   "{ad} · teslim {when}": "{ad} · due {when}",
+  "+{n} tane daha": "+{n} more",
 };

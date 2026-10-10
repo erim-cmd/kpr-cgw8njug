@@ -178,7 +178,8 @@ export function view() {
   // Sıradaki teslim üstteki kartta; liste ondan sonrakileri 7 gün boyunca gösterir
   const { task: heroTask, exam: heroExam } = heroPick(open);
   const heroId = heroTask?.id;
-  const upcoming = open.filter((t) => t.id !== heroId && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 7).sort(byDue);
+  // Kartta görünen iş ve kartın altındaki "Sonraki sınav" listede tekrar etmez
+  const upcoming = open.filter((t) => t.id !== heroId && t.id !== heroExam?.id && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 7).sort(byDue);
   const hidden = dismissed();
   // Üstteki kartın gösterdiği görev için uyarıyı tekrarlama
   // Kartta görünen sınav da uyarı listesinde tekrar etmesin

@@ -13,7 +13,7 @@
  */
 
 import { store } from "./store.js";
-import { buildReminders, describeReminder, pickDueReminders, reminderStrings } from "./alerts.js";
+import { buildReminders, describeReminder, digestNotice, pickDueReminders, reminderStrings } from "./alerts.js";
 import { isIOS, isStandalone } from "./install.js";
 import { t, getLang } from "./i18n.js";
 
@@ -102,11 +102,8 @@ export async function checkReminders() {
   const texts = due.map((r) => ({ ...r, ...describeReminder(r, now, L) }));
   // Uzun süre açılmadıysa birikenleri tek bildirimde topla
   if (texts.length > 3) {
-    await show(t("{n} hatırlatman var", { n: texts.length }), {
-      body: texts.slice(0, 4).map((r) => r.title).join("\n"),
-      tag: "kpr-digest",
-      data: { url: "#/bugun" },
-    });
+    const d = digestNotice(texts, L);
+    await show(d.title, { body: d.body, tag: "kpr-digest", data: { url: "#/bugun" } });
   } else {
     for (const r of texts) await show(r.title, { body: r.body, tag: r.id, data: { url: r.url } });
   }
