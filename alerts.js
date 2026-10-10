@@ -209,7 +209,18 @@ export function reminderStrings() {
     dueBody: t("{tur} teslimi {saat}."),
     dayEnd: t("gün sonu"),
     digest: t("{n} hatırlatman var"),
+    more: t("+{n} tane daha"),
   };
+}
+
+/**
+ * Toplu bildirim (3'ten fazla hatırlatma birikmişse): ilk 4 başlık, fazlası "+N tane daha".
+ * texts: describeReminder çıktısı (title içerir). DİKKAT: sw.js içinde birebir kopyalıdır (ES5 yazım).
+ */
+export function digestNotice(texts, L) {
+  var lines = texts.slice(0, 4).map(function (r) { return r.title; });
+  if (texts.length > 4) lines.push(L.more.replace("{n}", texts.length - 4));
+  return { title: L.digest.replace("{n}", texts.length), body: lines.join("\n") };
 }
 
 /**
