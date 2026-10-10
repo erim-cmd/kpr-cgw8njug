@@ -197,8 +197,9 @@ export function reminderStrings() {
     tomorrowAt: t("yarın {saat}"),
     today: t("bugün"),
     tomorrow: t("yarın"),
-    exam: t("Sınav {when}: {ad}"),
-    due: t("Teslim {when}: {ad}"),
+    // Önce ne olduğu, sonra ne zaman: "MAT 1001 · Ödev 1 · teslim yarın 10:00"
+    exam: t("{ad} · sınav {when}"),
+    due: t("{ad} · teslim {when}"),
     cls: t("{n} dk sonra: {ders}"),
     examPlan: t("Çalışma planını bugün yap."),
     examEve: t("Saat {saat}. Son tekrar zamanı."),
