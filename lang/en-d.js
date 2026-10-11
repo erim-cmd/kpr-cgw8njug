@@ -262,4 +262,17 @@ export default {
   "Ders, sınav, görev ara": "Search courses, exams, tasks",
   "Ders, sınav ya da görev adı yaz.": "Type a course, exam or task name.",
   "Sonuç yok.": "No results.",
+
+  // v2.27: Haftaya bakış, tatilde duraklat
+  "Haftaya bakış": "Week ahead",
+  "Haftaya bakış: {ad}": "Week ahead: {ad}",
+  "Dönem notunun {p} kadarı bu hafta belirleniyor.": "{p} of your term grade is decided this week.",
+  "Pazar 20:00'de: haftanın sınavları, teslimleri ve dönem notunun yüzde kaçı belirleniyor.": "Sunday 20:00: the week's exams, deadlines and how much of your term grade is decided.",
+  "Tatil ve ara dönem": "Holidays and breaks",
+  "Ders hatırlatmalarını duraklat": "Pause class reminders",
+  "Bu tarihlerde ders, günün özeti ve haftaya bakış gelmez. Sınav ve teslim hatırlatmaları gelir.": "No class, daily summary or week-ahead reminders on these dates. Exam and deadline reminders still come.",
+  "Tatil başlangıcı": "Break start",
+  "Tatil bitişi": "Break end",
+  "Tatil için başlangıç ve bitiş tarihini seç": "Pick a start and end date for the break",
+  "Bitiş tarihi başlangıçtan önce olamaz": "The end date can't be before the start date",
 };

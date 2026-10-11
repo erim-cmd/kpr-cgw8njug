@@ -49,5 +49,15 @@ function lastDates(ics) {
   ok(counts.length === 2 && counts.every((n) => n >= 13 && n <= 14), `başlangıç bilinmiyorsa termWeeks: ${counts}`);
 }
 
+// 4) Tatilde duraklatma (yalnız bildirimler) takvim dosyasını değiştirmez
+{
+  const strip = (s) => s.replace(/DTSTAMP:\d{8}T\d{6}Z?/g, "");
+  const tasks = [{ id: "t1", courseId: "c1", title: "Ödev 1", type: "odev", due: toISO(today), time: "10:00", done: false }];
+  const base = { termStart: weeksAgo(2) };
+  const a = buildICS({ ...state(base), tasks }, { classes: true });
+  const b = buildICS({ ...state({ ...base, pauseOn: true, pauseStart: weeksAgo(1), pauseEnd: toISO(today) }), tasks }, { classes: true });
+  ok(strip(a) === strip(b) && /RRULE/.test(b), "duraklatma açıkken .ics aynı (ders tekrarları ve teslimler dahil)");
+}
+
 console.log(`\ntakvime aktarma\n\n${pass} doğru, ${fail} hata`);
 process.exit(fail ? 1 : 0);
