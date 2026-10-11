@@ -34,7 +34,7 @@ Her düzeltmede ilgili belgelerin yapısını taklit eden sentetik `test/syllabu
 | Not dağılımı tam doğru | 5 / 28 | 17 / 28 |
 | Tarih (veya hafta) bulundu | 47 / 84 | 65 / 84 |
 | Fazla/yanlış öğe (otomatik sayım) | 58 | 41 |
-| Yanlış ağırlık üreten dosya | 20 | 5 (hepsinin toplamı ≠ 100 → kontrol ekranı kaydı durdurur) |
+| Yanlış ağırlık üreten dosya | 21 | 5 (hepsinin toplamı ≠ 100 → kontrol ekranı kaydı durdurur) |
 
 BAU'nun 9 gerçek syllabus'unda not ve öğe çıktısı değişmedi. `test/real-grading.mjs` (12 kontrol) v2.26.0 kodunda 11 hata veriyor; `npm test` yeşil.
 
