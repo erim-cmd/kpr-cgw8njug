@@ -26,7 +26,7 @@
 <main class="legal">
   <div class="wrap narrow">
     <h1>Gizlilik ve KVKK Aydınlatma Metni</h1>
-    <p class="updated">Son güncelleme: 7 Ekim 2026</p>
+    <p class="updated">Son güncelleme: 11 Ekim 2026</p>
 
     <div class="summary">
       <strong>Kısaca</strong>
@@ -34,6 +34,7 @@
         <li>Köprü'de hesap yok. Derslerin, görevlerin ve notların <strong>sadece senin cihazında</strong> saklanır; bize ulaşmaz.</li>
         <li>Syllabus <strong>varsayılan olarak cihazında okunur</strong>, hiçbir yere gönderilmez. Yükleme ekranında "Yapay zekâ ile oku" seçeneğini işaretlersen (açık rıza) dosyan, okunması için yapay zekâ hizmetine (Anthropic, ABD) gönderilir. <strong>Dosyayı biz saklamayız.</strong></li>
         <li>Yapay zekâ ile okuma seçildiğinde, kötüye kullanımı önlemek için IP adresinin özeti (açık hâli değil) günlük sayaç olarak tutulur ve <strong>26 saat içinde silinir.</strong></li>
+        <li>Bugün ekranındaki hava durumu için <strong>yalnızca seçtiğin şehrin sabit koordinatı</strong> Open-Meteo'ya gönderilir. Konum iznin istenmez; adın, derslerin ya da başka bir bilgin gönderilmez. Profil → Tercihler'den kapatabilirsin.</li>
         <li>Reklam yok, takip çerezi yok, verilerin satılmaz.</li>
       </ul>
     </div>
@@ -46,9 +47,10 @@
       <table>
         <thead><tr><th>Veri</th><th>Nerede</th><th>Amaç</th><th>Saklama</th></tr></thead>
         <tbody>
-          <tr><td>Adın (hitap için), dersler, ders saatleri, sınav/ödev tarihleri, notların</td><td>Yalnızca cihazındaki tarayıcı depolaması. Bize iletilmez.</td><td>Uygulamanın çalışması</td><td>Sen silene kadar (Ayarlar → Her şeyi sil)</td></tr>
+          <tr><td>Adın (hitap için), dersler, ders saatleri, sınav/ödev tarihleri, notların</td><td>Yalnızca cihazındaki tarayıcı depolaması. Bize iletilmez.</td><td>Uygulamanın çalışması</td><td>Sen silene kadar (Profil → Veri ve gizlilik → Her şeyi sil)</td></tr>
           <tr><td>Yüklediğin syllabus dosyası (PDF/Word/fotoğraf) ve içeriği</td><td>Varsayılan: sadece cihazında okunur, gönderilmez. "Yapay zekâ ile oku" seçilirse (yalnızca PDF/fotoğraf): Köprü sunucusu (Cloudflare) üzerinden Anthropic'e iletilir</td><td>Dosyadan ders bilgilerinin çıkarılması</td><td>Köprü tarafından saklanmaz. Anthropic'in kendi politikası geçerlidir (aşağıya bak).</td></tr>
           <tr><td>IP adresinin gün ile birlikte SHA-256 özeti (yalnızca yapay zekâ ile okumada). IP açık hâliyle yazılmaz; ancak özet tam anonimleştirme sayılmaz.</td><td>Cloudflare KV</td><td>Günlük 5 okuma sınırı, kötüye kullanımın önlenmesi</td><td>26 saat</td></tr>
+          <tr><td>Hava durumu için seçtiğin şehrin sabit koordinatı (şehir merkezi; konumun değil)</td><td>Hava durumu açıksa ve internet varsa Open-Meteo'ya gönderilir; gelen sonuç yalnızca cihazında saklanır</td><td>Bugün ekranında "Kampüste" hava durumu kartı</td><td>Köprü saklamaz. Open-Meteo'nun kendi koşulları geçerlidir (aşağıya bak). Profil → Tercihler'den kapatılabilir.</td></tr>
           <tr><td>Teknik kayıtlar (IP adresi, tarayıcı bilgisi, istek zamanı)</td><td>Barındırma sağlayıcısı (Cloudflare)</td><td>Sitenin güvenli ve kesintisiz çalışması</td><td>Cloudflare'in kayıt saklama süreleri</td></tr>
         </tbody>
       </table>
@@ -64,6 +66,7 @@
     <h2>4. Aktarılan taraflar ve yurt dışı aktarım</h2>
     <ul>
       <li><strong>Anthropic, PBC (ABD):</strong> Syllabus dosyasını okuyan yapay zekâ hizmeti. Anthropic, API üzerinden gönderilen içerikleri model eğitimi için kullanmayacağını ve sınırlı bir süre sonunda sileceğini taahhüt etmektedir. Ayrıntılar: <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">anthropic.com/legal/privacy</a></li>
+      <li><strong>Open-Meteo (İsviçre):</strong> Hava durumu hizmeti. Yalnızca seçtiğin şehrin sabit koordinatı gönderilir; çerez ve yönlendiren adres gönderilmez. Her internet isteğinde olduğu gibi IP adresin Open-Meteo'nun sunucusuna ulaşır. Hava durumunu kapatırsan hiç istek yapılmaz. Ayrıntılar: <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">open-meteo.com/en/terms</a></li>
       <li><strong>Cloudflare, Inc. (ABD):</strong> Sitenin ve sunucu fonksiyonunun barındırılması. Ayrıntılar: <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">cloudflare.com/privacypolicy</a></li>
     </ul>
     <p>Veriler bu taraflar dışında kimseyle paylaşılmaz, satılmaz ve reklam amacıyla kullanılmaz.</p>
@@ -73,7 +76,7 @@
 
     <h2>6. Hakların (KVKK m. 11)</h2>
     <p>Kişisel verilerinin işlenip işlenmediğini öğrenme, işlenmişse bilgi talep etme, işlenme amacını ve amaca uygun kullanılıp kullanılmadığını öğrenme, yurt içinde veya yurt dışında aktarıldığı üçüncü kişileri bilme, eksik veya yanlış işlenmişse düzeltilmesini, silinmesini veya yok edilmesini isteme, itiraz etme ve zarara uğraman hâlinde tazminat talep etme haklarına sahipsin. Açık rızanı dilediğin zaman geri alabilirsin; bunun için yükleme ekranında "Yapay zekâ ile oku" kutusunu işaretlememen yeterli; syllabus cihazında okunmaya devam eder.</p>
-    <p>Cihazında tutulan verileri istediğin an Ayarlar → <strong>Her şeyi sil</strong> ile kendin silebilirsin. Diğer talepler için yukarıdaki e-posta adresine yazabilirsin; başvurun en geç 30 gün içinde yanıtlanır.</p>
+    <p>Cihazında tutulan verileri istediğin an Profil → Veri ve gizlilik → <strong>Her şeyi sil</strong> ile kendin silebilirsin. Diğer talepler için yukarıdaki e-posta adresine yazabilirsin; başvurun en geç 30 gün içinde yanıtlanır.</p>
 
     <h2>7. Değişiklikler</h2>
     <p>Bu metin güncellenirse yeni hâli bu sayfada, güncelleme tarihiyle birlikte yayımlanır.</p>

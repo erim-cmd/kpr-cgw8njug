@@ -174,12 +174,20 @@ const dayEnd = (iso) => {
 const addDays = (d, n) => new Date(d.getTime() + n * 86400000);
 const addMin = (d, n) => new Date(d.getTime() + n * 60000);
 
-/** Gece yarısı ile 08:00 arası bildirim gönderme; bir önceki akşam 20:00'ye çek. */
-function quiet(d) {
-  const h = d.getHours();
-  if (h >= 23) { const x = new Date(d); x.setHours(20, 0, 0, 0); return x; }
-  if (h < 8) { const x = addDays(d, -1); x.setHours(20, 0, 0, 0); return x; }
-  return d;
+/**
+ * Sessiz saatler (Profil → Bildirimler; varsayılan 23:00–08:00): aralığa düşen bildirim, aralık başlamadan
+ * 3 saat önceye alınır (varsayılanda önceki akşam 20:00). Başlangıç = bitiş ise sessiz saat yok.
+ */
+function quiet(d, start = "23:00", end = "08:00") {
+  const min = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
+  const s = min(start), e = min(end), m = d.getHours() * 60 + d.getMinutes();
+  if (s === e) return d;
+  const inside = s < e ? m >= s && m < e : m >= s || m < e;
+  if (!inside) return d;
+  const begin = new Date(d);
+  begin.setHours(Math.floor(s / 60), s % 60, 0, 0);
+  if (begin > d) begin.setDate(begin.getDate() - 1); // aralık önceki gün başladı
+  return addMin(begin, -180);
 }
 
 /**
@@ -298,7 +306,11 @@ export function buildReminders(state, from = new Date(), days = 8) {
     out.push({ ...r, ...describeReminder(r, r.fireAt.getTime(), L) });
   };
 
+  // Profil → Bildirimler: türler ve sessiz saatler (eski kayıtta alan yoksa açık / 23:00–08:00)
+  const qs = settings.quietStart || "23:00";
+  const qe = settings.quietEnd || "08:00";
   for (const task of tasks.filter((x) => !x.done)) {
+    if (isExam(task) ? settings.notifyExams === false : settings.notifyDue === false) continue;
     const ad = label(task, courses);
     const hasTime = !!task.time;
     const base = { taskId: task.id, hasTime, time: task.time || "", ad, url: "#/gorevler" };
@@ -313,9 +325,9 @@ export function buildReminders(state, from = new Date(), days = 8) {
       const due = at(task.due, task.time || "23:59");
       const target = (hasTime ? due : dayEnd(task.due)).getTime();
       const d = { ...base, kind: "due", target, tur: TASK_TYPES[task.type] };
-      push({ ...d, id: `r:${task.id}:3d`, fireAt: quiet(addDays(due, -3)) });
-      push({ ...d, id: `r:${task.id}:1d`, fireAt: quiet(addDays(due, -1)) });
-      push({ ...d, id: `r:${task.id}:3h`, fireAt: quiet(addMin(due, -180)) });
+      push({ ...d, id: `r:${task.id}:3d`, fireAt: quiet(addDays(due, -3), qs, qe) });
+      push({ ...d, id: `r:${task.id}:1d`, fireAt: quiet(addDays(due, -1), qs, qe) });
+      push({ ...d, id: `r:${task.id}:3h`, fireAt: quiet(addMin(due, -180), qs, qe) });
     }
   }
 
@@ -325,7 +337,7 @@ export function buildReminders(state, from = new Date(), days = 8) {
     const idx = (day.getDay() + 6) % 7;
     const classes = courses.flatMap((c) => c.sessions.filter((s) => s.day === idx).map((s) => ({ c, s })));
     const due = tasks.filter((x) => !x.done && x.due === iso);
-    if (classes.length || due.length) {
+    if ((classes.length || due.length) && settings.notifyDaily !== false) {
       const parts = [];
       if (classes.length) parts.push(t("{n} ders", { n: classes.length }));
       const exams = due.filter(isExam).length;

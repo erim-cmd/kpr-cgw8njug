@@ -72,6 +72,12 @@ jobs:
       - name: Yapay zekâ ile okuma ayarsız çalışmaz (sunucu hazır olsa bile)
         run: node test/ai-gate.mjs
 
+      - name: Kampüste — hava durumu (yalnız şehir koordinatı, önbellek, gizlenme)
+        run: node test/weather.mjs
+
+      - name: Profil ve ayarlar (eski işlevlerin yeni yeri, alt sayfalar TR/EN) + Ara
+        run: node test/profile.mjs
+
       - name: PDF okuyucu (yazı tipi kodlaması, LaTeX aksanları)
         run: node test/doc-text.mjs
 

@@ -159,12 +159,9 @@ export default {
   "İzin reddedilmiş. Tarayıcının site ayarlarından bildirim iznini aç, sonra buraya dön.":
     "Permission was denied. Turn on notifications in your browser's site settings, then come back here.",
   "Kapalı": "Off",
-  "Sınavdan 1 hafta ve 1 gün önce, teslimden 3 gün, 1 gün ve 3 saat önce, her sabah günün özeti.":
-    "1 week and 1 day before exams, 3 days, 1 day and 3 hours before deadlines, plus a daily summary every morning.",
   "Aç": "Turn on",
   "Dersten 15 dk önce": "15 min before class",
   "Her ders için ayrı hatırlatma.": "A separate reminder for each class.",
-  "Dersten önce hatırlat": "Remind me before class",
   "Deneme": "Test",
   "Bildirimlerin nasıl göründüğüne bak.": "See what notifications look like.",
   "Gönder": "Send",
@@ -188,7 +185,6 @@ export default {
   "Profil": "Profile",
   "Adın": "Your name",
   "Otomatik: telefonun açık/koyu ayarını izler.": "Automatic: follows your phone's light/dark setting.",
-  "Hatırlatmalar": "Reminders",
   "Bildirimler nasıl çalışır?": "How do notifications work?",
   "Uygulama kapalıyken zamanında bildirim için sunucu gerekiyor; o gelene kadar en güvenilir yol takvime aktarmak. Android'de uygulama kapalıyken de ara ara kontrol ediyoruz.":
     "On-time notifications while the app is closed need a server. Until then, exporting to your calendar is the most reliable option. On Android, we also check now and then while the app is closed.",
@@ -200,7 +196,6 @@ export default {
   "Bir kez açtıktan sonra internet olmadan da çalışır.": "After you open it once, it works without internet.",
   "Hazır ✓": "Ready ✓",
   "Hazırlanıyor…": "Getting ready…",
-  "Verilerin": "Your data",
   "Yedek al": "Back up",
   "{c} ders, {g} görev. Veriler sadece bu cihazda.": "Courses: {c}, tasks: {g}. Your data stays on this device only.",
   "İndir": "Download",

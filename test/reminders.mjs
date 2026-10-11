@@ -168,5 +168,27 @@ function shownAt(st, now, only = /^r:(t1|e\d):/) {
   ok(A.digestNotice(six, { ...oldL, more: "+{n} tane daha" }).body.endsWith("+2 tane daha"), "yedek metinle");
 }
 
+// 8) Profil → Bildirimler: hatırlatma türleri ve sessiz saatler
+{
+  const tasksAll = [task({ time: "10:00" }), task({ id: "e1", type: "sinav", title: "Ara sınav", due: "2026-10-14", time: "10:00" })];
+  const kinds = (extra) => new Set(buildReminders(state(tasksAll, extra), D(10, 12, 0), 3).map((r) => r.kind));
+  const all = kinds({});
+  ok(["exam", "due", "day", "class"].every((k) => all.has(k)), `varsayılan: tüm türler (ders hatırlatması açıkken): ${[...all]}`);
+  ok(!kinds({ notifyExams: false }).has("exam"), "sınav hatırlatmaları kapatılabilmeli");
+  ok(!kinds({ notifyDue: false }).has("due"), "teslim hatırlatmaları kapatılabilmeli");
+  ok(!kinds({ notifyDaily: false }).has("day"), "günün özeti kapatılabilmeli");
+  ok(!kinds({ notifyClasses: false }).has("class"), "ders öncesi hatırlatma kapatılabilmeli");
+  // Sessiz saatler: varsayılan 23:00–08:00 → önceki akşam 20:00 (değişmedi)
+  const fire = (extra) => byId(buildReminders(state([task({ time: "10:00" })], extra), D(10, 12, 0), 3), "r:t1:3h").fireAt;
+  ok(fire({}).getTime() === D(10, 12, 20).getTime(), `varsayılan sessiz saat: ${fire({})}`);
+  ok(fire({ quietStart: "23:00", quietEnd: "08:00" }).getTime() === D(10, 12, 20).getTime(), "açık varsayılan değerler aynı sonucu verir");
+  // 22:00–09:00: 07:00 sessizde → aralık başlamadan 3 saat önce (19:00)
+  ok(fire({ quietStart: "22:00", quietEnd: "09:00" }).getTime() === D(10, 12, 19).getTime(), `22–09 sessiz: ${fire({ quietStart: "22:00", quietEnd: "09:00" })}`);
+  // 00:00–06:00: 07:00 sessiz değil → yerinde kalır
+  ok(fire({ quietStart: "00:00", quietEnd: "06:00" }).getTime() === D(10, 13, 7).getTime(), `00–06 sessiz: ${fire({ quietStart: "00:00", quietEnd: "06:00" })}`);
+  // Başlangıç = bitiş: sessiz saat yok
+  ok(fire({ quietStart: "00:00", quietEnd: "00:00" }).getTime() === D(10, 13, 7).getTime(), "sessiz saat kapalıyken kaydırma yok");
+}
+
 console.log(`\nbildirim zamanı\n\n${pass} doğru, ${fail} hata`);
 process.exit(fail ? 1 : 0);

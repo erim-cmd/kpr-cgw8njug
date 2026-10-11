@@ -49,6 +49,10 @@ const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const HEX = /^#[0-9a-f]{6}$/i;
 
+// Profil → sınıf (anahtar → etiket; etiketler settings.js'te çevrilir)
+export const YEARS = { hz: "Hazırlık", 1: "1. sınıf", 2: "2. sınıf", 3: "3. sınıf", 4: "4. sınıf", 5: "5. sınıf", 6: "6. sınıf", yl: "Yüksek lisans", dr: "Doktora" }; // i18n-ok
+// Hava durumu şehirleri (anahtarlar; ad ve koordinat weather.js'te) — store weather.js'i içe aktarmasın diye burada
+export const CITY_KEYS = { istanbul: 1, ankara: 1, izmir: 1, bursa: 1, antalya: 1, eskisehir: 1, kocaeli: 1, sakarya: 1, konya: 1, kayseri: 1, adana: 1, mersin: 1, gaziantep: 1, samsun: 1, trabzon: 1, erzurum: 1, diyarbakir: 1, malatya: 1, denizli: 1, edirne: 1, canakkale: 1, isparta: 1, van: 1, sivas: 1 };
 const str = (v, max) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 const arr = (v) => (Array.isArray(v) ? v : []);
 
@@ -60,10 +64,11 @@ export const uid = () =>
 // theme: görünüm tercihi — "sistem" (telefonu izler) | "acik" | "koyu" (theme.js)
 // lang: arayüz dili — "tr" | "en" (i18n.js)
 // studentNo: hocaya mail taslağına eklenen öğrenci numarası (mail.js; isteğe bağlı, cihazda)
-const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false, todayView: "bugun", interests: [], theme: "sistem", lang: "tr", studentNo: "", aiReading: false });
+const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false, todayView: "bugun", interests: [], theme: "sistem", lang: "tr", studentNo: "", aiReading: false,
+  notifyExams: true, notifyDue: true, notifyDaily: true, quietStart: "23:00", quietEnd: "08:00", weatherOn: true, weatherCity: "istanbul" });
 // version: veri şeması sürümü (göçler migrate.js'te; v2 = geçmiş dönemler gpaBase'e çevrildi)
 // archive: göçte arayüzden kaldırılan ama silinmeyen veri (geri dönüş için)
-const empty = () => ({ version: 1, profile: { name: "" }, courses: [], tasks: [], transcript: [], gpaBase: null, settings: defaultSettings(), archive: { transcript: [] }, electives: [] });
+const empty = () => ({ version: 1, profile: { name: "", university: "", year: "" }, courses: [], tasks: [], transcript: [], gpaBase: null, settings: defaultSettings(), archive: { transcript: [] }, electives: [] });
 
 function normSession(s) {
   if (!s || !Number.isInteger(s.day) || s.day < 0 || s.day > 6) return null;
@@ -215,6 +220,16 @@ function normSettings(s) {
     // Uyuyan yapay zekâ ile okuma yolu (importer.js): yalnız açıkça true ise. Arayüzde düğmesi yok;
     // sunucu yapılandırılmış olsa bile bu ayar olmadan sunucu sorulmaz, seçenek görünmez.
     aiReading: s.aiReading === true,
+    // Bildirim türleri (Profil → Bildirimler); eski kayıtlarda alan yoksa açık (önceki davranış)
+    notifyExams: s.notifyExams !== false,
+    notifyDue: s.notifyDue !== false,
+    notifyDaily: s.notifyDaily !== false,
+    // Sessiz saatler: bu aralıkta düşen teslim hatırlatması aralık başlamadan 3 saat önceye alınır (alerts.js quiet)
+    quietStart: TIME.test(s.quietStart) ? s.quietStart : d.quietStart,
+    quietEnd: TIME.test(s.quietEnd) ? s.quietEnd : d.quietEnd,
+    // Kampüste: hava durumu (yalnız şehrin koordinatı Open-Meteo'ya gider; weather.js)
+    weatherOn: s.weatherOn !== false,
+    weatherCity: s.weatherCity === "" || Object.hasOwn(CITY_KEYS, s.weatherCity) ? s.weatherCity ?? d.weatherCity : d.weatherCity,
   };
 }
 
@@ -252,6 +267,8 @@ export function normalize(data) {
   const out = empty();
   if (!data || typeof data !== "object") return out;
   out.profile.name = str(data.profile?.name, 40);
+  out.profile.university = str(data.profile?.university, 80);
+  out.profile.year = Object.hasOwn(YEARS, data.profile?.year) ? data.profile.year : "";
   out.courses = arr(data.courses).map(normCourse).filter(Boolean);
   const ids = new Set(out.courses.map((c) => c.id));
   out.tasks = arr(data.tasks).map((t) => normTask(t, ids)).filter(Boolean);
@@ -300,6 +317,19 @@ export const store = {
 
   setName(name) {
     commit({ ...state, profile: { ...state.profile, name: str(name, 40) } });
+  },
+
+  /** Profili düzenle: ad (boş olamaz), üniversite, sınıf. */
+  setProfile({ name, university, year }) {
+    const p = state.profile;
+    commit({
+      ...state,
+      profile: {
+        name: str(name, 40) || p.name,
+        university: university === undefined ? p.university : str(university, 80),
+        year: year === undefined ? p.year : Object.hasOwn(YEARS, year) ? year : "",
+      },
+    });
   },
 
   saveCourse(input) {

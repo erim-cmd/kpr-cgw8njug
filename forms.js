@@ -141,7 +141,7 @@ export function openCourseForm(course = null) {
             <label class="field"><span>${t("ya da en fazla kaç derse gelmeyebilirsin?")} <span class="hint">${t("(syllabus sayı veriyorsa)")}</span></span>
               <input name="absLimit" type="number" min="0" max="200" step="1" inputmode="numeric" value="${optNum(c.absLimit)}" placeholder="${t("ör. 4")}">
             </label>
-            <p class="fine">${t("Devam oranı syllabus'ta yazar. Şartı sağlamayan öğrenci NA alır ve finale giremez; sağlık raporu devamsızlığı silmez. Hak, dönem {n} hafta kabul edilerek ders oturumu sayısından hesaplanır (Ayarlar'dan değiştirilebilir).", { n: store.get().settings.termWeeks })}</p>
+            <p class="fine">${t("Devam oranı syllabus'ta yazar. Şartı sağlamayan öğrenci NA alır ve finale giremez; sağlık raporu devamsızlığı silmez. Hak, dönem {n} hafta kabul edilerek ders oturumu sayısından hesaplanır (Profil → Tercihler'den değiştirilebilir).", { n: store.get().settings.termWeeks })}</p>
           </div>
         </details>
         <details class="more" ${c.email || c.office || c.officeHours || c.grading.length ? "open" : ""}>
