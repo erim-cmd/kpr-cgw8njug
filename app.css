@@ -1123,6 +1123,8 @@ dialog.sheet.full .sheet-body { flex: 1; padding-bottom: calc(24px + var(--safe-
 .search-box { flex: 1; display: flex; align-items: center; gap: 8px; padding: 0 12px; min-height: 44px; border-radius: var(--r-pill); background: var(--bg); border: 1px solid var(--border); }
 .search-box svg { width: 18px; height: 18px; color: var(--text-muted); }
 .search-box input { flex: 1; min-width: 0; border: 0; background: none; padding: 10px 0; outline: none; }
+/* Tarayıcının kendi temizle (×) düğmesi kapat düğmesiyle yan yana iki × gösteriyordu */
+.search-box input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 .search-sheet .sheet-body { min-height: 40vh; }
 .search-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .search-row { width: 100%; min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; text-align: left; cursor: pointer; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-md); color: var(--text); font: inherit; }
