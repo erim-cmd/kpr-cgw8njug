@@ -262,6 +262,11 @@ export default {
   "Ders, sınav, görev ara": "Search courses, exams, tasks",
   "Ders, sınav ya da görev adı yaz.": "Type a course, exam or task name.",
   "Sonuç yok.": "No results.",
+  // importer.js — not toplamı denetimi
+  "Belgede de böyle; toplamı bu hâliyle kaydet": "The syllabus says so too; save the total as it is",
+  "Toplam {p}, 100 değil. Ağırlıkları syllabus'la karşılaştır.": "Total {p}, not 100. Compare the weights with the syllabus.",
+  "Toplam {p}": "Total {p}",
+  "Not toplamı {p}, 100 değil. Ağırlıkları düzelt ya da altındaki kutuyu işaretle.": "Weights add up to {p}, not 100. Fix them or tick the box below.",
 
   // v2.27: Haftaya bakış, tatilde duraklat
   "Haftaya bakış": "Week ahead",

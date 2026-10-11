@@ -411,6 +411,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 .calc-result p + p { margin-top: 6px; }
 .calc-result .need { font-size: var(--fs-lg); color: var(--cyan); }
 .calc-note { margin: 0; color: var(--text-muted); font-size: var(--fs-sm); }
+.total-ok { display: flex; align-items: center; gap: 10px; }
+.total-ok[hidden] { display: none; }
+.total-ok input { width: auto; flex: none; margin: 0; }
 .warn-text { color: var(--warn); }
 
 .source-quote { position: relative; overflow: hidden; margin: 0; padding: 10px 12px 10px 15px; background: var(--bg); border-radius: var(--r-md); font-size: var(--fs-xs); color: var(--text-muted); font-style: italic; }

@@ -16,7 +16,7 @@ import { sessionRow, gradeRow, swatches, bindRows, readSessions, readGrading, op
 import { mergeIntoCourse } from "./course-merge.js";
 import { extractText, DocError } from "./doc-text.js";
 import { parseSyllabus } from "./syllabus-local.js";
-import { t, localize } from "./i18n.js";
+import { t, localize, pct, decimal } from "./i18n.js";
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -414,6 +414,8 @@ function openReview(r, { reader = "local", aiError = "" } = {}) {
 
         <h3 class="mini-title">${t("Not dağılımı")}</h3>
         <div class="srows" data-rows="grading">${r.grading.map(gradeRow).join("")}</div>
+        <p class="calc-note" data-total aria-live="polite"></p>
+        <label class="calc-note total-ok" data-total-ok hidden><input type="checkbox" name="totalOk"> ${t("Belgede de böyle; toplamı bu hâliyle kaydet")}</label>
         <button type="button" class="btn btn-ghost" data-add="grading">${icon.plus}${t("Bileşen ekle")}</button>
       </div>
       <footer class="sheet-foot">
@@ -427,6 +429,27 @@ function openReview(r, { reader = "local", aiError = "" } = {}) {
       const gradingBox = form.querySelector('[data-rows="grading"]');
       bindRows(sessionsBox, form.querySelector('[data-add="sessions"]'), () => sessionRow());
       bindRows(gradingBox, form.querySelector('[data-add="grading"]'), () => gradeRow());
+
+      // Not toplamı: syllabus'ta olmayan bir ağırlık GNO hesabına sessizce girmesin. Toplam 100 değilse
+      // öğrenci ya ağırlıkları düzeltir ya da "belgede de böyle" kutusunu işaretler (gerçek izlence ölçümü, 11 Eki 2026).
+      const totalNote = form.querySelector("[data-total]");
+      const totalOk = form.querySelector("[data-total-ok]");
+      const gradeTotal = () => {
+        const rows = [...gradingBox.querySelectorAll(".grow")].filter((row) => !row.querySelector('[data-f="bonus"]')?.checked);
+        const sum = rows.reduce((a, row) => a + (Number(row.querySelector('[data-f="weight"]').value) || 0), 0);
+        return { n: rows.length, sum: Math.round(sum * 10) / 10 };
+      };
+      const showTotal = () => {
+        const { n, sum } = gradeTotal();
+        const off = n > 0 && Math.abs(sum - 100) > 0.5;
+        totalNote.textContent = n ? (off ? t("Toplam {p}, 100 değil. Ağırlıkları syllabus'la karşılaştır.", { p: pct(decimal(sum)) }) : t("Toplam {p}", { p: pct(100) })) : "";
+        totalOk.hidden = !off;
+        if (!off) totalOk.querySelector("input").checked = false;
+      };
+      gradingBox.addEventListener("input", showTotal);
+      gradingBox.addEventListener("change", showTotal);
+      new MutationObserver(showTotal).observe(gradingBox, { childList: true });
+      showTotal();
 
       // Tarih girilince o satır otomatik işaretlensin
       form.querySelectorAll(".irow").forEach((row) => {
@@ -446,6 +469,15 @@ function openReview(r, { reader = "local", aiError = "" } = {}) {
         }
         const list = readSessions(sessionsBox);
         if (!list) return;
+        const total = gradeTotal();
+        if (total.n && Math.abs(total.sum - 100) > 0.5 && !form.elements.namedItem("totalOk").checked) {
+          const first = gradingBox.querySelector('[data-f="weight"]');
+          first.setCustomValidity(t("Not toplamı {p}, 100 değil. Ağırlıkları düzelt ya da altındaki kutuyu işaretle.", { p: pct(decimal(total.sum)) }));
+          first.reportValidity();
+          gradingBox.addEventListener("input", () => first.setCustomValidity(""), { once: true });
+          form.elements.namedItem("totalOk").addEventListener("change", () => first.setCustomValidity(""), { once: true });
+          return;
+        }
 
         const tasks = [];
         for (const row of form.querySelectorAll(".irow")) {
