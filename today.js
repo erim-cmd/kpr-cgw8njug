@@ -8,6 +8,15 @@ import { buildAlerts } from "./alerts.js";
 import { permissionState } from "./notify.js";
 import { weekView, resetDay, setDay, actions as weekActions } from "./schedule.js";
 import { t } from "./i18n.js";
+import { campusSection, refreshWeather } from "./weather.js";
+
+/** Kampüste: önbellekteki hava durumu hemen; bayatsa arka planda yenilenir, gelince ekran yeniden çizilir. */
+function campus(state) {
+  refreshWeather({ settings: state.settings }).then((d) => {
+    if (d && typeof window !== "undefined") window.dispatchEvent(new Event("kpr:render"));
+  });
+  return campusSection(state.settings);
+}
 
 const DISMISS_KEY = "kpr:dismissed";
 // Uyarılar varsayılan katlı: ekranda öne çıkan tek şey "Sıradaki" kartı
@@ -234,6 +243,8 @@ export function view() {
       ${todayBlock}
       ${courses.length ? yesterdayBlock(courses, now) : ""}
     </section>
+
+    ${campus(state)}
 
     <section class="section">
       <div class="section-head"><h2>${t("Bu hafta")}</h2><span class="head-actions"><button type="button" class="mini-add" data-action="new-task">${icon.plus}${t("Görev ekle")}</button><a class="link" href="#/gorevler">${t("Tümü")}</a></span></div>

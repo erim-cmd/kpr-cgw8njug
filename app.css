@@ -24,7 +24,7 @@
 .site-link { position: relative; margin-left: auto; white-space: nowrap; color: var(--text-muted); font-size: var(--fs-xs); font-weight: 500; text-decoration: none; padding: 6px 10px; border-radius: var(--r-sm); }
 .site-link:hover { color: var(--text); background: var(--surface); }
 /* Tanıtım sayfası bağlantısı her ekranda ve ana ekrana kurulu uygulamada da görünür (Erim'in kararı, 7 Eki 2026) */
-.topbar .site-link ~ .icon-btn { margin-left: 0; }
+.topbar .site-link ~ .top-pill { margin-left: 0; }
 /* Syllabus ekle: her ekrandan tek dokunuş */
 .add-syllabus {
   margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
@@ -98,7 +98,7 @@ body.onboarding .add-syllabus { display: none; }
 
 body.onboarding .tabbar,
 body.onboarding .fab,
-body.onboarding #settings-link { display: none; }
+body.onboarding #top-pill { display: none; }
 body.onboarding #view { padding-bottom: 32px; }
 
 /* ---- Sayfa başlıkları ---- */
@@ -1083,3 +1083,61 @@ button.tl-row { width: 100%; padding: 10px 14px; border-radius: var(--r-md); bac
 .cd-mail { align-self: flex-start; margin-top: 4px; font-size: var(--fs-xs); }
 .mail-form textarea { resize: vertical; min-height: 180px; font: inherit; line-height: 1.5; }
 .mail-form .pick-chips { margin-top: 6px; }
+
+/* ---- Sağ üst kapsül: Ara + Profil (Ayarlar Profil'in içinde) ---- */
+.top-pill { margin-left: auto; display: inline-flex; align-items: center; gap: 2px; padding: 2px; border-radius: var(--r-pill); background: var(--surface); border: 1px solid var(--border); }
+.pill-btn { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: var(--r-pill); background: none; color: var(--text-muted); cursor: pointer; position: relative; }
+.pill-btn:hover { color: var(--text); background: var(--surface-2); }
+.pill-btn svg { width: 20px; height: 20px; }
+.pill-btn::after { content: ""; position: absolute; inset: -2px; } /* dokunma alanı 44px */
+
+/* ---- Tam ekran alt sayfa (Profil) ---- */
+dialog.sheet.full { height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh; border-radius: 0; }
+dialog.sheet.full .sheet-form { height: 100%; max-height: 100%; }
+dialog.sheet.full .sheet-body { flex: 1; padding-bottom: calc(24px + var(--safe-b)); }
+@media (min-width: 640px) { dialog.sheet.full { height: min(100dvh, 860px); border-radius: var(--r-lg); } }
+.pf-head { padding-top: calc(14px + var(--safe-t)); }
+.pf-head h2 { flex: 1; }
+.pf-body { gap: 20px; }
+.pf-body section { display: flex; flex-direction: column; gap: 8px; }
+.pf-body .seg { margin-bottom: 0; }
+.pf-body .seg button { min-height: 44px; }
+.pf-card { display: flex; align-items: center; gap: 14px; }
+.pf-avatar { flex: none; width: 64px; height: 64px; border-radius: var(--r-pill); display: grid; place-items: center; background: color-mix(in srgb, var(--cyan) 16%, var(--surface-2)); color: var(--cyan); font: 700 var(--fs-xl) var(--font-display); letter-spacing: 0.02em; }
+.pf-avatar svg { width: 30px; height: 30px; }
+.pf-who { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pf-who strong { font: 700 var(--fs-lg) var(--font-display); overflow-wrap: anywhere; }
+.pf-who small { color: var(--text-muted); font-size: var(--fs-sm); }
+.pf-sec { margin: 4px 0 -8px; }
+.pf-link { width: 100%; min-height: 56px; text-align: left; cursor: pointer; background: none; border-left: 0; border-right: 0; border-top: 0; color: var(--text); font: inherit; text-decoration: none; }
+.pf-link:hover { background: var(--surface-2); }
+.pf-link svg { flex: none; width: 18px; height: 18px; color: var(--text-muted); }
+.pf-note { text-align: center; }
+.pf-body .group-row { min-height: 56px; }
+.pf-body .group-row select { max-width: 170px; min-height: 44px; }
+.pf-body .group-row input[type="time"] { max-width: 130px; min-height: 44px; }
+.pf-body .btn { min-height: 44px; }
+
+/* ---- Ara ---- */
+.search-head { gap: 8px; }
+.search-box { flex: 1; display: flex; align-items: center; gap: 8px; padding: 0 12px; min-height: 44px; border-radius: var(--r-pill); background: var(--bg); border: 1px solid var(--border); }
+.search-box svg { width: 18px; height: 18px; color: var(--text-muted); }
+.search-box input { flex: 1; min-width: 0; border: 0; background: none; padding: 10px 0; outline: none; }
+/* Tarayıcının kendi temizle (×) düğmesi kapat düğmesiyle yan yana iki × gösteriyordu */
+.search-box input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.search-sheet .sheet-body { min-height: 40vh; }
+.search-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.search-row { width: 100%; min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; text-align: left; cursor: pointer; background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-md); color: var(--text); font: inherit; }
+.search-row span { min-width: 0; }
+.search-row strong { display: block; font-size: var(--fs-sm); font-weight: 600; overflow-wrap: anywhere; }
+.search-row small { display: block; font-size: var(--fs-xs); color: var(--text-muted); }
+.search-row em { flex: none; font-style: normal; font-size: var(--fs-xs); color: var(--text-muted); }
+.search-row svg { flex: none; width: 16px; height: 16px; color: var(--text-muted); }
+
+/* ---- Bugün: Kampüste ---- */
+.weather-card { display: flex; align-items: center; gap: 16px; }
+.weather-temp { flex: none; font: 700 var(--fs-2xl) var(--font-display); font-variant-numeric: tabular-nums; }
+.weather-info { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.weather-info strong { font-size: var(--fs-md); font-weight: 600; }
+.weather-info small { font-size: var(--fs-xs); color: var(--text-muted); }
+.pf-body .field input, .pf-body .field select { min-height: 44px; }

@@ -15,7 +15,8 @@ import * as onboarding from "./onboarding.js";
 import * as today from "./today.js";
 import * as tasks from "./tasks.js";
 import * as courses from "./courses.js";
-import * as settings from "./settings.js";
+import { openProfile } from "./settings.js";
+import { openSearch } from "./search.js";
 import * as term from "./term.js";
 import * as asistan from "./asistan.js";
 import * as secmeli from "./secmeli.js";
@@ -43,7 +44,6 @@ const ROUTES = {
   donem: { mod: term, get title() { return t("Dönem"); }, icon: "gauge", fab: null },
   ortalama: { mod: term.ortalama, get title() { return t("Ders harfleri"); }, fab: null },
   secmeli: { mod: secmeli, get title() { return t("Seçmeli"); }, icon: "compass", fab: null },
-  ayarlar: { mod: settings, get title() { return t("Ayarlar"); }, fab: null },
 };
 // Alt menü 5 sekme: 6'sı telefonda göz yoruyor. Program Bugün'ün "Hafta" görünümünde,
 // Ortalama Dönem'in ikincil sayfası; Görevler Bugün'ün altında ("Tümü" bağlantısı).
@@ -57,7 +57,7 @@ const REDIRECTS = {
 const $view = document.getElementById("view");
 const $tabbar = document.getElementById("tabbar");
 const $fab = document.getElementById("fab");
-const $settings = document.getElementById("settings-link");
+const $pill = document.getElementById("top-pill");
 const $add = document.getElementById("add-syllabus");
 
 // Sekme çubuğu ve üst çubuk metinleri: dil değişince render() yeniden çizer
@@ -69,10 +69,11 @@ function drawChrome() {
     (r) => `<a class="tab${ROUTES[r].accent ? " tab-accent" : ""}" href="#/${r}" data-route="${r}"><span class="tab-ic">${icon[ROUTES[r].icon]}</span><span>${ROUTES[r].title}</span></a>`
   ).join("")}</div>`;
   $add.innerHTML = `${icon.upload}<span>${t("Syllabus ekle")}</span>`;
+  // Sağ üst kapsül: Ara ve Profil (Ayarlar Profil'in içinde)
+  $pill.innerHTML = `<button type="button" class="pill-btn" data-action="open-search" aria-label="${t("Ara")}">${icon.search}</button><button type="button" class="pill-btn" data-action="open-profile" aria-label="${t("Profil")}">${icon.user}</button>`;
   document.getElementById("site-link").textContent = `← ${t("Tanıtım sayfası")}`;
 }
 $fab.innerHTML = icon.plus;
-$settings.innerHTML = icon.settings;
 drawChrome();
 
 /** Eski adresi yenisine çevirir; bilinmeyen rota Bugün'e düşmeden ÖNCE çalışır, sorgu korunur. */
@@ -87,8 +88,15 @@ function redirectOld() {
   history.replaceState(null, "", `#/${to[0]}?${params}`);
 }
 
+// Eski "#/ayarlar" (bildirim, yer imi) ve "#/profil": Bugün'ün üstünde Profil sayfası açılır
+let profileNext = false;
 function parseHash() {
   redirectOld();
+  const [p0] = location.hash.replace(/^#\/?/, "").split("?");
+  if (p0 === "ayarlar" || p0 === "profil") {
+    history.replaceState(null, "", "#/bugun");
+    profileNext = true;
+  }
   const [path, query = ""] = location.hash.replace(/^#\/?/, "").split("?");
   return { name: ROUTES[path] ? path : "bugun", params: new URLSearchParams(query) };
 }
@@ -137,7 +145,6 @@ function render() {
 
   const markCurrent = (el, on) => (on ? el.setAttribute("aria-current", "page") : el.removeAttribute("aria-current"));
   $tabbar.querySelectorAll(".tab").forEach((a) => markCurrent(a, a.dataset.route === (TAB_OF[name] || name)));
-  markCurrent($settings, name === "ayarlar");
 
   // Ders yokken tek eylem "Syllabus ekle": + düğmesi (görev ekle) gizli
   const hasCourses = store.get().courses.length > 0;
@@ -150,6 +157,10 @@ function render() {
   if (wide) $fab.removeAttribute("aria-label"); else $fab.setAttribute("aria-label", t("Görev ekle"));
   // Onboarding sonrası ilk çizim dahil: eski adresten gelen ?gorunum / ?bolum burada uygulanır
   applyParams();
+  if (profileNext) {
+    profileNext = false;
+    setTimeout(() => openProfile(), 0);
+  }
 }
 
 // ------------------------------------------------------------------
@@ -164,6 +175,8 @@ const globalActions = {
   "edit-course": (el) => openCourseForm(find(store.get().courses, el.dataset.id)),
   "course-detail": (el) => openCourseDetail(el.dataset.id),
   "import-syllabus": () => openImport(),
+  "open-search": () => openSearch(),
+  "open-profile": () => openProfile(),
   "toggle-task": (el) => {
     const task = store.toggleTask(el.dataset.id);
     if (task?.done) toast(t("Tamamlandı 🎉"), { label: t("Geri al"), onClick: () => store.toggleTask(task.id) });
@@ -251,6 +264,18 @@ window.addEventListener("hashchange", () => {
 // Dil, ekran çizilmeden önce güncellenir (yedekten yüklemede de dil uysun)
 store.subscribe(() => setLang(store.get().settings.lang));
 store.subscribe(render);
+// Arka planda gelen veri (Kampüste hava durumu) ekranı yeniden çizsin; form doldurulurken beklesin
+// (açık bir alt sayfa varken gelen veri, sayfa kapanınca çizilir: ör. Profil → Tercihler'de şehir değişti)
+let renderPending = false;
+window.addEventListener("kpr:render", () => {
+  if (isBusy()) renderPending = true;
+  else render();
+});
+document.getElementById("sheet").addEventListener("close", () => {
+  if (!renderPending) return;
+  renderPending = false;
+  render();
+});
 // Yedekten yükleme / sıfırlama da tema tercihini değiştirebilir
 store.subscribe(() => applyTheme(store.get().settings.theme));
 

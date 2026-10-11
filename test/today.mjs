@@ -12,6 +12,9 @@ const data = {
 const mem = { "kpr:data:v1": JSON.stringify(data), "kpr:install-dismissed": String(Date.now()) };
 globalThis.localStorage = { getItem: (k) => mem[k] ?? null, setItem: (k, v) => { mem[k] = v; }, removeItem: (k) => { delete mem[k]; } };
 globalThis.window = globalThis;
+// Kampüste (hava durumu) testte ağa çıkmasın
+let netCalls = 0;
+globalThis.fetch = async () => { netCalls++; throw new Error("test: ağ yok"); };
 globalThis.matchMedia = () => ({ matches: false, addEventListener() {} });
 globalThis.addEventListener = () => {};
 globalThis.document = { documentElement: { lang: "tr", dataset: {}, style: { setProperty() {} } }, addEventListener() {}, querySelector: () => null, getElementById: () => null, createElement: () => ({ style: {} }) };
