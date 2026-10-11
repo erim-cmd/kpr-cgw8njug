@@ -1,0 +1,19 @@
+IE 345 Engineering Economy
+Spring 2026
+Grading
+Assignments (2@10% ea)	20 %
+Case	15 %
+Midterm	30 %
+Final Exam	35 %
+Total	100 %
+Attendance
+As per University policy, the minimal requirement is 60% attendance.
+Week	Topics	Book
+1	Introduction	Ch. 1
+2	Time Value of Money	Ch. 2
+3	Cash Flow Analysis	Ch. 3
+4	Present Worth	Ch. 4
+5	Methods for Project Evaluation and Selection	5
+6	Single Project Analysis	7
+7	Public Sector Projects and Benefit/Cost Ratio	9
+8	Midterm

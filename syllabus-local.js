@@ -213,6 +213,7 @@ function parseGrading(lines, flines) {
   let headerWeightCol = -1;
   let inSection = 0;
   for (let i = 0; i < lines.length; i++) {
+    add.at = i;
     const f = flines[i].trim();
     // Gerçek bölüm başlıkları kısa ve büyük harfle başlar ("Değerlendirme", "6. ..."); uzun bir cümle ya da
     // tablo satırı içinde geçen "değerlendirme" gibi bir sözcük (ör. haftalık planın bir hücresinde) başlık sayılmaz.
@@ -226,6 +227,12 @@ function parseGrading(lines, flines) {
     }
     // Sayfa altlığı ("COURSE SYLLABUS | 14467 MIM 484E Construction Project · 2"): sayfa numarası ağırlık değildir
     if (/\bsyllabus\b|izlence|\bpage \d|sayfa \d/.test(f) && /\|/.test(f) && !/%/.test(f)) continue;
+    // AKTS / iş yükü tablosu ("ECTS Table", "AKTS İş Yükü"): saat ve adet sayıları ağırlık değildir; not bölümü burada biter
+    if (lineTrim.length <= 60 && /^(ects|akts)\b.*(table|tablosu|is yuku|workload|hesab)|^(is yuku|workload)\b/.test(f)) {
+      inSection = 0;
+      headerWeightCol = -1;
+      continue;
+    }
     let cells = lines[i].split("\t").map(clean);
     // Madde işaretli satır ("• · Project submissions during the semester: 40%"): işaret hücresi ad değildir
     if (cells.length >= 2 && /^[•●▪◦*¥·-]?$/.test(cells[0])) cells = cells.slice(1);
@@ -340,7 +347,7 @@ function parseGrading(lines, flines) {
       else add(found, x.name, x.w, line, x.bonus);
     }
   }
-  let out = [...found.values()].map(({ name, weight, source, bonus }) => ({ name: cut(name, 40), weight, source, ...(bonus ? { bonus } : {}) })).filter((g) => g.name);
+  let out = pickHundred([...found.values()].filter((g) => g.name)).sort((a, b) => a.at - b.at).map(({ name, weight, source, bonus }) => ({ name: cut(name, 40), weight, source, ...(bonus ? { bonus } : {}) }));
   // Bologna: bileşenler yarıyıl içinin kendi içindeki payları (toplam 100) ve final ayrı bir satırda → ölçekle
   const hasFinal = out.some((g) => /final|yariyil sonu|yil sonu/.test(fold(g.name)));
   const sum = out.filter((g) => !g.bonus).reduce((t, g) => t + g.weight, 0);
@@ -396,7 +403,7 @@ function lineParts(line, inSection) {
     const w = pctIn(part) ?? (zeroPct(part) ? 0 : null) ?? (inSection ? tailNum(part) : null);
     if (w === null || w < 0 || w > 100) continue;
     // "%70 devam zorunlu", "devamsızlık %30'u geçemez" gibi kural cümlelerini ele
-    if (/zorunlu|required|must|en az|at least|devam etmek|attend at least|minimum|gerekir|gerekmektedir|devamsiz|gecemez|asamaz|exceed|absen|kalir/.test(fp)) continue;
+    if (/zorunlu|required|requirement|must|en az|at least|devam etmek|attend at least|minimum|minimal|gerekir|gerekmektedir|devamsiz|gecemez|asamaz|exceed|absen|kalir/.test(fp)) continue;
     if (part.length > 70 && !inSection) continue;
     out.push({ name: componentName(part), w, bonus: BONUS_RE.test(fp), each: /\beach\b|\bher biri\b|\bbirer\b|\bher bir\b/.test(fp) });
   }
@@ -445,7 +452,38 @@ function add(map, name, w, source, bonus = false) {
   const nm = tidyComponent(name) || clean(name);
   const key = fold(nm).replace(/[^a-z0-9]/g, "") + (isBonus ? "+b" : "");
   if (!key || map.has(key)) return;
-  map.set(key, { name: nm, weight: w, source, ...(isBonus ? { bonus: true } : {}) });
+  // "Attendance | 70% attendance requirement": devam şartıdır, not bileşeni değil (gerçek devam puanı %5–20 olur)
+  if (w >= 50 && /attend|devam|katilim|yoklama/.test(fold(nm))) return;
+  map.set(key, { name: nm, weight: w, source, at: add.at, ...(isBonus ? { bonus: true } : {}) });
+}
+add.at = 0;
+
+/**
+ * Toplam 100'ü aşıyorsa (aynı belgede not tablosu + hafta/konu tablosu, AKTS iş yükü, alt kırılım paragrafı…)
+ * belgedeki sırayla art arda gelen ve tam 100 eden bileşen bloğunu seç. Böyle bir blok yoksa olduğu gibi bırak
+ * (parseSyllabus "toplam 100 değil" uyarısını verir). Gerçek izlence ölçümü, 11 Eki 2026: 19 dosyada bu hata.
+ */
+function pickHundred(out) {
+  const main = out.filter((g) => !g.bonus).sort((a, b) => a.at - b.at);
+  const total = main.reduce((t, g) => t + g.weight, 0);
+  if (total <= 100.5 || main.length < 2) return out;
+  let best = null;
+  for (let i = 0; i < main.length; i++) {
+    let sum = 0;
+    for (let j = i; j < main.length; j++) {
+      sum += main[j].weight;
+      if (sum > 100.5) break;
+      if (Math.abs(sum - 100) < 0.5 && j > i && (!best || j - i > best[1] - best[0])) best = [i, j];
+    }
+  }
+  if (!best) return out;
+  const keep = new Set(main.slice(best[0], best[1] + 1));
+  const lo = main[best[0]].at, hi = main[best[1]].at;
+  // Bloğun hemen yanındaki fazlalık (ör. "Sınav dışı: devam %10, ödev %10" — ÇOMÜ, gerçekten %130) belgenin kendi
+  // tutarsızlığıdır: tahminle düzeltme, olduğu gibi bırak ve uyar. Yalnız uzaktaki başka tablodan gelenler atılır.
+  if (main.some((g) => !keep.has(g) && g.at >= lo - 5 && g.at <= hi + 5)) return out;
+  // Bonus bileşenler yalnız seçilen bloğun yakınındaysa kalır
+  return out.filter((g) => keep.has(g) || (g.bonus && g.at >= lo - 3 && g.at <= hi + 6));
 }
 const numIn = (s) => {
   const m = /(\d{1,3}(?:[.,]\d+)?)\s*%?/.exec(s || "");

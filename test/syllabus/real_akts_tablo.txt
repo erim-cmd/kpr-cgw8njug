@@ -1,0 +1,15 @@
+SYLLABUS
+Course Unit Code	Course Title	Credits	ECTS Value
+TDE 128	Turkish: Syntax	2-0-2	3
+Assessment
+Activity	Number	Percentage	Description
+Midterm Exam	1	%40	Written exam
+Homework	1	%10	Text analysis
+Final	1	%50	Written exam
+ECTS Table
+Activities	Number	Duration	Total Workload
+Course Duration	14	2	28
+Assignments	1	5	5
+Midterm Exam (Midterm Exam Duration + Midterm Exam Preparation)	1	12	12
+Final Exam (Final Exam Duration + Final Exam Preparation)	1	18	18
+ECTS Credits:	3
