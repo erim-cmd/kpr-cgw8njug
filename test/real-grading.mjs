@@ -20,6 +20,8 @@ const cases = {
   real_yatay: { "Midterm Exam I": 25, "Midterm Exam II": 25, "Final Exam": 50 },
   // Önce değer: "40% Midterm exam (April 5)" / "60% | Final exam (…)" (Boğaziçi)
   real_once_deger: { "Midterm exam": 40, "Final exam": 60 },
+  // Boş şablon: "Etkinlik | Adet | Ağırlık (%)" altında "Vize | 1" — adet ağırlık değil (Ardahan)
+  real_bos_sablon: {},
   // Belgenin kendisi %130 (ÇOMÜ): yakın satırlardaki fazlalık atılmaz, uyarı verilir
   web_toplam_130: { Vize: 40, Final: 60, "Derse devam": 10, "Ödevler ve sunumlar": 10, "Derse aktif katılım": 10 },
 };
@@ -36,6 +38,14 @@ for (const [name, want] of Object.entries(cases)) {
   const bad = r.items.filter((x) => (/^final(?![- ]*make)/i.test(x.title) && x.date === "2027-01-20") || /^(your|you|exam$)/i.test(x.title));
   const ok = !bad.length && r.items.some((x) => /^final/i.test(x.title));
   ok ? pass++ : (fail++, console.log(`  ✗ real_telafi öğeler: ${r.items.map((x) => `${x.title}@${x.date || "?"}`).join(" | ")}`));
+}
+// Haftalık planda "8. | Ara Sınav": tarihsiz vize o haftaya bağlanır; "Final sınavına hazırlık" finalin haftası değil (ALKÜ)
+{
+  const r = parseSyllabus(readFileSync(dir + "real_hafta_sinav.txt", "utf8"), new Date(2026, 8, 26));
+  const vize = r.items.find((x) => /ara sınav/i.test(x.title));
+  const fin = r.items.find((x) => /final/i.test(x.title));
+  const ok = vize?.week === 8 && !fin?.week;
+  ok ? pass++ : (fail++, console.log(`  ✗ real_hafta_sinav öğeler: ${r.items.map((x) => `${x.title}@${x.date || "h" + x.week}`).join(" | ")}`));
 }
 console.log(`\ngerçek izlence not dağılımı\n\n${pass} doğru, ${fail} hata`);
 process.exit(fail ? 1 : 0);

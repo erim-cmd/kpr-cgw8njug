@@ -326,7 +326,10 @@ function parseGrading(lines, flines) {
       // vals içindeki karşılığı da aynı miktarda kaymış olur.
       const wIdx = headerWeightCol - nameIdx - 1;
       if (headerWeightCol > 0 && wIdx >= 0 && vals[wIdx] !== undefined) w = numIn(vals[wIdx]);
-      if (w === null) {
+      // Başlık ağırlık sütununu belirlemiş ama bu satırda o hücre boş ("Etkinlik | Adet | Ağırlık (%)" → "Vize | 1"):
+      // yandaki "Adet" sayısı ağırlık değildir; boş şablonda bileşen ağırlıksız kalır (Ardahan)
+      const weightCellEmpty = headerWeightCol > 0 && wIdx >= 1 && (vals[wIdx] === undefined || !vals[wIdx].trim()) && !/%/.test(lines[i]);
+      if (w === null && !weightCellEmpty) {
         const pct = vals.map((v) => (/%/.test(v) ? numIn(v) : null)).filter((x) => x !== null);
         const nums = vals.map(numIn).filter((x) => x !== null);
         w = pct.length ? pct[pct.length - 1] : nums.length ? nums[nums.length - 1] : null;
@@ -1986,6 +1989,20 @@ export function parseSyllabus(text, now = new Date()) {
     warnings.add(policies.some((p) => p.kind === "devam" && /orani syllabus.ta yazmiyor/.test(fold(p.rule))) ? "Yoklama alınıyor ama devam oranı yazmıyor; hocana sorup gir." : "Devam şartı bulunamadı.");
   if (att.unit && /saat|hour/.test(att.unit)) warnings.add("Devamsızlık saat olarak verilmiş; Köprü ders sayısıyla sayar, kontrol et.");
   if (att.unit && /hafta|week/.test(att.unit)) warnings.add("Devamsızlık hafta olarak verilmiş; haftada birden çok ders varsa sayıyı ona göre düzelt.");
+  // Haftalık planda tek satırda geçen sınav ("8. | Ara Sınav | …"): tarihsiz sınav öğesine o haftayı ver (ALKÜ)
+  for (const x of items) {
+    if (x.date || x.week || x.type !== "sinav") continue;
+    const kind = ITEM_KINDS.find((k) => k.re.test(fold(x.title)));
+    if (!kind || !["vize", "final"].includes(kind.group)) continue;
+    const weeks = new Set();
+    for (const fl of flines) {
+      const m = /^\s*(?:(\d{1,2})\s*\.?\s*(?:hafta|week)?|(?:hafta|week)\s*(\d{1,2}))\s*\t\s*([^\t]{2,40})/.exec(fl);
+      if (!m || !kind.re.test(m[3]) || /hazirlik|preparation|review|tekrar/.test(m[3])) continue;
+      const n = +(m[1] || m[2]);
+      if (n >= 1 && n <= 20) weeks.add(n);
+    }
+    if (weeks.size === 1) x.week = [...weeks][0];
+  }
   if (!items.length) warnings.add("Sınav veya ödev tarihi bulunamadı.");
 
   return {

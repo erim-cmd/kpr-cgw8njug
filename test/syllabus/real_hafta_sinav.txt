@@ -1,0 +1,10 @@
+BES 101 Beslenme İlkeleri
+Değerlendirme
+Etkinlik	Sayı	Katkı (%)
+Ara Sınav	X	40
+Final Sınavı	X	60
+Haftalık Ders Planı
+7.	Vitaminler
+8.	Ara Sınav
+9.	Mineraller
+14.	Final sınavına hazırlık

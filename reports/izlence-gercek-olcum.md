@@ -24,12 +24,15 @@ Her düzeltmede ilgili belgelerin yapısını taklit eden sentetik `test/syllabu
 **2. Cümle ve yerleşim biçimleri.** "midterm exam (30%), projects (10%) and final exam (60%)"; "taking 40% of the midterm exam and 60% of the final exam" (tablo hücresinde de); önce değer ("40% Midterm exam", "60% | Final exam"); yatay tablo (adlar bir satırda, yüzdeler altında); uzun cümlenin sonundaki "ad + yüzde".
 **3. Sınav öğeleri.** Telafi/makeup finalden önce tanınır (telafi tarihi finale yazılmaz). "30.03-07.04.2024" aralığında "07" yıl sanılmaz. Tarihsiz ve haftasız öğe yalnız sınav/teslim adı taşıyorsa kalır ("Your exam dates", "You must take…", "Exam Feedback" öğe değil).
 
+**4. Güvenlik ağı (kontrol ekranı).** "Kontrol et ve kaydet"te not toplamı canlı gösterilir; 100 değilse kayıt durur, öğrenci ya ağırlıkları düzeltir ya da "Belgede de böyle" kutusunu işaretler. Okuyucu hangi belgede yanılırsa yanılsın yanlış ağırlık GNO'ya sessizce girmez.
+**5. Küçük düzeltmeler.** Boş şablonda "Adet" sütunu ağırlık sayılmaz (başlık ağırlık sütununu belirlediyse yalnız o sütun okunur). Haftalık planda "8. | Ara Sınav" satırı tarihsiz vizeye 8. haftayı verir ("Final sınavına hazırlık" sayılmaz).
+
 | Ölçü (PDF + Word) | Önce | Sonra |
 |---|---|---|
-| Not dağılımı tam doğru | 5 / 28 | 16 / 28 |
-| Tarih bulundu | 47 / 84 | 50 / 84 |
-| Fazla/yanlış öğe (otomatik sayım) | 58 | 47 |
+| Not dağılımı tam doğru | 5 / 28 | 17 / 28 |
+| Tarih (veya hafta) bulundu | 47 / 84 | 54 / 84 |
+| Fazla/yanlış öğe (otomatik sayım) | 58 | 41 |
 
-BAU'nun 9 gerçek syllabus'unda not ve öğe çıktısı değişmedi. `test/real-grading.mjs` (9 kontrol) eski kodda 8 hata veriyor; `npm test` yeşil.
+BAU'nun 9 gerçek syllabus'unda not ve öğe çıktısı değişmedi. `test/real-grading.mjs` (11 kontrol) v2.26.0 kodunda 10 hata veriyor; `npm test` yeşil.
 
-**Kalan (sıradaki):** tıp ders kurulları (7 belge; ayrı okuma modu), puanla verilen not (400 puan → %, Esenyurt), satıra bölünmüş cümle (Toros güz), boş şablon tespiti (Ardahan), yönerge belgesi (TOBB), hafta numaralı sınavın haftalık plandan okunması (ALKÜ).
+**Kalan (sıradaki):** tıp ders kurulları (7 belge; ayrı okuma modu), puanla verilen not (400 puan → %, Esenyurt), satıra bölünmüş cümle (Toros güz), yönerge belgesi (TOBB), taranmış/fotoğraf syllabus (OCR kararı).
