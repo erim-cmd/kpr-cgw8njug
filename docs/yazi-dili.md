@@ -54,6 +54,8 @@ Köprü, işini bilen bir **üst dönem arkadaşı** gibi konuşur: kısa, net, 
 - Başlık: `<ne kaldı>: <ders/görev>` → "Yarın sınav: MCH 2016", "3 saat kaldı: Proje raporu"
 - Gövde: tek eylem → "Son tekrar zamanı.", "Teslim saatini ve yükleme yerini kontrol et."
 - Sabah özeti: "Bugün: 2 ders, 1 teslim" / "İlk ders 10:00 · MCH 2016 · D301"
+- Haftaya bakış (Pazar 20:00): "Haftaya bakış: 2 sınav, 1 teslim" / "Dönem notunun %35 kadarı bu hafta belirleniyor." (ağırlık bilinmiyorsa yüzde uydurulmaz, işlerin adı yazılır; hafta boşsa gönderilmez)
+- Tatil ve ara dönem: ders, sabah özeti ve haftaya bakış susar; sınav ve teslim hatırlatması susmaz
 
 **Boş ekran:** ne olacağı + tek eylem → "Henüz ders yok. Syllabus'unu yükle, dönemin kendiliğinden kurulsun." + [Syllabus ekle]
 
