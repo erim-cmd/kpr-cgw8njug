@@ -54,7 +54,7 @@ const SHELL = [
   "./settings.js",
   "./gpa.js",
   "./gpa-view.js",
-  "./term.js", "./density.js", "./doc-text.js", "./syllabus-local.js",
+  "./term.js", "./density.js", "./doc-text.js", "./syllabus-local.js", "./kurul.js",
   "./asistan.js",
   "./ders.js",
   "./weights.js",

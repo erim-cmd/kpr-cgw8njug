@@ -9,6 +9,8 @@
  * Emin olunamayan her şey warnings'e yazılır; öğrenci kaydetmeden önce kontrol ekranında düzeltir.
  */
 
+import { isKurulDoc, kurulCalendar, kurulAbove, kurulLabel } from "./kurul.js";
+
 /* ------------------------------------------------------------------ */
 /* Metin yardımcıları                                                    */
 /* ------------------------------------------------------------------ */
@@ -1832,7 +1834,10 @@ function parseWeeks(lines, flines, termYear) {
 }
 
 export function parseSyllabus(text, now = new Date()) {
-  const norm = text.normalize("NFC").replace(/\r/g, "").replace(/[   ]/g, " ").replace(/[‐‑‒]/g, "-");
+  const norm = text.normalize("NFC").replace(/\r/g, "").replace(/[   ]/g, " ").replace(/[‐‑‒]/g, "-")
+    // Bağlantılar ("https://…/S%CB20SINAV…pdf"): içlerindeki %XX kodları not yüzdesi sanılmasın (Muğla)
+    .replace(/\b(?:https?:\/\/|www\.)\S+/g, " ");
+  const kurul = isKurulDoc(norm.split("\n").map(fold));
   const lines = norm.split("\n").map((l) => l.replace(/[ ]+/g, " ").trimEnd());
   const flines = lines.map(fold);
   const warnings = new Set();
@@ -1920,7 +1925,10 @@ export function parseSyllabus(text, now = new Date()) {
     return /^(\d+\s*\.?\s*)?(ara sinav|arasinav|vize|midterm|mid-term|final|yariyil|yil sonu|genel sinav|donem ?sonu|butunleme|resit|make-?up|mazeret|quiz|kisa sinav|proje|project|sunum|presentation|odev|homework|assignment|hw|rapor|report|lab|essay|paper|sinav|exam|teslim|submission|poster|case|vaka|seminer|seminar|portfol)/.test(ft) && !/^(exam|sinav)$/.test(ft);
   });
   const weeks = parseWeeks(lines, flines, term);
-  const grading = parseGrading(lines, flines);
+  let grading = parseGrading(lines, flines);
+  // Tıp kurulu rehberi: ızgara ve yönetmelik sayıları not ağırlığı değildir. Tam 100 eden bir tablo yoksa
+  // hiçbirini getirme; öğrenci kendi kurulunun ağırlığını girer (gerçek izlence ölçümü: 5 rehberde sahte ağırlık)
+  if (kurul && Math.abs(grading.filter((g) => !g.bonus).reduce((t, g) => t + g.weight, 0) - 100) > 0.5) grading = [];
   // Not tablosunda olan ama takvimde hiç geçmeyen vize/final: tarihsiz sınav olarak ekle (öğrenci tarihini girer,
   // geri sayım ve GNO simülasyonu o sınavı bilir). Uydurma tarih yok.
   const groupOf = (t) => ITEM_KINDS.find((k) => k.re.test(fold(t)))?.group;
@@ -2002,6 +2010,22 @@ export function parseSyllabus(text, now = new Date()) {
       if (n >= 1 && n <= 20) weeks.add(n);
     }
     if (weeks.size === 1) x.week = [...weeks][0];
+  }
+  if (kurul) {
+    for (const x of kurulCalendar(lines, flines)) if (!items.some((it) => it.date === x.date)) items.push(x);
+    // Genel adlı sınava ("Teorik Sınav", "Uygulama Sınavı") üstteki kurul başlığını ekle
+    const key = (l) => cut(clean(l.replace(/\t/g, " · ")), 150);
+    const srcLine = new Map();
+    lines.forEach((l, i) => srcLine.has(key(l)) || srcLine.set(key(l), i));
+    for (const x of items) {
+      // Yıl sonu/genel/bütünleme/mazeret sınavları tek bir kurula ait değildir
+      if (!x.date || /kurul|final|genel|butunleme|mazeret|yariyil|yil sonu|make-?up/.test(fold(x.title))) continue;
+      const i = srcLine.get(x.source) ?? lines.findIndex((l) => x.source && clean(l.replace(/\t/g, " · ")).startsWith(x.source.slice(0, 40)));
+      const n = i >= 0 ? kurulAbove(flines, i) : null;
+      if (n) x.title = `${kurulLabel(n)} · ${x.title}`;
+    }
+    items.sort((a, b) => (a.date || "9").localeCompare(b.date || "9"));
+    warnings.add("Bu bir tıp ders kurulu rehberi: birden çok kurulun sınavları listelendi. Yalnız kendi kurulunun sınavlarını işaretli bırak; not dağılımını kurul rehberinden kontrol et.");
   }
   if (!items.length) warnings.add("Sınav veya ödev tarihi bulunamadı.");
 

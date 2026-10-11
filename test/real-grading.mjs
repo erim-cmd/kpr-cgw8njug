@@ -47,5 +47,16 @@ for (const [name, want] of Object.entries(cases)) {
   const ok = vize?.week === 8 && !fin?.week;
   ok ? pass++ : (fail++, console.log(`  ✗ real_hafta_sinav öğeler: ${r.items.map((x) => `${x.title}@${x.date || "h" + x.week}`).join(" | ")}`));
 }
+// Tıp ders kurulu rehberi (kurul.js): ızgara/örnek yüzdelerden not uydurma yok; takvim tablosundan kurul
+// sınavları; genel adlı sınava kurul başlığı; yıl sonu sınavına kurul etiketi yok (Medipol, Sakarya, Muğla)
+{
+  const r = parseSyllabus(readFileSync(dir + "real_tip_kurul.txt", "utf8"), new Date(2026, 8, 26));
+  const has = (t, d) => r.items.some((x) => x.title === t && x.date === d);
+  const ok = !r.grading.length &&
+    has("Hekimliğe Giriş kurul sınavı", "2023-11-04") && has("Molekülden Hücreye kurul sınavı", "2023-12-16") &&
+    has("I. Kurul · Teorik Sınav", "2023-10-16") && has("II. Kurul · Teorik Sınav", "2023-11-27") &&
+    !r.items.some((x) => /kurul ·.*yıl sonu/i.test(x.title)) && r.warnings.some((w) => /ders kurulu rehberi/.test(w));
+  ok ? pass++ : (fail++, console.log(`  ✗ real_tip_kurul: not ${JSON.stringify(r.grading.map((g) => g.weight))} · ${r.items.map((x) => `${x.title}@${x.date}`).join(" | ")}`));
+}
 console.log(`\ngerçek izlence not dağılımı\n\n${pass} doğru, ${fail} hata`);
 process.exit(fail ? 1 : 0);

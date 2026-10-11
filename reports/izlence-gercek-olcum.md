@@ -27,12 +27,15 @@ Her düzeltmede ilgili belgelerin yapısını taklit eden sentetik `test/syllabu
 **4. Güvenlik ağı (kontrol ekranı).** "Kontrol et ve kaydet"te not toplamı canlı gösterilir; 100 değilse kayıt durur, öğrenci ya ağırlıkları düzeltir ya da "Belgede de böyle" kutusunu işaretler. Okuyucu hangi belgede yanılırsa yanılsın yanlış ağırlık GNO'ya sessizce girmez.
 **5. Küçük düzeltmeler.** Boş şablonda "Adet" sütunu ağırlık sayılmaz (başlık ağırlık sütununu belirlediyse yalnız o sütun okunur). Haftalık planda "8. | Ara Sınav" satırı tarihsiz vizeye 8. haftayı verir ("Final sınavına hazırlık" sayılmaz).
 
+**6. Tıp ders kurulu modu (`kurul.js`).** Belge kurul rehberi olarak tanınır. Tam 100 eden bir değerlendirme tablosu yoksa not ağırlığı getirilmez (ızgara, belirtke tablosu, yönetmelik sayıları). "Kurul | Tarih | Hafta | Sınav Tarihi" takviminden kurul sınavları okunur; genel adlı sınava kurul başlığı eklenir ("II. Kurul · Teorik Sınav"); yıl sonu/bütünleme etiketlenmez. Öğrenci kontrol ekranında yalnız kendi kurulunun sınavlarını işaretli bırakır (uyarı bunu söyler). Bağlantılar (`https://…%CB…`) metinden atılır.
+
 | Ölçü (PDF + Word) | Önce | Sonra |
 |---|---|---|
 | Not dağılımı tam doğru | 5 / 28 | 17 / 28 |
-| Tarih (veya hafta) bulundu | 47 / 84 | 54 / 84 |
+| Tarih (veya hafta) bulundu | 47 / 84 | 65 / 84 |
 | Fazla/yanlış öğe (otomatik sayım) | 58 | 41 |
+| Yanlış ağırlık üreten dosya | 20 | 5 (hepsinin toplamı ≠ 100 → kontrol ekranı kaydı durdurur) |
 
-BAU'nun 9 gerçek syllabus'unda not ve öğe çıktısı değişmedi. `test/real-grading.mjs` (11 kontrol) v2.26.0 kodunda 10 hata veriyor; `npm test` yeşil.
+BAU'nun 9 gerçek syllabus'unda not ve öğe çıktısı değişmedi. `test/real-grading.mjs` (12 kontrol) v2.26.0 kodunda 11 hata veriyor; `npm test` yeşil.
 
-**Kalan (sıradaki):** tıp ders kurulları (7 belge; ayrı okuma modu), puanla verilen not (400 puan → %, Esenyurt), satıra bölünmüş cümle (Toros güz), yönerge belgesi (TOBB), taranmış/fotoğraf syllabus (OCR kararı).
+**Kalan:** puanla verilen not ve örnek tablo (Esenyurt), çok dersli fakülte tablosu (Ege Diş), satıra bölünmüş cümle (Toros güz), yönerge belgesi (TOBB) — beşi de toplam ≠ 100 olduğu için kontrol ekranında yakalanıyor. Tıp: kurul içi not tablosu yalnız tam 100 ederse okunuyor (Medipol %95/%5 henüz okunmuyor); haftalık ızgaradaki sınav hücreleri (Gazi, Demiroğlu). Taranmış/fotoğraf syllabus için OCR kararı.
