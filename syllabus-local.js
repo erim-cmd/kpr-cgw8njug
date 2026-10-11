@@ -71,6 +71,7 @@ function findDates(f, termYear) {
         if (/[:]/.test(around) || /\d[.:]\d{2}\s*[-–]\s*\d/.test(f.slice(m.index, m.index + 12))) continue;
         if (!/[./]/.test(m[0]) || m[1].length > 2 || m[2].length !== 2) continue;
       }
+      if (v.y && v.y.length === 2 && /^[./]\d/.test(f.slice(m.index + m[0].length))) continue;
       let y = v.y ? (v.y.length === 2 ? 2000 + +v.y : +v.y) : null;
       const assumed = y === null;
       if (assumed) y = inferYear(v.mo, termYear);
@@ -236,6 +237,8 @@ function parseGrading(lines, flines) {
     let cells = lines[i].split("\t").map(clean);
     // Madde işaretli satır ("• · Project submissions during the semester: 40%"): işaret hücresi ad değildir
     if (cells.length >= 2 && /^[•●▪◦*¥·-]?$/.test(cells[0])) cells = cells.slice(1);
+    // "60% | Final exam (date to be arranged…)": önce değer, sonra ad (Boğaziçi)
+    if (cells.length === 2 && /^\d{1,3}\s*%$/.test(cells[0]) && COMPONENT.test(fold(cells[1]))) cells = [cells[1], cells[0]];
     const fcells = cells.map(fold);
 
     // Farklı bir tablonun başlığına geçildiyse (ör. haftalık planın "Hafta" sütunu), önceki tablodan
@@ -245,6 +248,21 @@ function parseGrading(lines, flines) {
       inSection = 0;
     }
 
+    // Yatay tablo: bir satırda bileşen adları, altındaki satırda aynı sayıda yüzde
+    // ("Midterm Exam I | Midterm Exam II | Final Exam" / "25% | 25% | 50%", İTÜ)
+    if (cells.length >= 2 && fcells.every((c) => COMPONENT.test(c) && !/\d\s*%|%\s*\d/.test(c))) {
+      let j = i + 1;
+      while (j < lines.length && !lines[j].trim()) j++;
+      const nc = j < lines.length ? lines[j].split("\t").map(clean) : [];
+      if (nc.length === cells.length && nc.every((c) => /^%?\s*\d{1,3}(?:[.,]\d+)?\s*%?$/.test(c) && /%/.test(c))) {
+        const ws = nc.map(numIn);
+        if (Math.abs(ws.reduce((t, w) => t + w, 0) - 100) < 0.5) {
+          cells.forEach((c, k) => add(found, stripPct(c), ws[k], `${lines[i]} · ${lines[j]}`.replace(/\t/g, " · ")));
+          i = j;
+          continue;
+        }
+      }
+    }
     if (cells.length >= 2) {
       // Başlık satırı: hangi sütun ağırlık?
       // Not: salt "%" bir başlık işareti olabilir ("Ağırlık (%)"), ama "%20" gibi bir veri değeri değil —
@@ -296,6 +314,13 @@ function parseGrading(lines, flines) {
       if (shareRow(fname, cells.slice(nameIdx + 1).join(" "), shares)) continue;
       if (!name || !COMPONENT.test(fname) || SKIP_ROW.test(fname)) continue;
       const vals = cells.slice(nameIdx + 1);
+      // "Final | …calculated by taking 40% of the midterm exam and 60% of the final exam": hücre bir cümle ve
+      // birden çok yüzde taşıyor → satırın adı değil, cümlenin kendisi okunur (Toros)
+      const sentence = vals.find((v) => v.length > 40 && (v.match(/%/g) || []).length >= 2);
+      if (sentence && headerWeightCol < 0) {
+        for (const x of lineParts(sentence, inSection)) add(found, x.name, x.w, lines[i], x.bonus);
+        continue;
+      }
       let w = null;
       // headerWeightCol, başlık satırındaki MUTLAK hücre indeksi; ad CLO sütunundan kaydırıldıysa (nameIdx)
       // vals içindeki karşılığı da aynı miktarda kaymış olur.
@@ -321,7 +346,7 @@ function parseGrading(lines, flines) {
     // Not: cümle sınırında da böl ("...Turnitin. The maximum ratio is 30%.") — yoksa alakasız bir cümledeki
     // yüzde, önceki cümledeki "project" gibi bir anahtar kelimeyle yanlışlıkla eşleşip sahte bir not bileşeni üretebilir.
     // "40 %: Term-time works" (önce değer, sonra ad) → "Term-time works: 40%"
-    const vf = /^\s*(?:[•●▪*-]\s*)?(\d{1,3})\s*%\s*[:–-]\s*(.+)$/.exec(cells.join(" "));
+    const vf = /^\s*(?:[•●▪*-]\s*)?(\d{1,3})\s*%\s*(?:[:–-]\s*|(?=[A-Za-zÇĞİÖŞÜçğıöşü]))(.+)$/.exec(cells.join(" "));
     const line = vf ? `${vf[2]}: ${vf[1]}%` : cells.join(" ");
     // "Students have to attend 80% of project lessons": devam oranı, not bileşeni değil
     if (/(have to|has to|must|required to|should|are expected to)\s+attend|attend\s+(at least\s+)?%?\s?\d{1,3}\s?%/.test(fold(line))) continue;
@@ -375,8 +400,9 @@ function countOf(name, flines) {
 /** Tek satırdaki bileşenler: "Vize %40 - Final %60" · "Midterm 30% and Final 70%" · "Sınav dışı: Derse devam %10, Ödevler ve sunumlar %10". */
 function lineParts(line, inSection) {
   const out = [];
+  line = line.replace(/(\d{1,3})\s*%\s+of\s+(?:the\s+)?((?:[A-Za-z-]+\s+){0,2}?(?:exam|midterm|final|quiz|project|assignment|homework)s?(?:\s+exams?)?)/gi, "$2 $1%");
   const parts = line.replace(/\([^()]*\)/g, (m) => m.replace(/[,;]/g, "\u0001")).split(
-    /[,;]|\s{2,}|(?<!\d)\.\s+(?=[A-ZÇĞİÖŞÜ])|(?<=[\d%])\s+(?:ve|and)\s+(?=[A-ZÇĞİÖŞÜa-zçğıöşü]+\s*[:(%-]?\s*%?\d)|(?<=\d\s*%|%\s*\d{1,3})\s+[-–—]\s+/
+    /[,;]|\s{2,}|(?<!\d)\.\s+(?=[A-ZÇĞİÖŞÜ])|(?<=[\d%]\)?)\s+(?:ve|and)\s+(?=[A-ZÇĞİÖŞÜa-zçğıöşü][^,;%\d]{0,40}(?:%\s*\d|\d{1,3}\s*%|\(\s*%?\s*\d))|(?<=\d\s*%|%\s*\d{1,3})\s+[-–—]\s+/
   );
   for (let part of parts) {
     part = part.replace(/\u0001/g, ",");
@@ -387,6 +413,11 @@ function lineParts(line, inSection) {
       // "Ara sınav: %40 (sınav %100, ödev %0)": parantez içi alt kırılım bileşen adı değildir; ad iki noktadan önce
       const afterOut = after.replace(/\([^()]*\)/g, "");
       if (COMPONENT.test(fold(afterOut)) && (pctIn(afterOut) !== null || zeroPct(afterOut))) part = after;
+    }
+    // Uzun cümlenin sonundaki "ad + yüzde": "…will be the total of midterm exam (30%)" → "midterm exam (30%)"
+    if (part.length > 40) {
+      const tail = /((?:[A-Za-zÇĞİÖŞÜçğıöşü-]+\s+){0,2}[A-Za-zÇĞİÖŞÜçğıöşü-]+)\s*(?:\(\s*%?\s*\d{1,3}\s*%?\s*\)|%\s*\d{1,3}|\d{1,3}\s*%)[\s*.]*$/.exec(part);
+      if (tail && COMPONENT.test(fold(tail[1])) && (part.match(/%/g) || []).length === 1) part = tail[0];
     }
     const fp = fold(part);
     if (!COMPONENT.test(fp) || SKIP_ROW.test(fp)) continue;
@@ -432,7 +463,7 @@ function componentName(part) {
   const segs = stripPct(part).split(/\s[–—-]\s|:|\(|\)|;/).map(clean).filter(Boolean);
   let n = segs.find((x) => COMPONENT.test(fold(x))) || segs[0] || "";
   // Cümle içinden kalan bağlaç ve noktalama: "and final." → "Final", "each midterm" → "Midterm"
-  n = n.replace(/^(?:and|ve|ile|plus|each|her biri|for|for the|the)\s+/i, "").replace(/[.,;]+$/, "").trim();
+  n = n.replace(/^(?:(?:and|ve|ile|plus|each|her biri|for|of|by|taking|total of|the)\s+)+/i, "").replace(/[.,;]+$/, "").trim();
   return /^[a-zçğıöşü]/.test(n) && n === n.toLocaleLowerCase("tr-TR") ? n.charAt(0).toLocaleUpperCase("tr-TR") + n.slice(1) : n;
 }
 
@@ -514,8 +545,8 @@ const stripPct = (s) =>
 
 const ITEM_KINDS = [
   { type: "sinav", re: /\b(ara sinav|arasinav|vize|midterm|mid-term)\b/, tr: "Vize sınavı", group: "vize" },
+  { type: "sinav", re: /\b(butunleme|resit|make-?up(?: exam)?|mazeret sinavi)\b/, tr: "Bütünleme", group: "butunleme" },
   { type: "sinav", re: /\b(final|yariyil sonu sinavi|yariyil sonu|yil sonu sinavi|yil sonu|genel sinav|donem ?sonu sinavi)\b/, tr: "Final sınavı", group: "final" },
-  { type: "sinav", re: /\b(butunleme|resit|make-?up exam|mazeret sinavi)\b/, tr: "Bütünleme", group: "butunleme" },
   { type: "sinav", re: /\b(quiz|kisa sinav|pop quiz)\b/, tr: "Quiz", group: "quiz" },
   { type: "proje", re: /\b(proje|project|sunum|presentation|poster)\b/, tr: "Proje", group: "proje" },
   { type: "odev", re: /\b(odev|homework|assignment|hw|problem set|rapor|report|essay|makale|lab raporu)\b/, tr: "Ödev", group: "odev" },
@@ -1877,7 +1908,14 @@ export function parseSyllabus(text, now = new Date()) {
   const term = detectTerm(norm, now);
   const course = parseCourse(lines, flines, pairsBy, norm);
   const sessions = parseSessions(norm, flines, lines, pairsBy);
-  const items = parseItems(lines, flines, term, warnings, course.name);
+  const items = parseItems(lines, flines, term, warnings, course.name).filter((x) => {
+    if (x.date || x.week) return true;
+    const ft = fold(x.title).replace(/^[^a-z0-9]+/, "");
+    if (/feedback|review|preparation|hazirlik|sonuclar|results|dates\b|tarihleri\b/.test(ft)) return false;
+    const kw = /(ara sinav|arasinav|vize|midterm|mid-term|final|yariyil|yil sonu|genel sinav|donem ?sonu|butunleme|resit|make-?up|mazeret|quiz|kisa sinav|proje|project|sunum|presentation|odev|homework|assignment|rapor|report|essay|paper|exam|teslim|submission|poster|seminer|seminar|portfol)/;
+    if (/^[a-z0-9]/.test(fold(x.title)) && ft.split(/\s+/).length <= 4 && kw.test(ft) && !/^(exam|sinav)$/.test(ft)) return true;
+    return /^(\d+\s*\.?\s*)?(ara sinav|arasinav|vize|midterm|mid-term|final|yariyil|yil sonu|genel sinav|donem ?sonu|butunleme|resit|make-?up|mazeret|quiz|kisa sinav|proje|project|sunum|presentation|odev|homework|assignment|hw|rapor|report|lab|essay|paper|sinav|exam|teslim|submission|poster|case|vaka|seminer|seminar|portfol)/.test(ft) && !/^(exam|sinav)$/.test(ft);
+  });
   const weeks = parseWeeks(lines, flines, term);
   const grading = parseGrading(lines, flines);
   // Not tablosunda olan ama takvimde hiç geçmeyen vize/final: tarihsiz sınav olarak ekle (öğrenci tarihini girer,

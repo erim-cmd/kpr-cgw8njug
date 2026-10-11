@@ -12,6 +12,14 @@ const cases = {
   real_akts_tablo: { "Midterm Exam": 40, Homework: 10, Final: 50 },
   // Değerlendirme tablosunda "Attendance | 70% attendance requirement": devam şartı, bileşen değil
   real_devam_satiri: { Midterm: 40, Final: 60 },
+  // Cümle içinde: "…the total of midterm exam (30%), projects (10%) and final exam (60%)" (Toros)
+  real_cumle_agirlik: { "Midterm exam": 30, Projects: 10, "Final exam": 60 },
+  // Tablo hücresinde cümle: "taking 40% of the midterm exam and 60% of the final exam" (Toros)
+  real_of_the: { "Midterm exam": 40, "Final exam": 60 },
+  // Yatay tablo: adlar bir satırda, yüzdeler altında (İTÜ)
+  real_yatay: { "Midterm Exam I": 25, "Midterm Exam II": 25, "Final Exam": 50 },
+  // Önce değer: "40% Midterm exam (April 5)" / "60% | Final exam (…)" (Boğaziçi)
+  real_once_deger: { "Midterm exam": 40, "Final exam": 60 },
   // Belgenin kendisi %130 (ÇOMÜ): yakın satırlardaki fazlalık atılmaz, uyarı verilir
   web_toplam_130: { Vize: 40, Final: 60, "Derse devam": 10, "Ödevler ve sunumlar": 10, "Derse aktif katılım": 10 },
 };
@@ -21,6 +29,13 @@ for (const [name, want] of Object.entries(cases)) {
   const got = Object.fromEntries(r.grading.filter((g) => !g.bonus).map((g) => [g.name, g.weight]));
   const ok = JSON.stringify(got) === JSON.stringify(want);
   ok ? pass++ : (fail++, console.log(`  ✗ ${name}: ${JSON.stringify(got)} ≠ ${JSON.stringify(want)}`));
+}
+// Sınav öğeleri: telafi tarihi finale yazılmaz; cümle parçaları ("Your exam dates", "You must take…") öğe değil (İTÜ)
+{
+  const r = parseSyllabus(readFileSync(dir + "real_telafi.txt", "utf8"), new Date(2026, 8, 26));
+  const bad = r.items.filter((x) => (/^final(?![- ]*make)/i.test(x.title) && x.date === "2027-01-20") || /^(your|you|exam$)/i.test(x.title));
+  const ok = !bad.length && r.items.some((x) => /^final/i.test(x.title));
+  ok ? pass++ : (fail++, console.log(`  ✗ real_telafi öğeler: ${r.items.map((x) => `${x.title}@${x.date || "?"}`).join(" | ")}`));
 }
 console.log(`\ngerçek izlence not dağılımı\n\n${pass} doğru, ${fail} hata`);
 process.exit(fail ? 1 : 0);

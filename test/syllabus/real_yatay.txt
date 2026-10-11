@@ -1,0 +1,4 @@
+MAK 210E Engineering Mathematics
+Examinations
+Midterm Exam I	Midterm Exam II	Final Exam
+25%	25%	50%

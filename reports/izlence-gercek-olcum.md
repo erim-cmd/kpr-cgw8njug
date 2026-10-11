@@ -19,7 +19,17 @@
 ## Test için
 Her düzeltmede ilgili belgelerin yapısını taklit eden sentetik `test/syllabus/real_*.txt` + `expected.json` girdisi (gerçek dosya repoya girmez). Ölçüm betiği: her dosyada `extractText` → `parseSyllabus`, sonucu `_dogru-cevaplar.json`'daki `truth` ile karşılaştır.
 
-## Düzeltme 1 uygulandı (11 Eki 2026, akşam)
-`syllabus-local.js`: (a) toplam 100'ü aşınca belgede art arda gelen ve tam 100 eden bileşen bloğu seçilir; bloğun 5 satır yakınında fazlalık varsa (ÇOMÜ %130) dokunulmaz, uyarı kalır. (b) AKTS / iş yükü tablosunda not bölümü biter. (c) Adı devam/attendance olan ve ≥ %50 görünen satır bileşen değil (devam şartı). (d) "minimal requirement" cümlesi bileşen değil.
-Sonuç: not dağılımı tam doğru PDF/Word 5/28 → 11/28 (Çankaya ×2, Çağ ×2, ODTÜ, Ege Hemşirelik). BAU'nun 9 gerçek syllabus'unda çıktı değişmedi. `npm test` yeşil; yeni `test/real-grading.mjs` eski kodda 3 hata veriyor.
-Açık: `sw.js` VERSION ve `settings.js` APP_VERSION artırılmadı (v2.27.0 bildirim işiyle birlikte artacak). Sıradaki: düzeltme 2 (cümle/formül/puan) ve 3 (sınav öğeleri).
+## Uygulanan düzeltmeler (11 Eki 2026)
+**1. Not bölümü dışı sayılar.** Toplam 100'ü aşınca belgede art arda gelen ve tam 100 eden blok seçilir (bloğun 5 satır yakınındaki fazlalık, ör. ÇOMÜ %130, korunur ve uyarı kalır). AKTS / iş yükü tablosunda not bölümü biter. Adı devam/attendance olan ≥ %50 satır ve "minimal requirement" cümlesi bileşen değil.
+**2. Cümle ve yerleşim biçimleri.** "midterm exam (30%), projects (10%) and final exam (60%)"; "taking 40% of the midterm exam and 60% of the final exam" (tablo hücresinde de); önce değer ("40% Midterm exam", "60% | Final exam"); yatay tablo (adlar bir satırda, yüzdeler altında); uzun cümlenin sonundaki "ad + yüzde".
+**3. Sınav öğeleri.** Telafi/makeup finalden önce tanınır (telafi tarihi finale yazılmaz). "30.03-07.04.2024" aralığında "07" yıl sanılmaz. Tarihsiz ve haftasız öğe yalnız sınav/teslim adı taşıyorsa kalır ("Your exam dates", "You must take…", "Exam Feedback" öğe değil).
+
+| Ölçü (PDF + Word) | Önce | Sonra |
+|---|---|---|
+| Not dağılımı tam doğru | 5 / 28 | 16 / 28 |
+| Tarih bulundu | 47 / 84 | 50 / 84 |
+| Fazla/yanlış öğe (otomatik sayım) | 58 | 47 |
+
+BAU'nun 9 gerçek syllabus'unda not ve öğe çıktısı değişmedi. `test/real-grading.mjs` (9 kontrol) eski kodda 8 hata veriyor; `npm test` yeşil.
+
+**Kalan (sıradaki):** tıp ders kurulları (7 belge; ayrı okuma modu), puanla verilen not (400 puan → %, Esenyurt), satıra bölünmüş cümle (Toros güz), boş şablon tespiti (Ardahan), yönerge belgesi (TOBB), hafta numaralı sınavın haftalık plandan okunması (ALKÜ).
