@@ -67,6 +67,27 @@ ok(/Open-Meteo/.test(prefs), "hangi verinin gittiği açıklanıyor");
 const notify = pageHtml("notify", st);
 ok(["notifyExams", "notifyDue", "notifyDaily", "notifyClasses"].every((n) => notify.includes(`name="${n}"`)), "4 hatırlatma türü");
 ok(/name="quietStart" value="23:00"/.test(notify) && /name="quietEnd" value="08:00"/.test(notify), "sessiz saatler varsayılan 23:00–08:00");
+// Haftaya bakış: Günün özeti'nin hemen altında, varsayılan açık
+const iDaily = notify.indexOf('name="notifyDaily"'), iWeekly = notify.indexOf('name="notifyWeekly"'), iClasses = notify.indexOf('name="notifyClasses"');
+ok(iDaily > 0 && iDaily < iWeekly && iWeekly < iClasses, "Haftaya bakış Günün özeti'nin altında");
+ok(/name="notifyWeekly" checked/.test(notify) && notify.includes("Pazar 20:00'de"), "Haftaya bakış varsayılan açık, açıklamalı");
+// Tatil ve ara dönem: Sessiz saatler'in altında; aç/kapa + iki tarih, varsayılan kapalı
+const iQuiet = notify.indexOf("Sessiz saatler"), iPause = notify.indexOf("Tatil ve ara dönem");
+ok(iQuiet > 0 && iPause > iQuiet && iPause < notify.indexOf('name="pauseOn"'), "Tatil ve ara dönem Sessiz saatler'in altında");
+ok(!/name="pauseOn" checked/.test(notify) && notify.includes('name="pauseOn"') && /type="date" name="pauseStart" value=""/.test(notify) && /type="date" name="pauseEnd" value=""/.test(notify), "duraklatma varsayılan kapalı, tarihler boş");
+// Ayar doğrulaması (store.js normalize)
+const S = (s) => normalize({ settings: s }).settings;
+ok(S({}).notifyWeekly === true && S({ notifyWeekly: false }).notifyWeekly === false, "notifyWeekly varsayılan açık, kapatılabilir");
+ok(S({}).pauseOn === false && S({}).pauseStart === "" && S({}).pauseEnd === "", "eski kayıtta duraklatma kapalı");
+const okP = S({ pauseOn: true, pauseStart: "2026-12-28", pauseEnd: "2027-01-04" });
+ok(okP.pauseOn && okP.pauseStart === "2026-12-28" && okP.pauseEnd === "2027-01-04", "geçerli aralık kaydedilir");
+ok(S({ pauseOn: true, pauseStart: "2026-11-10", pauseEnd: "2026-11-10" }).pauseOn, "tek günlük aralık geçerli");
+ok(!S({ pauseOn: true, pauseStart: "2026-11-10", pauseEnd: "2026-11-01" }).pauseOn, "bitiş < başlangıç → kapalı");
+ok(!S({ pauseOn: true, pauseStart: "2026-02-30", pauseEnd: "2026-03-05" }).pauseOn && S({ pauseStart: "2026-02-30" }).pauseStart === "", "takvimde olmayan tarih → boş, kapalı");
+ok(!S({ pauseOn: true, pauseStart: "x", pauseEnd: "" }).pauseOn && !S({ pauseOn: "evet", pauseStart: "2026-11-01", pauseEnd: "2026-11-02" }).pauseOn, "eksik/bozuk değer → kapalı");
+store.setSettings({ pauseOn: true, pauseStart: "2026-11-10", pauseEnd: "2026-11-15" });
+ok(/name="pauseOn" checked/.test(pageHtml("notify", store.get())) && /value="2026-11-15"/.test(pageHtml("notify", store.get())), "kaydedilen duraklatma sayfada görünür");
+store.setSettings({ pauseOn: false, pauseStart: "", pauseEnd: "" });
 
 // 3) Hesapsız: hesap / LMS / Google Takvim bağlantısı yok
 const all = Object.keys(PAGES).map((p) => pageHtml(p, st)).join(" ");

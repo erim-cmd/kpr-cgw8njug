@@ -17,7 +17,7 @@ const ok = (c, msg) => { c ? pass++ : (fail++, console.log("  ✗ " + msg)); };
 const D = (m, d, h = 0, mi = 0) => new Date(2026, m - 1, d, h, mi, 0, 0); // yerel saat
 const DAY = 86400000, CATCH = 12 * 3600 * 1000;
 
-const course = { id: "c1", code: "MAT 1001", name: "Kalkülüs I", sessions: [{ day: 0, start: "09:00", end: "10:50", room: "A-110" }] }; // Pazartesi
+const course = { id: "c1", code: "MAT 1001", name: "Kalkülüs I", grading: [], sessions: [{ day: 0, start: "09:00", end: "10:50", room: "A-110" }] }; // Pazartesi
 const task = (o) => ({ id: "t1", courseId: "c1", title: "Ödev 1", type: "odev", due: "2026-10-13", time: "", done: false, ...o });
 const state = (tasks, extra = {}) => ({ courses: [course], tasks, settings: { notifyClasses: true, termWeeks: 14, ...extra } });
 const flat = (list) => list.map((r) => ({ ...r, fireAt: r.fireAt.getTime() }));
@@ -188,6 +188,72 @@ function shownAt(st, now, only = /^r:(t1|e\d):/) {
   ok(fire({ quietStart: "00:00", quietEnd: "06:00" }).getTime() === D(10, 13, 7).getTime(), `00–06 sessiz: ${fire({ quietStart: "00:00", quietEnd: "06:00" })}`);
   // Başlangıç = bitiş: sessiz saat yok
   ok(fire({ quietStart: "00:00", quietEnd: "00:00" }).getTime() === D(10, 13, 7).getTime(), "sessiz saat kapalıyken kaydırma yok");
+}
+
+// 9) Haftaya bakış: Pazar 20:00'de tek hatırlatma (önümüzdeki 7 gün: sınav/teslim sayısı + not payı)
+{
+  // 11 Ekim 2026 Pazar. Ders notu: Ara sınav %40 + Final %60 → Ara sınav haftası dönem notunun %40 kadarı
+  const graded = { ...course, grading: [{ name: "Ara sınav", weight: 40 }, { name: "Final", weight: 60 }] };
+  const st = (tasks, extra = {}) => ({ courses: [graded], tasks, settings: { notifyClasses: true, termWeeks: 14, ...extra } });
+  const week = [task({ due: "2026-10-13" }), task({ id: "e1", type: "sinav", title: "Ara sınav", due: "2026-10-14", time: "10:00" })];
+  const weekly = (list) => list.filter((r) => r.kind === "week");
+  const w = weekly(buildReminders(st(week), D(10, 11, 0), 3));
+  ok(w.length === 1 && w[0].id === "r:week:2026-10-11", `Pazar için tek "haftaya bakış": ${w.map((r) => r.id)}`);
+  ok(w[0]?.fireAt.getTime() === D(10, 11, 20).getTime(), `Pazar 20:00'de: ${w[0]?.fireAt}`);
+  ok(/1 sınav/.test(w[0]?.title) && /1 teslim/.test(w[0]?.title), `başlıkta sayılar: ${w[0]?.title}`);
+  ok(/%40 kadarı/.test(w[0]?.body), `gövdede not payı: ${w[0]?.body}`);
+  ok(w[0]?.title.length <= 40 && w[0]?.body.length <= 90, "başlık ≤ 40, gövde ≤ 90 karakter (yazı dili)");
+  ok(w[0]?.target > D(10, 11, 20).getTime(), "hedef bildirimden sonra (gösterilebilir)");
+  // Gösterim anında metin aynı kalır (gün/saat ifadesi yok)
+  ok(JSON.stringify(describe(flat(w)[0], D(10, 11, 21))) === JSON.stringify({ title: w[0].title, body: w[0].body }), "gösterimde metin değişmez");
+  // Ağırlık bilinmiyorsa gövde işleri sayar (uydurma yüzde yok)
+  const noW = weekly(buildReminders(state(week), D(10, 11, 0), 3))[0];
+  ok(noW && !/%/.test(noW.body) && /Ödev 1/.test(noW.body), `ağırlık yoksa yüzde yok: ${noW?.body}`);
+  // Boş hafta: gönderilmez (okuma/kişisel iş sayılmaz)
+  ok(!weekly(buildReminders(st([task({ due: "2026-10-25" })]), D(10, 11, 0), 3)).length, "boş haftada haftaya bakış yok");
+  ok(!weekly(buildReminders(st([task({ type: "okuma", due: "2026-10-13" })]), D(10, 11, 0), 3)).length, "yalnız okuma varsa haftaya bakış yok");
+  // Pazar dışındaki günlerde yok; bitmiş iş sayılmaz
+  ok(!weekly(buildReminders(st(week), D(10, 12, 0), 5)).length, "Pazartesi–Cuma arası haftaya bakış yok");
+  ok(!weekly(buildReminders(st(week.map((x) => ({ ...x, done: true }))), D(10, 11, 0), 3)).length, "bitmiş işler sayılmaz");
+  // Kapatılabilir; sessiz saat kuralı geçerli (19:00–08:00 → 20:00 sessizde → 16:00)
+  ok(!weekly(buildReminders(st(week, { notifyWeekly: false }), D(10, 11, 0), 3)).length, "haftaya bakış kapatılabilmeli");
+  const q = weekly(buildReminders(st(week, { quietStart: "19:00", quietEnd: "08:00" }), D(10, 11, 0), 3))[0];
+  ok(q?.fireAt.getTime() === D(10, 11, 16).getTime(), `sessiz saatte 3 saat önceye alınır: ${q?.fireAt}`);
+  // Worker kopyası haftaya bakışı olduğu gibi gösterir
+  const root = fileURLToPath(new URL("../", import.meta.url));
+  const ctx = { self: { addEventListener() {}, registration: {}, location: { origin: "http://x" } }, URL, Response: class {}, console };
+  vm.createContext(ctx);
+  vm.runInContext(readFileSync(root + "sw.js", "utf8"), ctx);
+  const sw = ctx.describeReminder(flat(w)[0], D(10, 11, 20).getTime(), JSON.parse(JSON.stringify(reminderStrings())));
+  ok(sw.title === w[0].title && sw.body === w[0].body, "worker haftaya bakışı aynı gösterir");
+  // İngilizce
+  setLang("en");
+  const en = weekly(buildReminders(st(week), D(10, 11, 0), 3))[0];
+  ok(/^Week ahead/.test(en?.title) && /40%/.test(en?.body), `EN: ${en?.title} / ${en?.body}`);
+  setLang("tr");
+}
+
+// 10) Tatil ve ara dönem: aralıkta ders, günün özeti, haftaya bakış yok; sınav ve teslim devam eder
+{
+  const graded = { ...course, grading: [{ name: "Ara sınav", weight: 40 }, { name: "Final", weight: 60 }] };
+  const tasksAll = [task({ due: "2026-10-13", time: "10:00" }), task({ id: "e1", type: "sinav", title: "Ara sınav", due: "2026-10-14", time: "10:00" })];
+  const st = (extra) => ({ courses: [graded], tasks: tasksAll, settings: { notifyClasses: true, termWeeks: 14, ...extra } });
+  const kinds = (extra) => { const l = buildReminders(st(extra), D(10, 11, 0), 5); return new Set(l.map((r) => r.kind)); };
+  const off = kinds({});
+  ok(["exam", "due", "day", "class", "week"].every((k) => off.has(k)), `duraklatma yokken hepsi: ${[...off]}`);
+  const p = kinds({ pauseOn: true, pauseStart: "2026-10-10", pauseEnd: "2026-10-18" });
+  ok(!p.has("class") && !p.has("day") && !p.has("week"), `tatilde ders/özet/haftaya bakış yok: ${[...p]}`);
+  ok(p.has("exam") && p.has("due"), "tatilde sınav ve teslim hatırlatmaları devam eder");
+  // Kapalıyken tarih girilmiş olsa da etkisiz
+  const q = kinds({ pauseOn: false, pauseStart: "2026-10-10", pauseEnd: "2026-10-18" });
+  ok(q.has("class") && q.has("day") && q.has("week"), "duraklatma kapalıyken etkisiz");
+  // Aralık gün gün: 12 Ekim tatilde, 13 Ekim değil (bitiş günü dahil)
+  const list = buildReminders(st({ pauseOn: true, pauseStart: "2026-10-10", pauseEnd: "2026-10-12" }), D(10, 11, 0), 9);
+  ok(!byId(list, "r:day:2026-10-12") && byId(list, "r:day:2026-10-13"), "bitiş günü dahil, ertesi gün özet gelir");
+  ok(!list.some((r) => r.kind === "class" && r.id.includes("2026-10-12")), "tatil günündeki ders hatırlatması yok");
+  ok(list.some((r) => r.kind === "class" && r.id.includes("2026-10-19")), "tatil sonrası (bir sonraki Pazartesi) ders hatırlatması var");
+  // Sessiz saat kuralı tatilde de korunur (teslim 3 saat önce → önceki akşam 20:00)
+  ok(byId(buildReminders(st({ pauseOn: true, pauseStart: "2026-10-10", pauseEnd: "2026-10-18" }), D(10, 11, 0), 5), "r:t1:3h")?.fireAt.getTime() === D(10, 12, 20).getTime(), "tatilde de sessiz saat kuralı");
 }
 
 console.log(`\nbildirim zamanı\n\n${pass} doğru, ${fail} hata`);

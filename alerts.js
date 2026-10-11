@@ -13,7 +13,8 @@ import { daysUntil, parseISO, toISO, todayIdx, toMin, nowMin, relLabel } from ".
 import { attendance } from "./attendance.js";
 import { calcGrades } from "./ders-calc.js";
 import { projection, fmtGpa, standing } from "./gpa.js";
-import { t, locale } from "./i18n.js";
+import { t, locale, pct } from "./i18n.js";
+import { density } from "./density.js";
 
 const LEVEL_ORDER = { danger: 0, warn: 1, info: 2 };
 const courseName = (c) => (c ? c.code || c.name : "");
@@ -240,7 +241,7 @@ export function digestNotice(texts, L) {
 export function describeReminder(r, now, L) {
   var f = function (s, v) { return s.replace(/\{(\w+)\}/g, function (m, k) { return v && k in v ? String(v[k]) : m; }); };
   var pad = function (n) { return (n < 10 ? "0" : "") + n; };
-  if (r.kind === "day" || !L) return { title: r.title, body: r.body };
+  if (r.kind === "day" || r.kind === "week" || !L) return { title: r.title, body: r.body };
   var tg = new Date(r.target);
   var nw = new Date(now);
   var days = Math.round((new Date(tg.getFullYear(), tg.getMonth(), tg.getDate()) - new Date(nw.getFullYear(), nw.getMonth(), nw.getDate())) / 86400000);
@@ -288,12 +289,41 @@ export function pickDueReminders(list, sent, now, catchUp) {
   return { show: latest, skip: skip };
 }
 
+/** iso + n gün (yerel takvim; yaz saati geçişinde kaymaz) */
+const isoPlus = (iso, n) => { const d = parseISO(iso); d.setDate(d.getDate() + n); return toISO(d); };
+
+/**
+ * Haftaya bakış (Pazar akşamı): önümüzdeki 7 günün (Pazartesi–Pazar) sınav ve teslim sayısı; dönem notunun
+ * o hafta belirlenen payı Dönem akışıyla aynı hesap (density.js). Ağırlık bilinmiyorsa yüzde yerine işlerin adı.
+ * Hiç sınav/teslim yoksa null (bildirim gönderilmez). Okuma ve kişisel işler sayılmaz.
+ */
+function weekAhead(state, sunday) {
+  const { courses, tasks, settings } = state;
+  const mon = isoPlus(sunday, 1), sun = isoPlus(sunday, 7);
+  const list = tasks.filter((x) => !x.done && !isLight(x) && x.due >= mon && x.due <= sun).sort((a, b) => a.due.localeCompare(b.due));
+  if (!list.length) return null;
+  const exams = list.filter(isExam).length;
+  const parts = [];
+  if (exams) parts.push(t("{n} sınav", { n: exams }));
+  if (list.length - exams) parts.push(t("{n} teslim", { n: list.length - exams }));
+  const week = density(tasks, settings, courses).weeks.find((w) => w.start === mon);
+  const share = week ? Math.round(week.share) : 0;
+  const names = list.slice(0, 2).map((x) => label(x, courses));
+  if (list.length > 2) names.push(t("+{n} tane daha", { n: list.length - 2 }));
+  return {
+    title: t("Haftaya bakış: {ad}", { ad: parts.join(", ") }),
+    body: share >= 1 ? t("Dönem notunun {p} kadarı bu hafta belirleniyor.", { p: pct(share) }) : names.join(", "),
+  };
+}
+
 /**
  * Önümüzdeki `days` gün içindeki bildirimler.
  * Sınav: 7 gün önce, 1 gün önce 20:00, sınavdan 2 saat önce (saat yoksa 08:00).
  * Ödev/proje: 3 gün önce, 1 gün önce, teslimden 3 saat önce (saat yoksa 23:59 kabul).
- * Her sabah 08:00: bugünün özeti. İsteğe bağlı: dersten 15 dk önce.
- * Her kayıt: id, fireAt (planlanan an), target (olayın kendisi, ms), kind ("exam" | "due" | "day" | "class"),
+ * Her sabah 08:00: bugünün özeti. Pazar 20:00: haftaya bakış. İsteğe bağlı: dersten 15 dk önce.
+ * Tatil ve ara dönem (settings.pauseOn): aralıktaki günlerde ders, günün özeti ve haftaya bakış yok;
+ * sınav ve teslim hatırlatmaları devam eder.
+ * Her kayıt: id, fireAt (planlanan an), target (olayın kendisi, ms), kind ("exam" | "due" | "day" | "week" | "class"),
  * title/body (fireAt anındaki metin; gösterimde describe() yeniden hesaplar).
  */
 export function buildReminders(state, from = new Date(), days = 8) {
@@ -309,6 +339,8 @@ export function buildReminders(state, from = new Date(), days = 8) {
   // Profil → Bildirimler: türler ve sessiz saatler (eski kayıtta alan yoksa açık / 23:00–08:00)
   const qs = settings.quietStart || "23:00";
   const qe = settings.quietEnd || "08:00";
+  // Tatil ve ara dönem: iki gün dahil (store.js normalize'da bitiş < başlangıç ise kapalı)
+  const paused = (iso) => settings.pauseOn === true && !!settings.pauseStart && !!settings.pauseEnd && iso >= settings.pauseStart && iso <= settings.pauseEnd;
   for (const task of tasks.filter((x) => !x.done)) {
     if (isExam(task) ? settings.notifyExams === false : settings.notifyDue === false) continue;
     const ad = label(task, courses);
@@ -337,7 +369,7 @@ export function buildReminders(state, from = new Date(), days = 8) {
     const idx = (day.getDay() + 6) % 7;
     const classes = courses.flatMap((c) => c.sessions.filter((s) => s.day === idx).map((s) => ({ c, s })));
     const due = tasks.filter((x) => !x.done && x.due === iso);
-    if ((classes.length || due.length) && settings.notifyDaily !== false) {
+    if ((classes.length || due.length) && settings.notifyDaily !== false && !paused(iso)) {
       const parts = [];
       if (classes.length) parts.push(t("{n} ders", { n: classes.length }));
       const exams = due.filter(isExam).length;
@@ -354,7 +386,11 @@ export function buildReminders(state, from = new Date(), days = 8) {
         url: "#/bugun",
       });
     }
-    if (settings.notifyClasses) {
+    if (idx === 6 && settings.notifyWeekly !== false && !paused(iso)) {
+      const w = weekAhead(state, iso);
+      if (w) push({ id: `r:week:${iso}`, kind: "week", fireAt: quiet(at(iso, "20:00"), qs, qe), target: dayEnd(iso).getTime(), ...w, url: "#/donem" });
+    }
+    if (settings.notifyClasses && !paused(iso)) {
       for (const { c, s } of classes) {
         const start = at(iso, s.start);
         push({

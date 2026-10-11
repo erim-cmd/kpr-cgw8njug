@@ -1119,6 +1119,7 @@ dialog.sheet.full .sheet-body { flex: 1; padding-bottom: calc(24px + var(--safe-
 .pf-body .group-row { min-height: 56px; }
 .pf-body .group-row select { max-width: 170px; min-height: 44px; }
 .pf-body .group-row input[type="time"] { max-width: 130px; min-height: 44px; }
+.pf-body .group-row input[type="date"] { min-height: 44px; }
 .pf-body .btn { min-height: 44px; }
 
 /* ---- Ara ---- */

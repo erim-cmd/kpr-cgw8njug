@@ -11,7 +11,7 @@
  * Uygulamada "Yeni sürüm hazır → Yenile" uyarısı çıkar (bkz. js/app.js).
  */
 
-const VERSION = "2.26.0";
+const VERSION = "2.27.1";
 const SHELL_CACHE = `kpr-shell-${VERSION}`;
 
 const SHELL = [
@@ -156,7 +156,7 @@ const REMINDER_URL = "./__kpr-reminders.json";
 function describeReminder(r, now, L) {
   var f = function (s, v) { return s.replace(/\{(\w+)\}/g, function (m, k) { return v && k in v ? String(v[k]) : m; }); };
   var pad = function (n) { return (n < 10 ? "0" : "") + n; };
-  if (r.kind === "day" || !L) return { title: r.title, body: r.body };
+  if (r.kind === "day" || r.kind === "week" || !L) return { title: r.title, body: r.body };
   var tg = new Date(r.target);
   var nw = new Date(now);
   var days = Math.round((new Date(tg.getFullYear(), tg.getMonth(), tg.getDate()) - new Date(nw.getFullYear(), nw.getMonth(), nw.getDate())) / 86400000);

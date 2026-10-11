@@ -24,7 +24,7 @@ import { THEMES, applyTheme } from "./theme.js";
 import { LANGS, setLang, t, localize } from "./i18n.js";
 import { CITIES } from "./weather.js";
 
-export const APP_VERSION = "2.26.0";
+export const APP_VERSION = "2.27.1";
 const BRAND = "Köprü"; // i18n-ok — marka adı çevrilmez
 
 // Sınıf etiketleri (store.js YEARS anahtarları)
@@ -160,12 +160,18 @@ function notifyPage(state) {
       ${switchRow("notifyExams", t("Sınavlar"), t("1 hafta, 1 gün ve 2 saat önce."), s.notifyExams)}
       ${switchRow("notifyDue", t("Teslimler"), t("3 gün, 1 gün ve 3 saat önce."), s.notifyDue)}
       ${switchRow("notifyDaily", t("Günün özeti"), t("Her sabah 08:00'de bugünün dersleri ve teslimleri."), s.notifyDaily)}
+      ${switchRow("notifyWeekly", t("Haftaya bakış"), t("Pazar 20:00'de: haftanın sınavları, teslimleri ve dönem notunun yüzde kaçı belirleniyor."), s.notifyWeekly)}
       ${switchRow("notifyClasses", t("Dersten 15 dk önce"), t("Her ders için ayrı hatırlatma."), s.notifyClasses)}
     </div></section>
     <section><h3 class="mini-title">${t("Sessiz saatler")}</h3><div class="group">
       <label class="group-row"><div><strong>${t("Başlangıç")}</strong></div><input type="time" name="quietStart" value="${esc(s.quietStart)}" aria-label="${t("Sessiz saatler başlangıç")}"></label>
       <label class="group-row"><div><strong>${t("Bitiş")}</strong></div><input type="time" name="quietEnd" value="${esc(s.quietEnd)}" aria-label="${t("Sessiz saatler bitiş")}"></label>
     </div><p class="fine">${t("Bu saatlere düşen teslim hatırlatması, sessiz saatler başlamadan 3 saat önce gelir.")}</p></section>
+    <section><h3 class="mini-title">${t("Tatil ve ara dönem")}</h3><div class="group">
+      ${switchRow("pauseOn", t("Ders hatırlatmalarını duraklat"), t("Bu tarihlerde ders, günün özeti ve haftaya bakış gelmez. Sınav ve teslim hatırlatmaları gelir."), s.pauseOn)}
+      <label class="group-row"><div><strong>${t("Başlangıç")}</strong></div><input type="date" name="pauseStart" value="${esc(s.pauseStart)}" aria-label="${t("Tatil başlangıcı")}"></label>
+      <label class="group-row"><div><strong>${t("Bitiş")}</strong></div><input type="date" name="pauseEnd" value="${esc(s.pauseEnd)}" aria-label="${t("Tatil bitişi")}"></label>
+    </div></section>
     ${on ? `<section><div class="group"><div class="group-row"><div><strong>${t("Deneme")}</strong><p>${t("Bildirimlerin nasıl göründüğüne bak.")}</p></div>
       <button class="btn btn-ghost" type="button" data-act="notify-test">${t("Gönder")}</button></div></div></section>` : ""}
     <section><h3 class="mini-title">${t("Takvim")}</h3><div class="group">${calendarRows(state)}</div>
@@ -271,11 +277,19 @@ function saveProfile(form, go) {
 
 function saveNotify(form, go) {
   const f = form.elements;
+  const pauseStart = f.pauseStart.value, pauseEnd = f.pauseEnd.value;
+  // Duraklatma açıkken iki tarih de gerekli; bitiş başlangıçtan önce olamaz (store.js normalize da kapatır)
+  if (f.pauseOn.checked && (!pauseStart || !pauseEnd)) return toast(t("Tatil için başlangıç ve bitiş tarihini seç"));
+  if (f.pauseOn.checked && pauseEnd < pauseStart) return toast(t("Bitiş tarihi başlangıçtan önce olamaz"));
   store.setSettings({
     notifyExams: f.notifyExams.checked,
     notifyDue: f.notifyDue.checked,
     notifyDaily: f.notifyDaily.checked,
+    notifyWeekly: f.notifyWeekly.checked,
     notifyClasses: f.notifyClasses.checked,
+    pauseOn: f.pauseOn.checked,
+    pauseStart,
+    pauseEnd,
     quietStart: f.quietStart.value || "23:00",
     quietEnd: f.quietEnd.value || "08:00",
   });

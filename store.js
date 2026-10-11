@@ -47,6 +47,13 @@ export const INTERESTS = localize({
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+/** Takvimde gerçekten olan gün mü (2026-02-30 değil) */
+const realDate = (v) => {
+  if (typeof v !== "string" || !DATE.test(v)) return false;
+  const [y, m, d] = v.split("-").map(Number);
+  const x = new Date(y, m - 1, d);
+  return x.getFullYear() === y && x.getMonth() === m - 1 && x.getDate() === d;
+};
 const HEX = /^#[0-9a-f]{6}$/i;
 
 // Profil → sınıf (anahtar → etiket; etiketler settings.js'te çevrilir)
@@ -65,7 +72,8 @@ export const uid = () =>
 // lang: arayüz dili — "tr" | "en" (i18n.js)
 // studentNo: hocaya mail taslağına eklenen öğrenci numarası (mail.js; isteğe bağlı, cihazda)
 const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false, todayView: "bugun", interests: [], theme: "sistem", lang: "tr", studentNo: "", aiReading: false,
-  notifyExams: true, notifyDue: true, notifyDaily: true, quietStart: "23:00", quietEnd: "08:00", weatherOn: true, weatherCity: "istanbul" });
+  notifyExams: true, notifyDue: true, notifyDaily: true, notifyWeekly: true, quietStart: "23:00", quietEnd: "08:00", pauseOn: false, pauseStart: "", pauseEnd: "",
+  weatherOn: true, weatherCity: "istanbul" });
 // version: veri şeması sürümü (göçler migrate.js'te; v2 = geçmiş dönemler gpaBase'e çevrildi)
 // archive: göçte arayüzden kaldırılan ama silinmeyen veri (geri dönüş için)
 const empty = () => ({ version: 1, profile: { name: "", university: "", year: "" }, courses: [], tasks: [], transcript: [], gpaBase: null, settings: defaultSettings(), archive: { transcript: [] }, electives: [] });
@@ -202,6 +210,12 @@ function normEntry(e) {
   return { id: str(e.id, 64) || uid(), year, season: e.season, code, name, credit, ects: num(e.ects, 0, 60), grade: g };
 }
 
+function normPause(s) {
+  const start = realDate(s.pauseStart) ? s.pauseStart : "";
+  const end = realDate(s.pauseEnd) ? s.pauseEnd : "";
+  return { pauseOn: s.pauseOn === true && !!start && !!end && end >= start, pauseStart: start, pauseEnd: end };
+}
+
 function normSettings(s) {
   const d = defaultSettings();
   if (!s || typeof s !== "object") return d;
@@ -224,9 +238,14 @@ function normSettings(s) {
     notifyExams: s.notifyExams !== false,
     notifyDue: s.notifyDue !== false,
     notifyDaily: s.notifyDaily !== false,
+    // Haftaya bakış: Pazar 20:00'de önümüzdeki 7 günün sınav/teslim sayısı ve not payı
+    notifyWeekly: s.notifyWeekly !== false,
     // Sessiz saatler: bu aralıkta düşen teslim hatırlatması aralık başlamadan 3 saat önceye alınır (alerts.js quiet)
     quietStart: TIME.test(s.quietStart) ? s.quietStart : d.quietStart,
     quietEnd: TIME.test(s.quietEnd) ? s.quietEnd : d.quietEnd,
+    // Tatil ve ara dönem: aralıkta (iki gün dahil) ders, günün özeti ve haftaya bakış gelmez; sınav/teslim gelir.
+    // Tarih geçersizse ya da bitiş başlangıçtan önceyse kapalı.
+    ...normPause(s),
     // Kampüste: hava durumu (yalnız şehrin koordinatı Open-Meteo'ya gider; weather.js)
     weatherOn: s.weatherOn !== false,
     weatherCity: s.weatherCity === "" || Object.hasOwn(CITY_KEYS, s.weatherCity) ? s.weatherCity ?? d.weatherCity : d.weatherCity,

@@ -137,16 +137,20 @@ function heroBlock(open, courses) {
  */
 // Hafta şeridi components.js'te (Hafta görünümüyle ortak)
 
+/** "Bu hafta": bugünden itibaren 7 gün (takvim haftası değil; Pazar günü yarın da "bu hafta"). */
+const inWeek = (t) => daysUntil(t.due) >= 0 && daysUntil(t.due) <= 7;
+
 /** Selamın altındaki tek cümle: bugünün ve haftanın özeti. */
 function summary(state, open, sessions, now) {
   if (!state.courses.length) return "";
   const left = sessions.filter((s) => now < toMin(s.end)).length;
-  const week = open.filter((t) => !isLight(t) && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 6 - todayIdx()).length;
+  // "Bu hafta" listesiyle aynı pencere (önümüzdeki 7 gün); Sıradaki kartındaki iş de sayılır
+  const week = open.filter((t) => !isLight(t) && inWeek(t)).length;
   // Tek cümle; iki sayı olunca İngilizce tekil/çoğul için ders sayısı 1 ayrı anahtar
   let text;
-  if (!sessions.length) text = week ? t("Bugün dersin yok, bu hafta {n} teslimin var.", { n: week }) : t("Bugün dersin yok, bu hafta başka teslimin yok.");
-  else if (!left) text = week ? t("Bugünkü derslerin bitti, bu hafta {n} teslimin var.", { n: week }) : t("Bugünkü derslerin bitti, bu hafta başka teslimin yok.");
-  else if (!week) text = t("Bugün {n} dersin var, bu hafta başka teslimin yok.", { n: left });
+  if (!sessions.length) text = week ? t("Bugün dersin yok, bu hafta {n} teslimin var.", { n: week }) : t("Bugün dersin yok, bu hafta teslimin yok.");
+  else if (!left) text = week ? t("Bugünkü derslerin bitti, bu hafta {n} teslimin var.", { n: week }) : t("Bugünkü derslerin bitti, bu hafta teslimin yok.");
+  else if (!week) text = t("Bugün {n} dersin var, bu hafta teslimin yok.", { n: left });
   else if (left === 1) text = t("Bugün 1 dersin var, bu hafta {n} teslimin var.", { n: week });
   else text = t("Bugün {d} dersin var, bu hafta {n} teslimin var.", { d: left, n: week });
   return `<p class="page-sub">${text}</p>`;
@@ -188,7 +192,7 @@ export function view() {
   const { task: heroTask, exam: heroExam } = heroPick(open);
   const heroId = heroTask?.id;
   // Kartta görünen iş ve kartın altındaki "Sonraki sınav" listede tekrar etmez
-  const upcoming = open.filter((t) => t.id !== heroId && t.id !== heroExam?.id && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 7).sort(byDue);
+  const upcoming = open.filter((t) => t.id !== heroId && t.id !== heroExam?.id && inWeek(t)).sort(byDue);
   const hidden = dismissed();
   // Üstteki kartın gösterdiği görev için uyarıyı tekrarlama
   // Kartta görünen sınav da uyarı listesinde tekrar etmesin

@@ -267,4 +267,17 @@ export default {
   "Toplam {p}, 100 değil. Ağırlıkları syllabus'la karşılaştır.": "Total {p}, not 100. Compare the weights with the syllabus.",
   "Toplam {p}": "Total {p}",
   "Not toplamı {p}, 100 değil. Ağırlıkları düzelt ya da altındaki kutuyu işaretle.": "Weights add up to {p}, not 100. Fix them or tick the box below.",
+
+  // v2.27: Haftaya bakış, tatilde duraklat
+  "Haftaya bakış": "Week ahead",
+  "Haftaya bakış: {ad}": "Week ahead: {ad}",
+  "Dönem notunun {p} kadarı bu hafta belirleniyor.": "{p} of your term grade is decided this week.",
+  "Pazar 20:00'de: haftanın sınavları, teslimleri ve dönem notunun yüzde kaçı belirleniyor.": "Sunday 20:00: the week's exams, deadlines and how much of your term grade is decided.",
+  "Tatil ve ara dönem": "Holidays and breaks",
+  "Ders hatırlatmalarını duraklat": "Pause class reminders",
+  "Bu tarihlerde ders, günün özeti ve haftaya bakış gelmez. Sınav ve teslim hatırlatmaları gelir.": "No class, daily summary or week-ahead reminders on these dates. Exam and deadline reminders still come.",
+  "Tatil başlangıcı": "Break start",
+  "Tatil bitişi": "Break end",
+  "Tatil için başlangıç ve bitiş tarihini seç": "Pick a start and end date for the break",
+  "Bitiş tarihi başlangıçtan önce olamaz": "The end date can't be before the start date",
 };
