@@ -124,7 +124,7 @@ export function openCourseForm(course = null) {
         </div>
         <fieldset class="field"><legend>${t("Renk")}</legend>${swatches(c.color)}</fieldset>
         <fieldset class="field"><legend>${t("Haftalık ders saatleri")}</legend>
-          <div class="srows" data-rows="sessions">${c.sessions.map(sessionRow).join("")}</div>
+          <div class="srows" data-rows="sessions" data-empty="${t("Henüz saat eklenmedi.")}">${c.sessions.map(sessionRow).join("")}</div>
           <button type="button" class="btn btn-ghost" data-add="sessions">${icon.plus}${t("Saat ekle")}</button>
         </fieldset>
         <details class="more" ${c.credit !== null || c.attendPct !== null || c.absLimit !== null ? "open" : ""}>
@@ -159,7 +159,7 @@ export function openCourseForm(course = null) {
               <input name="officeHours" value="${esc(c.officeHours)}" maxlength="80" placeholder="${t("ör. Salı 14:00–16:00")}">
             </label>
             <fieldset class="field"><legend>${t("Not dağılımı")} <span class="hint">${t("(not hesaplayıcı için)")}</span></legend>
-              <div class="srows" data-rows="grading">${c.grading.map(gradeRow).join("")}</div>
+              <div class="srows" data-rows="grading" data-empty="${t("Not dağılımı bulunamadı. Syllabus'tan bakıp Bileşen ekle ile gir.")}">${c.grading.map(gradeRow).join("")}</div>
               <button type="button" class="btn btn-ghost" data-add="grading">${icon.plus}${t("Bileşen ekle")}</button>
             </fieldset>
           </div>

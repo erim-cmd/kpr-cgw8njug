@@ -268,6 +268,10 @@ export default {
   "Toplam {p}": "Total {p}",
   "Not toplamı {p}, 100 değil. Ağırlıkları düzelt ya da altındaki kutuyu işaretle.": "Weights add up to {p}, not 100. Fix them or tick the box below.",
 
+  // v2.27.2: boş liste mesajları (importer.js, forms.js)
+  "Henüz saat eklenmedi.": "No class hours yet.",
+  "Not dağılımı bulunamadı. Syllabus'tan bakıp Bileşen ekle ile gir.": "No grade breakdown found. Check the syllabus and enter it with Add component.",
+
   // v2.27: Haftaya bakış, tatilde duraklat
   "Haftaya bakış": "Week ahead",
   "Haftaya bakış: {ad}": "Week ahead: {ad}",

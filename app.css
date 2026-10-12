@@ -259,7 +259,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 .srow { display: grid; grid-template-columns: 1.3fr 1fr 1fr auto; gap: 6px; align-items: center; padding: 8px; border: 1px solid var(--border); border-radius: var(--r-md); }
 .srow select, .srow input { padding: 8px 8px; }
 .srow [data-f="room"] { grid-column: 1 / -1; }
-.srows:empty::before { content: "Henüz saat eklenmedi."; font-size: var(--fs-sm); color: var(--text-muted); }
+/* Boş liste mesajı her listenin kendi data-empty metni (çevrilmiş; importer.js, forms.js) */
+.srows:empty::before { content: attr(data-empty); font-size: var(--fs-sm); color: var(--text-muted); }
 
 /* ---- Bildirim (toast) ---- */
 .toast {
@@ -1073,9 +1074,9 @@ button.tl-row { width: 100%; padding: 10px 14px; border-radius: var(--r-md); bac
 /* ---- Dokunma alanı ≥ 44px (Apple HIG) ----
    Küçük denetimler aynı görünür; görünmez bir katman dokunulan alanı en az 44×44px'e büyütür.
    .abs-btn ve .flag-hide zaten konumlu (absolute); :where sayesinde onların konumu korunur. */
-:where(.brand, .add-syllabus, .icon-btn, .check, .pick-chip, .link, .u-pick, .focus-done, .chip-btn, .mini-add, .site-link, .info-note summary, .flag-src summary, .footnote a, a[href^="mailto:"], .seg button) { position: relative; } /* :where — kendi konumu olan (ör. .flag-hide) bozulmaz */
+:where(.brand, .add-syllabus, .icon-btn, .check, .pick-chip, .link, .u-pick, .focus-done, .chip-btn, .mini-add, .site-link, .info-note summary, .flag-src summary, .footnote a, a[href^="mailto:"], .seg button, .total-ok) { position: relative; } /* :where — kendi konumu olan (ör. .flag-hide) bozulmaz */
 .focus-exam { position: relative; } /* all: unset sonrası */
-:is(.brand, .add-syllabus, .icon-btn, .check, .pick-chip, .link, .u-pick, .focus-done, .focus-exam, .abs-btn, .chip-btn, .mini-add, .site-link, .info-note summary, .flag-src summary, .footnote a, a[href^="mailto:"], .seg button)::after {
+:is(.brand, .add-syllabus, .icon-btn, .check, .pick-chip, .link, .u-pick, .focus-done, .focus-exam, .abs-btn, .chip-btn, .mini-add, .site-link, .info-note summary, .flag-src summary, .footnote a, a[href^="mailto:"], .seg button, .total-ok)::after {
   content: ""; position: absolute; left: 50%; top: 50%;
   width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
 }
