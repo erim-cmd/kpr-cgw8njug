@@ -1,0 +1,9 @@
+ÖRNEK TIP FAKÜLTESİ DÖNEM I ÖĞRENCİ REHBERİ
+Dönem I beş ders kurulundan oluşur. Her ders kurulunun sonunda kurul sonu sınavı yapılır.
+Devam Zorunluluğu: Teorik derslerin %70'ine, pratik derslerin %80'ine devam zorunludur.
+Kurul Sonu Sınav Notu Hesaplanması: Tüm sınavlar 100 puan üzerinden yapılır ve nihai not
+100 üzerinden duyurulur. Kurul sonu sınav puanının %10'u Klinik Beceri Uygulama (KBU)
+dersinden kazanılır. Yani kurul sonu sınav notu: (KBU notu x %10) + (kurul
+sonu sınavı x %90) şeklinde hesaplanır. Kurul sonu sınavı birden çok sınavdan oluşabilir.
+Örneğin herhangi bir kurulda KBU (%10), çoktan seçmeli teorik sınav (%75), pratik sınav(lar) %15
+şeklinde olabilir. Ders kurulu sınavlarının ağırlıklarını belirlemeye dönem koordinatörlüğü yetkilidir.

@@ -1,0 +1,15 @@
+PSY 101 Introduction to Psychology I
+Title, Name-Last Name	Dr. Sample Person
+Instructor
+
+This is a theoretical course with 3 hours per week. It will be Face-to-Face. The students can study and work on
+Information about
+the course topics through coursebook, videos, related materials. Fall term grade will be the total of midterm exam
+Course
+(%35), presentation and weekly homeworks (%15) and final exam (%50).
+
+WEEKLY COURSE CONTENTS
+
+Week	Topics	Teaching Methods and Techniques
+1. Week	Introduction	Face-to-Face
+2. Week	Research methods	Face-to-Face

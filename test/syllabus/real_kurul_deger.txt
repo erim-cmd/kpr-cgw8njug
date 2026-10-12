@@ -1,0 +1,29 @@
+ÖRNEK TIP FAKÜLTESİ DÖNEM III
+4. DERS KURULU
+Kurul sonu sınavı ders kurulunun son günü yapılır. Ders kurulu sınav soru dağılımı aşağıdadır.
+
+Ders	Soru sayısı
+Farmakoloji	12
+Patoloji	30
+Mikrobiyoloji	18
+TOPLAM	100
+
+DERS KURULU SINAVI DEĞERLENDİRME
+Ders Kurulu Etkinlikleri	Adet	Değer (%)
+
+Uygulama sınavı
+Yok	0
+(Anabilim Dalları ayrı ayrı)
+
+Sözlü sınav
+Yok	0
+
+PDÖ Oturum Değerlendirmesi	Yok	0
+
+Mesleki Beceri Uygulama Sınavı	1	15
+
+Ders Kurul yazılı sınavı
+1	85
+(Çoktan seçmeli )
+
+Toplam	2	100
