@@ -1,0 +1,20 @@
+ÖRNEK TIP FAKÜLTESİ
+DÖNEM I EĞİTİM-ÖĞRETİM REHBERİ
+Dönem I dört ders kurulundan oluşur. Her ders kurulu sonunda kurul sınavı yapılır.
+
+Ders kurulu	Başlangıç	Bitiş
+I. Ders Kurulu (Hücre)	02.10.2023	10.11.2023
+II. Ders Kurulu (Doku)	13.11.2023	22.12.2023
+
+DERS KURULU SINAVLARININ DEĞERLENDİRİLMESİ
+Hücre	Doku	Metabolizma
+Kurulu	Kurulu	Kurulu
+Test,	Test, Pratik
+Sınav Şekli	Test	Laboratuvarda	Test
+Değerlendirme
+Yazılı	%90	%75	%100
+Uygulama	%10	%25	%0
+Toplam	%100	%100	%100
+
+Kurul sınav soruları derslerin teorik saatleriyle orantılıdır.
+Ders kurulu sınavına girebilmek için teorik derslerin %70'ine devam zorunludur.

@@ -9,7 +9,7 @@
  * Emin olunamayan her şey warnings'e yazılır; öğrenci kaydetmeden önce kontrol ekranında düzeltir.
  */
 
-import { isKurulDoc, kurulCalendar, kurulAbove, kurulLabel } from "./kurul.js";
+import { isKurulDoc, kurulCalendar, kurulAbove, kurulLabel, kurulGrading, kurulGrid } from "./kurul.js";
 
 /* ------------------------------------------------------------------ */
 /* Metin yardımcıları                                                    */
@@ -188,9 +188,23 @@ function labelPairs(line, fline) {
 
 const GRADING_HEAD = /^(olcme ve )?degerlendirme|notlandirma|basari notu|degerlendirme sistemi|grading|assessment|evaluation|course evaluation|grade distribution|basari degerlendirme|degerlendirme olcutleri/;
 const SKIP_ROW = /\b(toplam|total|genel toplam|sum)\b|basariya (katkisi|orani)|basari notuna katkisi|yariyil ici calismalari|donem ici calismalar|yil ici|katkisi$/;
-const COMPONENT = /(vize|ara sinav|arasinav|midterm|final|yariyil sonu|quiz|kisa sinav|odev|homework|assignment|proje|project|lab|laboratuvar|sunum|presentation|rapor|report|katilim|participation|attendance|devam|uygulama|pratik|practice|seminer|seminar|tartisma|discussion|bitirme|portfolyo|portfolio|arazi|atolye|workshop|problem set|case|vaka|paper|essay|makale|exam|sinav|test|sertifika|certificate|mooc|term-time work|term time work)/;
+const COMPONENT = /(vize|ara sinav|arasinav|mid-?term|final|yariyil sonu|quiz|kisa sinav|odev|homework|assignment|proje|project|lab|laboratuvar|sunum|presentation|rapor|report|katilim|participation|attendance|devam|uygulama|pratik|practice|seminer|seminar|tartisma|discussion|bitirme|portfolyo|portfolio|arazi|atolye|workshop|problem set|case|vaka|paper|essay|makale|exam|sinav|test|sertifika|certificate|mooc|term-time work|term time work)/;
 
 function parseGrading(lines, flines) {
+  // İki satıra bölünmüş cümle (Toros güz): "…the total of midterm exam" / [sol sütun etiketi "Course"] /
+  // "(%30), presentation …". Yüzdeyle başlayan satır, bileşen adıyla biten önceki satıra eklenir.
+  lines = lines.slice();
+  for (let i = 1; i < lines.length; i++) {
+    if (!/^\(\s*%?\s*\d{1,3}\s*%?\s*\)/.test(lines[i].trim())) continue;
+    let j = i - 1;
+    const label = lines[j].trim();
+    if (label && label.length <= 25 && !/[\d%.,;:()\t]/.test(label) && label.split(/\s+/).length <= 3) j--;
+    const prev = j >= 0 ? lines[j].trim() : "";
+    if (!/[A-Za-zÇĞİÖŞÜçğıöşü]$/.test(prev) || prev.includes("\t") || !COMPONENT.test(fold(prev.split(/\s+/).slice(-3).join(" ")))) continue;
+    lines[i] = `${prev} ${lines[i].trim()}`;
+    lines[j] = "";
+  }
+  flines = lines.map(fold);
   // İTÜ ders formu: "Faaliyetler · Adedi · Genel Nota Katkı, %" tablosu dikey kırılır; her bileşenin adı
   // "adet · katkı" satırının ("2 · 30") hemen üstünde ("Yıl İçi Sınavları", "Başarı Değerlendirme · Ödevler").
   const itu = flines.findIndex((l) => /genel nota katki|effects on grading/.test(l));
@@ -214,26 +228,47 @@ function parseGrading(lines, flines) {
   const found = new Map();
   const shares = { sem: null, fin: null };
   let headerWeightCol = -1;
+  // Çok sütunlu ağırlık tablosunda "Term Grade / Dönem notu" sütunu: ad sütunu (Esenyurt)
+  let headerNameCol = -1;
   let inSection = 0;
+  // "Ex." / "Örnek:" ile başlayan örnek tablo: boş satıra kadar okunmaz (Esenyurt)
+  let example = false;
+  // Puanla verilen not: "Midterm Exam | 100 points" … "Total | 400 points" → sonunda yüzdeye çevrilir
+  const points = [];
+  let pointsTotal = null;
   for (let i = 0; i < lines.length; i++) {
     add.at = i;
     const f = flines[i].trim();
+    if (!f) example = false;
+    if (/^(ex|e\.g|orn|ornek)\s*[.:](\s|$)/.test(f)) example = true;
+    if (example) continue;
+    // Puan satırı (yüzde yok): ad · "N points/puan" çiftleri; toplam satırı ayrı tutulur
+    if (/\b\d{1,4}\s*(points?|pts|puan)\b/.test(f) && !/%/.test(f)) {
+      const pc = lines[i].split("\t").map(clean);
+      for (let k = 0; k + 1 < pc.length; k++) {
+        const pm = /^(\d{1,4})\s*(points?|pts|puan)$/i.exec(fold(pc[k + 1]));
+        if (!pm || !pc[k] || /\d/.test(pc[k]) && !COMPONENT.test(fold(pc[k]))) continue;
+        if (SKIP_ROW.test(fold(pc[k]))) pointsTotal = +pm[1];
+        else if (COMPONENT.test(fold(pc[k]))) points.push({ name: pc[k], pts: +pm[1], source: lines[i].replace(/\t/g, " · "), at: i });
+      }
+      continue;
+    }
     // Gerçek bölüm başlıkları kısa ve büyük harfle başlar ("Değerlendirme", "6. ..."); uzun bir cümle ya da
     // tablo satırı içinde geçen "değerlendirme" gibi bir sözcük (ör. haftalık planın bir hücresinde) başlık sayılmaz.
     const lineTrim = lines[i].trim();
     if (lineTrim.length <= 90 && /^[0-9A-ZÇĞİÖŞÜ]/.test(lineTrim) && GRADING_HEAD.test(f.replace(/^\d+[.)]\s*/, ""))) {
       inSection = 30;
-      headerWeightCol = -1; // yeni bölüm: önceki tablodan kalma sütun indeksini unut
+      headerWeightCol = headerNameCol = -1; // yeni bölüm: önceki tablodan kalma sütun indeksini unut
     } else if (inSection) {
       inSection--;
-      if (inSection === 0) headerWeightCol = -1; // pencere kapandı: eski sütun indeksi başka bir tabloya sızmasın
+      if (inSection === 0) headerWeightCol = headerNameCol = -1; // pencere kapandı: eski sütun indeksi başka bir tabloya sızmasın
     }
     // Sayfa altlığı ("COURSE SYLLABUS | 14467 MIM 484E Construction Project · 2"): sayfa numarası ağırlık değildir
     if (/\bsyllabus\b|izlence|\bpage \d|sayfa \d/.test(f) && /\|/.test(f) && !/%/.test(f)) continue;
     // AKTS / iş yükü tablosu ("ECTS Table", "AKTS İş Yükü"): saat ve adet sayıları ağırlık değildir; not bölümü burada biter
     if (lineTrim.length <= 60 && /^(ects|akts)\b.*(table|tablosu|is yuku|workload|hesab)|^(is yuku|workload)\b/.test(f)) {
       inSection = 0;
-      headerWeightCol = -1;
+      headerWeightCol = headerNameCol = -1;
       continue;
     }
     let cells = lines[i].split("\t").map(clean);
@@ -246,7 +281,7 @@ function parseGrading(lines, flines) {
     // Farklı bir tablonun başlığına geçildiyse (ör. haftalık planın "Hafta" sütunu), önceki tablodan
     // kalma ağırlık-sütunu indeksini unut — yoksa çok sonraki alakasız bir satıra yanlışlıkla sızabilir.
     if (cells.length >= 2 && fcells.some((c) => /^(hafta|week|wk|hf)\b|^(weeks|haftalar)\s*$/.test(c.trim()))) {
-      headerWeightCol = -1;
+      headerWeightCol = headerNameCol = -1;
       inSection = 0;
     }
 
@@ -273,6 +308,21 @@ function parseGrading(lines, flines) {
       const wc = fcells.findIndex((c) => (/katki|agirlik|weight|oran|yuzde|percent|puan|notuna etkisi/.test(c) || (/%/.test(c) && !/\d/.test(c))) && !COMPONENT.test(c));
       if (wc > 0 && !fcells.some((c) => /^\d/.test(c))) {
         headerWeightCol = wc;
+        headerNameCol = -1;
+        // Birden çok "ad | ağırlık" sütun çifti (ara sınav alt kırılımı, final alt kırılımı, dönem notu):
+        // dersin notu "Term Grade / Dönem notu" çiftindedir (Esenyurt)
+        const pairs = fcells.map((c, k) => (k > 0 && /weight|agirlik|katki|oran|percent/.test(c) ? k : -1)).filter((k) => k > 0);
+        const term = pairs.find((k) => /term grade|course grade|final grade|overall grade|donem notu|basari notu|ders notu|yil sonu notu/.test(fcells[k - 1]));
+        if (pairs.length >= 2 && term) {
+          headerWeightCol = term;
+          headerNameCol = term - 1;
+        }
+        continue;
+      }
+      if (headerNameCol > 0) {
+        const nm = cells[headerNameCol];
+        const w = cells[headerWeightCol] !== undefined ? numIn(cells[headerWeightCol]) : null;
+        if (nm && COMPONENT.test(fold(nm)) && !SKIP_ROW.test(fold(nm)) && w !== null && w > 0 && w <= 100) add(found, stripPct(nm), w, lines[i]);
         continue;
       }
       // "CLO No. / Assessment Component / Weight" gibi tablolarda ilk sütun ders çıktısı numarasıdır
@@ -378,6 +428,12 @@ function parseGrading(lines, flines) {
     }
   }
   let out = pickHundred([...found.values()].filter((g) => g.name)).sort((a, b) => a.at - b.at).map(({ name, weight, source, bonus }) => ({ name: cut(name, 40), weight, source, ...(bonus ? { bonus } : {}) }));
+  // Puanla verilen not: yüzdeli dağılım 100 etmiyorsa ve "Total N points" satırı puanların toplamıysa yüzdeye çevir
+  const pctSum = out.filter((g) => !g.bonus).reduce((t, g) => t + g.weight, 0);
+  const ptsSum = points.reduce((t, p) => t + p.pts, 0);
+  if (Math.abs(pctSum - 100) > 0.5 && points.length >= 2 && pointsTotal && ptsSum === pointsTotal) {
+    out = points.map((p) => ({ name: cut(p.name, 40), weight: Math.round((p.pts / pointsTotal) * 10000) / 100, source: clean(p.source) }));
+  }
   // Bologna: bileşenler yarıyıl içinin kendi içindeki payları (toplam 100) ve final ayrı bir satırda → ölçekle
   const hasFinal = out.some((g) => /final|yariyil sonu|yil sonu/.test(fold(g.name)));
   const sum = out.filter((g) => !g.bonus).reduce((t, g) => t + g.weight, 0);
@@ -1928,7 +1984,12 @@ export function parseSyllabus(text, now = new Date()) {
   let grading = parseGrading(lines, flines);
   // Tıp kurulu rehberi: ızgara ve yönetmelik sayıları not ağırlığı değildir. Tam 100 eden bir tablo yoksa
   // hiçbirini getirme; öğrenci kendi kurulunun ağırlığını girer (gerçek izlence ölçümü: 5 rehberde sahte ağırlık)
-  if (kurul && Math.abs(grading.filter((g) => !g.bonus).reduce((t, g) => t + g.weight, 0) - 100) > 0.5) grading = [];
+  // Önce kurulun kendi değerlendirme tablosu (sütunlu, "Adet | Değer (%)", formül; yalnız tam 100 ederse)
+  const kg = kurul ? kurulGrading(lines, flines) : null;
+  if (kg) {
+    grading = kg.grading;
+    if (kg.warning) warnings.add(kg.warning);
+  } else if (kurul && Math.abs(grading.filter((g) => !g.bonus).reduce((t, g) => t + g.weight, 0) - 100) > 0.5) grading = [];
   // Not tablosunda olan ama takvimde hiç geçmeyen vize/final: tarihsiz sınav olarak ekle (öğrenci tarihini girer,
   // geri sayım ve GNO simülasyonu o sınavı bilir). Uydurma tarih yok.
   const groupOf = (t) => ITEM_KINDS.find((k) => k.re.test(fold(t)))?.group;
@@ -2013,6 +2074,8 @@ export function parseSyllabus(text, now = new Date()) {
   }
   if (kurul) {
     for (const x of kurulCalendar(lines, flines)) if (!items.some((it) => it.date === x.date)) items.push(x);
+    // Haftalık ızgaradaki "TEORİK SINAV" hücreleri (gün belli değilse tarihsiz, hafta aralığı başlıkta)
+    for (const x of kurulGrid(lines, flines)) if (!items.some((it) => (x.date ? it.date === x.date && fold(it.title) === fold(x.title) : it.title === x.title))) items.push(x);
     // Genel adlı sınava ("Teorik Sınav", "Uygulama Sınavı") üstteki kurul başlığını ekle
     const key = (l) => cut(clean(l.replace(/\t/g, " · ")), 150);
     const srcLine = new Map();

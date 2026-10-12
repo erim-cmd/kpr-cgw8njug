@@ -1,0 +1,13 @@
+ECO 210 Introductory Econometrics
+Instructor: Dr. Sample Person
+
+GRADING
+Course grade is calculated from points collected during the term.
+Component	Points
+Homework	50 points
+Quizzes	50 points
+Midterm Exam	100 points
+Final Exam	200 points
+Total	400 points
+
+Letter grades: A ≥ 360 points, B ≥ 320 points, C ≥ 280 points.

@@ -24,6 +24,21 @@ const cases = {
   real_bos_sablon: {},
   // Belgenin kendisi %130 (ÇOMÜ): yakın satırlardaki fazlalık atılmaz, uyarı verilir
   web_toplam_130: { Vize: 40, Final: 60, "Derse devam": 10, "Ödevler ve sunumlar": 10, "Derse aktif katılım": 10 },
+  // v2.27.3 — tıp kurulu içindeki not tablosu (yalnız tam 100 ederse; Medipol, Muğla, SDÜ):
+  // kurul başına sütunlu "Yazılı %90 %75 … / Uygulama %10 %25 … / Toplam %100 …" → ilk kurulun sütunu (uyarıyla)
+  real_kurul_sutun: { Yazılı: 90, Uygulama: 10 },
+  // "Ders Kurulu Etkinlikleri | Adet | Değer (%)": "Yok 0" satırları bileşen değil; ad üst satırda, açıklama altta
+  real_kurul_deger: { "Mesleki Beceri Uygulama Sınavı": 15, "Ders Kurul yazılı sınavı (Çoktan seçmeli)": 85 },
+  // Aralık ("8-10", "80-82") ağırlık değil; orta nokta uydurulmaz → hiç getirilmez
+  real_kurul_aralik: {},
+  // Formül cümlesi "(KBU notu x %10) + (kurul sonu sınavı x %90)"; "Örneğin … (%75) … %15" okunmaz
+  real_kurul_formul: { KBU: 10, "Kurul sonu sınavı": 90 },
+  // Puanla verilen not: "Total 400 points" satırı toplamı doğruluyorsa yüzdeye çevrilir
+  real_puan: { Homework: 12.5, Quizzes: 12.5, "Midterm Exam": 25, "Final Exam": 50 },
+  // Çok sütunlu ağırlık tablosunda "Term Grade" sütunu; "Ex." ile başlayan örnek tablolar ve puan satırları okunmaz (Esenyurt)
+  real_ornek_tablo: { "Mid-Term": 30, "Final Exam": 70 },
+  // İki satıra bölünmüş cümle (arada sol sütun etiketi): "…total of midterm exam / Course / (%35), presentation…" (Toros güz)
+  real_cumle_bolunmus: { "Midterm exam": 35, "Presentation and weekly homeworks": 15, "Final exam": 50 },
 };
 let pass = 0, fail = 0;
 for (const [name, want] of Object.entries(cases)) {
@@ -58,5 +73,23 @@ for (const [name, want] of Object.entries(cases)) {
     !r.items.some((x) => /kurul ·.*yıl sonu/i.test(x.title)) && r.warnings.some((w) => /ders kurulu rehberi/.test(w));
   ok ? pass++ : (fail++, console.log(`  ✗ real_tip_kurul: not ${JSON.stringify(r.grading.map((g) => g.weight))} · ${r.items.map((x) => `${x.title}@${x.date}`).join(" | ")}`));
 }
+// Kurul sütun tablosu: hangi kurulun oranı getirildiği söylenir (kurul başına farklı)
+{
+  const r = parseSyllabus(readFileSync(dir + "real_kurul_sutun.txt", "utf8"), new Date(2026, 8, 26));
+  const ok = r.warnings.some((w) => /kurula göre değişiyor/.test(w) && /ilk kurul/.test(w));
+  ok ? pass++ : (fail++, console.log(`  ✗ real_kurul_sutun uyarı: ${r.warnings.join(" | ")}`));
+}
+// Haftalık ızgarada sınav hücresi (Gazi, Demiroğlu): sütunu belli olan hücre o günün tarihiyle sınav;
+// boş hücreleri düşmüş satırda gün belli değil → tarih uydurulmaz, tarihsiz öğe + hafta aralığı başlıkta
+{
+  const r = parseSyllabus(readFileSync(dir + "real_kurul_izgara.txt", "utf8"), new Date(2026, 8, 26));
+  const at = (re, d) => r.items.filter((x) => re.test(x.title) && x.date === d).length;
+  const undated = (re) => r.items.filter((x) => re.test(x.title) && !x.date && !x.week && /10–14 Kasım/.test(x.title)).length;
+  const ok = at(/^Teorik Sınav$/, "2025-11-07") === 1 && at(/^Pratik Sınavı$/, "2025-11-05") === 1 &&
+    undated(/^Teorik Sınav/) === 1 && undated(/^Uygulama Sınavı/) === 1 &&
+    !r.items.some((x) => x.date >= "2025-11-10" && x.date <= "2025-11-14") && !r.items.some((x) => /tartışma|serbest/i.test(x.title));
+  ok ? pass++ : (fail++, console.log(`  ✗ real_kurul_izgara öğeler: ${r.items.map((x) => `${x.title}@${x.date || "?"}`).join(" | ")}`));
+}
+
 console.log(`\ngerçek izlence not dağılımı\n\n${pass} doğru, ${fail} hata`);
 process.exit(fail ? 1 : 0);
