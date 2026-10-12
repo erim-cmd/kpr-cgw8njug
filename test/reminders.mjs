@@ -252,6 +252,12 @@ function shownAt(st, now, only = /^r:(t1|e\d):/) {
   ok(!byId(list, "r:day:2026-10-12") && byId(list, "r:day:2026-10-13"), "bitiş günü dahil, ertesi gün özet gelir");
   ok(!list.some((r) => r.kind === "class" && r.id.includes("2026-10-12")), "tatil günündeki ders hatırlatması yok");
   ok(list.some((r) => r.kind === "class" && r.id.includes("2026-10-19")), "tatil sonrası (bir sonraki Pazartesi) ders hatırlatması var");
+  // Haftaya bakış tatil kontrolü haftanın ilk gününe (Pazartesi) göre: tatil Pazar bitiyorsa o akşam gelir,
+  // Pazartesi başlıyorsa gelmez
+  const weekOn = (ps, pe) => buildReminders(st({ pauseOn: true, pauseStart: ps, pauseEnd: pe }), D(10, 11, 0), 3).some((r) => r.id === "r:week:2026-10-11");
+  ok(weekOn("2026-10-03", "2026-10-11"), "tatil Pazar bitiyor → o akşam haftaya bakış gelir");
+  ok(!weekOn("2026-10-12", "2026-10-18"), "tatil Pazartesi başlıyor → önceki Pazar haftaya bakış gelmez");
+  ok(!weekOn("2026-10-05", "2026-10-12"), "tatil Pazartesi'yi de kapsıyor → haftaya bakış gelmez");
   // Sessiz saat kuralı tatilde de korunur (teslim 3 saat önce → önceki akşam 20:00)
   ok(byId(buildReminders(st({ pauseOn: true, pauseStart: "2026-10-10", pauseEnd: "2026-10-18" }), D(10, 11, 0), 5), "r:t1:3h")?.fireAt.getTime() === D(10, 12, 20).getTime(), "tatilde de sessiz saat kuralı");
 }

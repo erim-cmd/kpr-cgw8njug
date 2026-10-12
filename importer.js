@@ -391,7 +391,7 @@ function openReview(r, { reader = "local", aiError = "" } = {}) {
         <fieldset class="field"><legend>${t("Renk")}</legend>${swatches(color)}</fieldset>
 
         <h3 class="mini-title">${t("Haftalık ders saatleri")}</h3>
-        <div class="srows" data-rows="sessions">${sessions.map(sessionRow).join("")}</div>
+        <div class="srows" data-rows="sessions" data-empty="${t("Henüz saat eklenmedi.")}">${sessions.map(sessionRow).join("")}</div>
         <button type="button" class="btn btn-ghost" data-add="sessions">${icon.plus}${t("Saat ekle")}</button>
 
         <h3 class="mini-title">${t("Sınav ve ödev tarihleri")}</h3>
@@ -413,7 +413,7 @@ function openReview(r, { reader = "local", aiError = "" } = {}) {
         <p class="calc-note">${t("Bunlar ders sayfasının en üstünde görünecek.")}</p>` : ""}
 
         <h3 class="mini-title">${t("Not dağılımı")}</h3>
-        <div class="srows" data-rows="grading">${r.grading.map(gradeRow).join("")}</div>
+        <div class="srows" data-rows="grading" data-empty="${t("Not dağılımı bulunamadı. Syllabus'tan bakıp Bileşen ekle ile gir.")}">${r.grading.map(gradeRow).join("")}</div>
         <p class="calc-note" data-total aria-live="polite"></p>
         <label class="calc-note total-ok" data-total-ok hidden><input type="checkbox" name="totalOk"> ${t("Belgede de böyle; toplamı bu hâliyle kaydet")}</label>
         <button type="button" class="btn btn-ghost" data-add="grading">${icon.plus}${t("Bileşen ekle")}</button>

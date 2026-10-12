@@ -321,8 +321,8 @@ function weekAhead(state, sunday) {
  * Sınav: 7 gün önce, 1 gün önce 20:00, sınavdan 2 saat önce (saat yoksa 08:00).
  * Ödev/proje: 3 gün önce, 1 gün önce, teslimden 3 saat önce (saat yoksa 23:59 kabul).
  * Her sabah 08:00: bugünün özeti. Pazar 20:00: haftaya bakış. İsteğe bağlı: dersten 15 dk önce.
- * Tatil ve ara dönem (settings.pauseOn): aralıktaki günlerde ders, günün özeti ve haftaya bakış yok;
- * sınav ve teslim hatırlatmaları devam eder.
+ * Tatil ve ara dönem (settings.pauseOn): aralıktaki günlerde ders, günün özeti ve haftaya bakış yok
+ * (haftaya bakış için ertesi gün, yani haftanın ilk günü bakılır); sınav ve teslim hatırlatmaları devam eder.
  * Her kayıt: id, fireAt (planlanan an), target (olayın kendisi, ms), kind ("exam" | "due" | "day" | "week" | "class"),
  * title/body (fireAt anındaki metin; gösterimde describe() yeniden hesaplar).
  */
@@ -386,7 +386,8 @@ export function buildReminders(state, from = new Date(), days = 8) {
         url: "#/bugun",
       });
     }
-    if (idx === 6 && settings.notifyWeekly !== false && !paused(iso)) {
+    // Tatil kontrolü haftanın ilk gününe (ertesi gün, Pazartesi) göre: tatil Pazar bitiyorsa o akşam gelir
+    if (idx === 6 && settings.notifyWeekly !== false && !paused(isoPlus(iso, 1))) {
       const w = weekAhead(state, iso);
       if (w) push({ id: `r:week:${iso}`, kind: "week", fireAt: quiet(at(iso, "20:00"), qs, qe), target: dayEnd(iso).getTime(), ...w, url: "#/donem" });
     }
