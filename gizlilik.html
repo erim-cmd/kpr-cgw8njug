@@ -26,13 +26,14 @@
 <main class="legal">
   <div class="wrap narrow">
     <h1>Gizlilik ve KVKK Aydınlatma Metni</h1>
-    <p class="updated">Son güncelleme: 11 Ekim 2026</p>
+    <p class="updated">Son güncelleme: 15 Ekim 2026</p>
 
     <div class="summary">
       <strong>Kısaca</strong>
       <ul>
         <li>Köprü'de hesap yok. Derslerin, görevlerin ve notların <strong>sadece senin cihazında</strong> saklanır; bize ulaşmaz.</li>
-        <li>Syllabus <strong>varsayılan olarak cihazında okunur</strong>, hiçbir yere gönderilmez. Yükleme ekranında "Yapay zekâ ile oku" seçeneğini işaretlersen (açık rıza) dosyan, okunması için yapay zekâ hizmetine (Anthropic, ABD) gönderilir. <strong>Dosyayı biz saklamayız.</strong></li>
+        <li>Syllabus <strong>önce cihazında okunur</strong>, hiçbir yere gönderilmez. Okuma eksik kalırsa (not dağılımı tutmuyor ya da sınav tarihi bulunamadı) kontrol ekranında "Yapay zekâ ile tekrar oku" önerilir. Rıza kutusunu işaretleyip dokunursan, <strong>cihazında çıkarılmış syllabus metni</strong> okunması için yapay zekâ hizmetine (Anthropic, ABD) gönderilir. Notların, devamsızlığın ve diğer bilgilerin gönderilmez. <strong>Metnin kendisini saklamayız.</strong></li>
+        <li>Aynı syllabus'u yükleyen başka öğrenciler için yapay zekâ tekrar çağrılmasın diye <strong>okunmuş özet</strong> (ders adı ve kodu, tarihler, not dağılımı, kurallar) 180 gün saklanır. Hoca adı, e-posta ve ofis bilgisi bu özetten çıkarılır; özet sana ait kişisel veri içermez.</li>
         <li>Yapay zekâ ile okuma seçildiğinde, kötüye kullanımı önlemek için IP adresinin özeti (açık hâli değil) günlük sayaç olarak tutulur ve <strong>26 saat içinde silinir.</strong></li>
         <li>Bugün ekranındaki hava durumu için <strong>yalnızca seçtiğin şehrin sabit koordinatı</strong> Open-Meteo'ya gönderilir. Konum iznin istenmez; adın, derslerin ya da başka bir bilgin gönderilmez. Profil → Tercihler'den kapatabilirsin.</li>
         <li>Reklam yok, takip çerezi yok, verilerin satılmaz.</li>
@@ -48,7 +49,9 @@
         <thead><tr><th>Veri</th><th>Nerede</th><th>Amaç</th><th>Saklama</th></tr></thead>
         <tbody>
           <tr><td>Adın (hitap için), dersler, ders saatleri, sınav/ödev tarihleri, notların</td><td>Yalnızca cihazındaki tarayıcı depolaması. Bize iletilmez.</td><td>Uygulamanın çalışması</td><td>Sen silene kadar (Profil → Veri ve gizlilik → Her şeyi sil)</td></tr>
-          <tr><td>Yüklediğin syllabus dosyası (PDF/Word/fotoğraf) ve içeriği</td><td>Varsayılan: sadece cihazında okunur, gönderilmez. "Yapay zekâ ile oku" seçilirse (yalnızca PDF/fotoğraf): Köprü sunucusu (Cloudflare) üzerinden Anthropic'e iletilir</td><td>Dosyadan ders bilgilerinin çıkarılması</td><td>Köprü tarafından saklanmaz. Anthropic'in kendi politikası geçerlidir (aşağıya bak).</td></tr>
+          <tr><td>Yüklediğin syllabus dosyası (PDF/Word/metin) ve içeriği</td><td>Önce yalnızca cihazında okunur, gönderilmez. Kontrol ekranında "Yapay zekâ ile tekrar oku" rızayla seçilirse: cihazında çıkarılan metin Köprü sunucusu (Cloudflare) üzerinden Anthropic'e iletilir</td><td>Dosyadan ders bilgilerinin çıkarılması</td><td>Dosya ve metin Köprü tarafından saklanmaz. Anthropic'in kendi politikası geçerlidir (aşağıya bak)</td></tr>
+          <tr><td>Okunmuş syllabus özeti (ders adı ve kodu, tarihler, not dağılımı, kurallar; hoca adı, e-posta ve ofis bilgisi çıkarılır) ve metnin SHA-256 özeti</td><td>Cloudflare KV</td><td>Aynı syllabus'u yükleyen öğrenciler için yapay zekânın tekrar çağrılmaması (maliyet ve hız)</td><td>180 gün</td></tr>
+          <tr><td>Aylık toplam token sayısı (kişisel veri değil)</td><td>Cloudflare KV</td><td>Aylık harcama sınırı</td><td>40 gün</td></tr>
           <tr><td>IP adresinin gün ile birlikte SHA-256 özeti (yalnızca yapay zekâ ile okumada). IP açık hâliyle yazılmaz; ancak özet tam anonimleştirme sayılmaz.</td><td>Cloudflare KV</td><td>Günlük 5 okuma sınırı, kötüye kullanımın önlenmesi</td><td>26 saat</td></tr>
           <tr><td>Hava durumu için seçtiğin şehrin sabit koordinatı (şehir merkezi; konumun değil)</td><td>Hava durumu açıksa ve internet varsa Open-Meteo'ya gönderilir; gelen sonuç yalnızca cihazında saklanır</td><td>Bugün ekranında "Kampüste" hava durumu kartı</td><td>Köprü saklamaz. Open-Meteo'nun kendi koşulları geçerlidir (aşağıya bak). Profil → Tercihler'den kapatılabilir.</td></tr>
           <tr><td>Teknik kayıtlar (IP adresi, tarayıcı bilgisi, istek zamanı)</td><td>Barındırma sağlayıcısı (Cloudflare)</td><td>Sitenin güvenli ve kesintisiz çalışması</td><td>Cloudflare'in kayıt saklama süreleri</td></tr>
@@ -59,7 +62,7 @@
 
     <h2>3. Hukuki sebepler</h2>
     <ul>
-      <li><strong>Açık rıza (KVKK m. 5/1 ve m. 9):</strong> Syllabus dosyanın okunmak üzere yurt dışındaki yapay zekâ hizmetine aktarılması, yükleme ekranında "Yapay zekâ ile oku" kutusunu işaretleyerek verdiğin açık rızaya dayanır. Rıza vermezsen syllabus cihazında okunur ya da dersleri elle eklersin; Köprü'nün diğer her özelliği aynı şekilde çalışır.</li>
+      <li><strong>Açık rıza (KVKK m. 5/1 ve m. 9):</strong> Syllabus dosyanın okunmak üzere yurt dışındaki yapay zekâ hizmetine aktarılması, kontrol ekranında rıza kutusunu işaretleyip "Yapay zekâ ile tekrar oku"ya dokunarak verdiğin açık rızaya dayanır. Rıza vermezsen syllabus cihazında okunur ya da dersleri elle eklersin; Köprü'nün diğer her özelliği aynı şekilde çalışır.</li>
       <li><strong>Meşru menfaat (KVKK m. 5/2-f):</strong> Kötüye kullanımı önlemek için günlük sayaç tutulması ve sitenin güvenliğine yönelik teknik kayıtlar.</li>
     </ul>
 

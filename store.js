@@ -71,7 +71,7 @@ export const uid = () =>
 // theme: görünüm tercihi — "sistem" (telefonu izler) | "acik" | "koyu" (theme.js)
 // lang: arayüz dili — "tr" | "en" (i18n.js)
 // studentNo: hocaya mail taslağına eklenen öğrenci numarası (mail.js; isteğe bağlı, cihazda)
-const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false, todayView: "bugun", interests: [], theme: "sistem", lang: "tr", studentNo: "", aiReading: false,
+const defaultSettings = () => ({ termWeeks: 14, termStart: "", notify: false, notifyClasses: false, todayView: "bugun", interests: [], theme: "sistem", lang: "tr", studentNo: "", aiReading: true,
   notifyExams: true, notifyDue: true, notifyDaily: true, notifyWeekly: true, quietStart: "23:00", quietEnd: "08:00", pauseOn: false, pauseStart: "", pauseEnd: "",
   weatherOn: true, weatherCity: "istanbul" });
 // version: veri şeması sürümü (göçler migrate.js'te; v2 = geçmiş dönemler gpaBase'e çevrildi)
@@ -233,7 +233,8 @@ function normSettings(s) {
     studentNo: str(s.studentNo, 20),
     // Uyuyan yapay zekâ ile okuma yolu (importer.js): yalnız açıkça true ise. Arayüzde düğmesi yok;
     // sunucu yapılandırılmış olsa bile bu ayar olmadan sunucu sorulmaz, seçenek görünmez.
-    aiReading: s.aiReading === true,
+    // Önce cihaz, tutmazsa yapay zekâ önerisi (15 Eki 2026): alan yoksa açık, açıkça false ya da bozuksa kapalı
+    aiReading: s.aiReading === undefined ? true : s.aiReading === true,
     // Bildirim türleri (Profil → Bildirimler); eski kayıtlarda alan yoksa açık (önceki davranış)
     notifyExams: s.notifyExams !== false,
     notifyDue: s.notifyDue !== false,
