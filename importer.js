@@ -3,9 +3,10 @@
  * 1) Dosya seç (PDF / Word / metin)  →  2) Cihazda okunur: doc-text.js metni çıkarır,
  *    syllabus-local.js alanlara ayırır (internet gerekmez, dosya cihazdan çıkmaz)
  * 3) Öğrenci sonucu kontrol eder, düzeltir  →  4) Ders + görevler tek seferde kaydedilir
- * Yapay zekâ ile okuma (functions/api/syllabus.js): sunucu hazırsa seçenek olarak görünür,
- * açık rıza kutusu işaretlenirse dosya okunmak üzere gönderilir. Çıktı şekli cihaz içi okuyucuyla
- * aynı. Yapay zekâ okuyamazsa (sunucu yok, sınır doldu, zaman aşımı…) cihaz içi okuyucuya düşülür.
+ * Önce cihaz, tutmazsa yapay zekâ (15 Eki 2026 kararı): syllabus her zaman önce cihazda okunur. Not toplamı
+ * 100 tutmazsa ya da tarihsiz sınav kalırsa (needsHelp) kontrol ekranında "Yapay zekâ ile tekrar oku" önerilir;
+ * öğrenci açık rıza kutusunu işaretleyip dokunursa cihazda çıkarılmış METİN sunucuya (functions/api/syllabus.js)
+ * gider. İki okuma not dağılımında ayrışırsa öğrenci syllabus'a bakıp birini seçmeden kayıt olmaz.
  */
 
 import { store, COLORS, TASK_TYPES } from "./store.js";
@@ -29,6 +30,7 @@ const numOrNull = (v) => (v === "" || v === null || v === undefined ? null : Num
 const API = "api/syllabus"; // göreli: sitenin bulunduğu klasöre göre
 const AI_TYPES = new Set(["application/pdf", "image/jpeg", "image/png"]); // sunucunun kabul ettikleri
 const AI_MAX_BYTES = 4 * 1024 * 1024;
+const AI_MAX_TEXT = 300_000; // sunucudaki MAX_TEXT ile aynı
 let apiState = null; // "ready" | "off" | "none"
 
 /**
@@ -37,9 +39,9 @@ let apiState = null; // "ready" | "off" | "none"
  * GitHub Pages'te hiç sorulmaz (statik; sunucu yok) → "none".
  */
 /**
- * Uyuyan yol kapalı mı? Yapay zekâ ile okuma ancak ayarlarda AÇIKÇA açılmışsa (settings.aiReading === true)
- * denenir. Kapalıyken sunucu hiç sorulmaz (ağ isteği yok), seçenek görünmez, dosya gönderilmez —
- * sunucu yapılandırılmış olsa bile. Syllabus her zaman cihaz içinde okunur. test/ai-gate.mjs
+ * Yapay zekâ önerisi açık mı? settings.aiReading (varsayılan açık; ayar false ise ya da bozuksa kapalı).
+ * Kapalıyken sunucu hiç sorulmaz (ağ isteği yok), öneri görünmez, metin gönderilmez.
+ * Açıkken bile hiçbir şey kendiliğinden gitmez: öğrenci rıza kutusunu işaretleyip dokunmalı. test/ai-gate.mjs
  */
 export const aiAllowed = (settings = store.get().settings) => settings?.aiReading === true;
 
@@ -73,20 +75,31 @@ const blobToBase64 = (blob) =>
 const mediaTypeOf = (file) =>
   file.type || (/\.pdf$/i.test(file.name) ? "application/pdf" : /\.png$/i.test(file.name) ? "image/png" : /\.jpe?g$/i.test(file.name) ? "image/jpeg" : "");
 
-/** Yapay zekâ ile okur. Başarısızsa { error } döner (asla fırlatmaz), çağıran cihaz içine düşer. */
-export async function readWithAI(file) {
-  if (!aiAllowed()) return { error: "off" }; // ayar kapalı: dosya hiçbir yere gitmez
-  const mediaType = mediaTypeOf(file);
-  if (!AI_TYPES.has(mediaType)) return { error: t("Word ve metin dosyaları yapay zekâya gönderilmiyor") };
-  if (file.size > AI_MAX_BYTES) return { error: t("dosya 4 MB'tan büyük") };
-  if (!navigator.onLine) return { error: t("internet bağlantısı yok") };
+/**
+ * Yapay zekâ ile okur. input: { text, name } (cihazda çıkarılmış metin — uygulamanın yolu) ya da bir File (PDF/fotoğraf).
+ * Başarısızsa { error } döner (asla fırlatmaz), çağıran cihaz içi okumayla devam eder.
+ */
+export async function readWithAI(input) {
+  if (!aiAllowed()) return { error: "off" }; // ayar kapalı: hiçbir şey gönderilmez
+  let payload;
+  if (typeof input?.text === "string") {
+    if (input.text.length > AI_MAX_TEXT) return { error: t("belge çok uzun") };
+    if (!navigator.onLine) return { error: t("internet bağlantısı yok") };
+    payload = { text: input.text, fileName: input.name || "" };
+  } else {
+    const mediaType = mediaTypeOf(input);
+    if (!AI_TYPES.has(mediaType)) return { error: t("Word ve metin dosyaları yapay zekâya gönderilmiyor") };
+    if (input.size > AI_MAX_BYTES) return { error: t("dosya 4 MB'tan büyük") };
+    if (!navigator.onLine) return { error: t("internet bağlantısı yok") };
+    payload = { data: await blobToBase64(input), mediaType, fileName: input.name };
+  }
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 80_000);
   try {
     const res = await fetch(API, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ data: await blobToBase64(file), mediaType, fileName: file.name }),
+      body: JSON.stringify(payload),
       signal: ctrl.signal,
     });
     const body = await res.json().catch(() => ({}));
@@ -98,6 +111,72 @@ export async function readWithAI(file) {
     clearTimeout(timer);
   }
 }
+
+/**
+ * Cihaz içi okuma yardıma ihtiyaç duyuyor mu? ["weights"] not toplamı 100 değil ya da hiç bileşen yok;
+ * ["dates"] tarihi ve haftası olmayan sınav var. Boş dizi: okuma tutarlı, yapay zekâ önerilmez.
+ */
+export function needsHelp(r) {
+  const out = [];
+  const w = (r?.grading || []).filter((g) => !g.bonus).map((g) => Number(g.weight) || 0);
+  const sum = Math.round(w.reduce((a, b) => a + b, 0) * 10) / 10;
+  if (!w.length || Math.abs(sum - 100) > 0.5) out.push("weights");
+  if ((r?.items || []).some((x) => x.type === "sinav" && !DATE.test(x.date || "") && !x.week)) out.push("dates");
+  return out;
+}
+
+const weightsOf = (r) => (r?.grading || []).filter((g) => !g.bonus).map((g) => Number(g.weight) || 0);
+const sameWeights = (a, b) => [...a].sort((x, y) => x - y).join() === [...b].sort((x, y) => x - y).join();
+
+/** Ortak önbellekten gelen sonuçta hoca iletişim bilgisi boştur; cihazın okuduğuyla doldur. */
+function withContact(ai, local) {
+  const c = { ...ai.course };
+  for (const k of ["instructor", "email", "office", "office_hours"]) if (!c[k] && local?.course?.[k]) c[k] = local.course[k];
+  return { ...ai, course: c };
+}
+
+/** Açık rıza metni (kontrol ekranı ve Seçmeli Keşfi aynı metni kullanır). */
+export const consentText = () =>
+  t("{link} okudum; syllabus metninin, okunması için yurt dışındaki yapay zekâ hizmetine (Anthropic) aktarılmasına açık rıza veriyorum. Notların ve diğer bilgilerin gönderilmez. Günde 5 okuma hakkın var.", { link: `<a href="gizlilik.html" target="_blank" rel="noopener">${t("Aydınlatma metnini")}</a>` });
+
+/** Seçmeli Keşfi için: rıza iste, verilirse true döner. */
+export function askAIConsent(reasons) {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (v) => { if (!done) { done = true; resolve(v); } };
+    const d = openSheet(
+      `<form class="sheet-form" novalidate>
+        ${head(t("Yapay zekâ ile oku"))}
+        <div class="sheet-body">
+          <p class="lead-text">${reasonText(reasons)}</p>
+          <label class="consent"><input type="checkbox" name="aiConsent"><span>${consentText()}</span></label>
+        </div>
+        <footer class="sheet-foot">
+          <button type="button" class="btn btn-ghost" data-close>${t("Vazgeç")}</button>
+          <button type="submit" class="btn btn-primary">${t("Yapay zekâ ile oku")}</button>
+        </footer>
+      </form>`,
+      (d) => {
+        const form = d.querySelector("form");
+        form.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const box = form.elements.namedItem("aiConsent");
+          if (!box.checked) { box.setCustomValidity(t("Devam etmek için kutuyu işaretle.")); box.reportValidity(); box.addEventListener("change", () => box.setCustomValidity(""), { once: true }); return; }
+          finish(true);
+          closeSheet();
+        });
+      }
+    );
+    d?.addEventListener?.("close", () => finish(false), { once: true });
+  });
+}
+
+const reasonText = (reasons) =>
+  [
+    reasons.includes("weights") && t("Not dağılımı tutmuyor (toplam 100 değil ya da bulunamadı)."),
+    reasons.includes("dates") && t("Bazı sınavların tarihi bulunamadı."),
+    t("Yapay zekâ bu tür belgeleri genelde daha doğru okur."),
+  ].filter(Boolean).join(" ");
 
 const head = (title) => `<header class="sheet-head">
   <h2>${title}</h2>
@@ -125,11 +204,7 @@ export function openImport({ into = null } = {}) {
           <strong data-file-label>${t("Dosya seç")}</strong>
           <small>${t("PDF, Word (.docx) ya da metin")}</small>
         </label>
-        <p class="fine" data-local-note>${t("Dosyan cihazında okunur, hiçbir yere gönderilmez. İnternet olmadan da çalışır.")}</p>
-        <label class="consent" data-ai hidden>
-          <input type="checkbox" name="ai">
-          <span><b>${t("Yapay zekâ ile oku (daha doğru).")}</b> ${t("{link} okudum; PDF ya da fotoğrafımın, okunması için yurt dışındaki yapay zekâ hizmetine (Anthropic) aktarılmasına açık rıza veriyorum. Dosya saklanmaz. Günde 5 okuma hakkın var; olmazsa cihazında okunur.", { link: `<a href="gizlilik.html" target="_blank" rel="noopener">${t("Aydınlatma metnini")}</a>` })}</span>
-        </label>
+        <p class="fine" data-local-note>${t("Dosyan önce cihazında okunur, hiçbir yere gönderilmez. Okuma eksik kalırsa kontrol ekranında yapay zekâ ile tekrar okumayı önerir; senin onayın olmadan bir şey gönderilmez.")}</p>
       </div>
       <footer class="sheet-foot">
         <button type="button" class="btn btn-ghost" data-manual>${t("Elle ekle")}</button>
@@ -162,16 +237,8 @@ export function openImport({ into = null } = {}) {
       form.querySelector("[data-manual]").addEventListener("click", () => openCourseForm());
       form.addEventListener("submit", (e) => {
         e.preventDefault();
-        const ai = form.elements.namedItem("ai");
-        run(input.files[0], { ai: !!ai && !ai.closest("[hidden]") && ai.checked });
+        run(input.files[0]);
       });
-
-      // Yalnız ayar açıksa ve sunucu hazırsa yapay zekâ seçeneğini göster (yoksa sunucu sorulmaz, ekran değişmez)
-      if (aiAllowed()) {
-        aiStatus().then((st) => {
-          if (st === "ready") form.querySelector("[data-ai]").hidden = false;
-        });
-      }
     }
   );
 }
@@ -227,31 +294,26 @@ function showError(message, file) {
   });
 }
 
-async function run(file, { ai = false } = {}) {
+async function run(file, { ai = false, local = null, text = "" } = {}) {
   if (!file) return;
-  ai = ai && aiAllowed();
+  ai = ai && aiAllowed() && !!local && !!text;
   const stop = showProgress(ai);
   try {
-    // 1) Rıza verildiyse yapay zekâ; olmazsa sebebiyle birlikte cihaz içine düş
-    let aiError = "";
+    // 2b) Öğrenci rıza verip "Yapay zekâ ile tekrar oku"ya dokunduysa: cihazın çıkardığı metin gönderilir
     if (ai) {
-      const r = await readWithAI(file);
-      if (r.result) {
-        stop();
-        if (target) openMerge(r.result);
-        else openReview(r.result, { reader: "ai" });
-        return;
-      }
-      aiError = r.error;
+      const r = await readWithAI({ text, name: file.name });
+      stop();
+      if (r.result) return target ? openMerge(withContact(r.result, local)) : openReview(withContact(r.result, local), { reader: "ai", local, file, text });
+      return target ? openMerge(local) : openReview(local, { reader: "local", aiError: r.error, file, text, tried: true });
     }
-    // 2) Cihaz içi okuma
-    const { text } = await extractText(file);
-    const result = parseSyllabus(text);
+    // 1) Her zaman önce cihaz içi okuma
+    const { text: body } = await extractText(file);
+    const result = parseSyllabus(body);
     // İlerleme ekranı bir an görünsün (çok hızlı biter)
     await new Promise((r) => setTimeout(r, 400));
     stop();
     if (target) openMerge(result);
-    else openReview(result, { reader: "local", aiError });
+    else openReview(result, { reader: "local", file, text: body });
   } catch (err) {
     stop();
     showError(err instanceof DocError ? err.message : t("Dosya okunamadı. Başka bir dosya dene ya da dersi elle ekle."));
@@ -349,7 +411,7 @@ function openMerge(r) {
   );
 }
 
-function openReview(r, { reader = "local", aiError = "" } = {}) {
+function openReview(r, { reader = "local", aiError = "", file = null, text = "", local = null, tried = false } = {}) {
   const { courses } = store.get();
   const code = (r.course.code || "").trim().toLowerCase();
   const existing = code ? courses.find((c) => c.code.trim().toLowerCase() === code) : null;
@@ -363,6 +425,11 @@ function openReview(r, { reader = "local", aiError = "" } = {}) {
     r.grading.length && t("{n} not bileşeni", { n: r.grading.length }),
     (r.policies || []).length && t("{n} kural", { n: r.policies.length }),
   ].filter(Boolean).join(", ");
+  // Önce cihaz, tutmazsa yapay zekâ: öneri yalnız ayar açık, sunucu hazır ve okuma eksikse görünür (aşağıda)
+  const reasons = reader === "local" && file && text && !tried ? needsHelp(r) : [];
+  // İki okuma not dağılımında ayrışıyorsa öğrenci seçmeden kayıt olmaz (sessiz yanlış not olmasın)
+  const choice = reader === "ai" && local && weightsOf(local).length && weightsOf(r).length && !sameWeights(weightsOf(local), weightsOf(r));
+  const wtext = (x) => weightsOf(x).map((w) => pct(decimal(w))).join(" / ");
 
   openSheet(
     `<form class="sheet-form" novalidate>
@@ -370,6 +437,11 @@ function openReview(r, { reader = "local", aiError = "" } = {}) {
       <div class="sheet-body">
         <p class="lead-text">${found ? t("Köprü {bulunan} buldu. Yanlış bir şey varsa düzelt, sonra kaydet.", { bulunan: `<b>${found}</b>` }) : t("Köprü bu dosyada tarih veya saat bulamadı. Yanlış bir şey varsa düzelt, sonra kaydet.")}</p>
         <p class="fine reader-note" data-reader="${reader}">${reader === "ai" ? t("Yapay zekâ ile okundu.") : aiError ? t("Yapay zekâ ile okunamadı ({hata}); dosya cihazında okundu.", { hata: esc(aiError) }) : t("Cihazında okundu.")}</p>
+        ${reasons.length ? `<div class="info-box ai-offer" data-ai-offer hidden>
+          <p>${reasonText(reasons)}</p>
+          <label class="consent"><input type="checkbox" name="aiConsent"><span>${consentText()}</span></label>
+          <button type="button" class="btn btn-ghost" data-ai-read>${t("Yapay zekâ ile tekrar oku")}</button>
+        </div>` : ""}
         ${existing ? `<p class="info-box">${t("{ders} dersin zaten kayıtlı. Kaydedince bu dersin bilgileri güncellenir, yeni tarihler eklenir.", { ders: esc(existing.name) })}</p>` : ""}
         ${r.warnings.length ? `<ul class="warn-box">${r.warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}
 
@@ -413,6 +485,11 @@ function openReview(r, { reader = "local", aiError = "" } = {}) {
         <p class="calc-note">${t("Bunlar ders sayfasının en üstünde görünecek.")}</p>` : ""}
 
         <h3 class="mini-title">${t("Not dağılımı")}</h3>
+        ${choice ? `<fieldset class="info-box grade-choice" data-grade-choice aria-labelledby="grade-choice-q">
+          <p id="grade-choice-q" class="grade-choice-q">${t("İki okuma not dağılımında ayrışıyor. Syllabus'a bakıp doğru olanı seç.")}</p>
+          <label class="consent"><input type="radio" name="gradeSrc" value="ai"><span>${t("Yapay zekâ: {w}", { w: esc(wtext(r)) })}</span></label>
+          <label class="consent"><input type="radio" name="gradeSrc" value="local"><span>${t("Cihaz: {w}", { w: esc(wtext(local)) })}</span></label>
+        </fieldset>` : ""}
         <div class="srows" data-rows="grading" data-empty="${t("Not dağılımı bulunamadı. Syllabus'tan bakıp Bileşen ekle ile gir.")}">${r.grading.map(gradeRow).join("")}</div>
         <p class="calc-note" data-total aria-live="polite"></p>
         <label class="calc-note total-ok" data-total-ok hidden><input type="checkbox" name="totalOk"> ${t("Belgede de böyle; toplamı bu hâliyle kaydet")}</label>
@@ -451,6 +528,30 @@ function openReview(r, { reader = "local", aiError = "" } = {}) {
       new MutationObserver(showTotal).observe(gradingBox, { childList: true });
       showTotal();
 
+      // Yapay zekâ önerisi: sunucu hazırsa görünür; rıza işaretlenmeden gönderilmez
+      const offer = form.querySelector("[data-ai-offer]");
+      if (offer && aiAllowed()) {
+        aiStatus().then((st) => { if (st === "ready") offer.hidden = false; });
+        offer.querySelector("[data-ai-read]").addEventListener("click", () => {
+          const box = form.elements.namedItem("aiConsent");
+          if (!box.checked) {
+            box.setCustomValidity(t("Devam etmek için kutuyu işaretle."));
+            box.reportValidity();
+            box.addEventListener("change", () => box.setCustomValidity(""), { once: true });
+            return;
+          }
+          run(file, { ai: true, local: r, text });
+        });
+      }
+
+      // İki okuma ayrışınca: seçilen okumanın bileşenleri satırlara gelir
+      const choiceBox = form.querySelector("[data-grade-choice]");
+      choiceBox?.addEventListener("change", (e) => {
+        const src = e.target.value === "local" ? local : r;
+        gradingBox.innerHTML = (src.grading || []).map(gradeRow).join("");
+        choiceBox.querySelectorAll("input").forEach((i) => i.setCustomValidity(""));
+      });
+
       // Tarih girilince o satır otomatik işaretlensin
       form.querySelectorAll(".irow").forEach((row) => {
         const due = row.querySelector('[data-f="due"]');
@@ -465,6 +566,12 @@ function openReview(r, { reader = "local", aiError = "" } = {}) {
           nameInput.setCustomValidity(t("Ders adı gerekli."));
           nameInput.reportValidity();
           nameInput.addEventListener("input", () => nameInput.setCustomValidity(""), { once: true });
+          return;
+        }
+        if (choiceBox && !form.querySelector('[name="gradeSrc"]:checked')) {
+          const first = choiceBox.querySelector("input");
+          first.setCustomValidity(t("Kaydetmeden önce hangi not dağılımının doğru olduğunu seç."));
+          first.reportValidity();
           return;
         }
         const list = readSessions(sessionsBox);

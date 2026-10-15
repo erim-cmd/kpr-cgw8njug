@@ -6,7 +6,8 @@
  *      takvime, görevlere ve GNO'ya girmez. Dosya saklanmaz, yalnızca özet (store → electives).
  *   2. İlgi alanı seçimi (çoklu çip + Tamam); seçimler cihazda, store → settings.interests.
  *   3. Öneriler: eşleştirme gelene kadar küçük "Önizleme" listesi (sahte ders öneri gibi gösterilmez).
- * Yapay zekâ ve ağ isteği yok.
+ * Okuma önce cihazda; okuma eksikse (not toplamı tutmuyor, tarihsiz sınav) öğrenciye yapay zekâ ile okuma
+ * önerilir. Rıza verilirse yalnızca cihazda çıkarılmış syllabus metni gönderilir (importer.js readWithAI).
  */
 
 import { store, INTERESTS } from "./store.js";
@@ -167,6 +168,19 @@ export const actions = {
   },
 };
 
+/** Rıza alınırsa aday dersi yapay zekâ ile yeniden okur ve aynı kaydın üzerine yazar. */
+async function readElectiveWithAI(saved, text, reasons, render) {
+  const [{ askAIConsent, readWithAI }, { electiveFrom }] = await Promise.all([import("./importer.js"), import("./syllabus-local.js")]);
+  if (!(await askAIConsent(reasons))) return;
+  toast(t("Yapay zekâ okuyor…"));
+  const r = await readWithAI({ text, name: saved.code || saved.name });
+  if (!r.result) return toast(t("Yapay zekâ ile okunamadı ({hata}); cihazdaki okuma kaldı.", { hata: r.error }));
+  const e = electiveFrom(r.result);
+  store.saveElective({ ...e, instructor: e.instructor || saved.instructor, id: saved.id });
+  toast(t("{name} yapay zekâ ile güncellendi", { name: e.code || e.name || saved.code || saved.name }));
+  render();
+}
+
 export const changes = {
   async "elective-file"(el, { render }) {
     const file = el.files?.[0];
@@ -178,11 +192,19 @@ export const changes = {
       const [{ extractText, DocError }, { parseSyllabus, electiveFrom }] = await Promise.all([import("./doc-text.js"), import("./syllabus-local.js")]);
       try {
         const { text } = await extractText(file);
-        const e = electiveFrom(parseSyllabus(text));
+        const parsed = parseSyllabus(text);
+        const e = electiveFrom(parsed);
         if (!e.name && !e.code) toast(t("Bu dosyada ders adı ya da kodu bulunamadı."));
         else {
-          store.saveElective(e);
-          toast(t("{name} adaylara eklendi", { name: e.code || e.name }));
+          const saved = store.saveElective(e);
+          const { needsHelp, aiAllowed, aiStatus } = await import("./importer.js");
+          const reasons = needsHelp(parsed);
+          if (saved && reasons.length && aiAllowed() && (await aiStatus()) === "ready") {
+            toast(t("{name} adaylara eklendi; okuma eksik olabilir", { name: e.code || e.name }), {
+              label: t("Yapay zekâ ile oku"),
+              onClick: () => readElectiveWithAI(saved, text, reasons, render),
+            });
+          } else toast(t("{name} adaylara eklendi", { name: e.code || e.name }));
         }
       } catch (err) {
         toast(err instanceof DocError ? err.message : t("Dosya okunamadı. Başka bir dosya dene."));

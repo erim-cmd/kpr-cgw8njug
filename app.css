@@ -343,6 +343,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--cyan); outline: 
 .consent { display: flex; gap: 10px; align-items: flex-start; font-size: var(--fs-xs); color: var(--text-muted); line-height: 1.45; cursor: pointer; }
 .consent input { width: 18px; height: 18px; margin: 1px 0 0; flex: none; accent-color: var(--accent); }
 .consent a { color: var(--cyan); }
+.ai-offer, .grade-choice { display: grid; gap: 10px; }
+.ai-offer p { margin: 0; }
+.ai-offer .btn { justify-self: start; }
+.grade-choice-q { margin: 0; font-weight: 600; }
 
 .reading { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 10px 0 6px; }
 .reading-orb { width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle, color-mix(in srgb, var(--accent) 30%, transparent), transparent 70%); animation: pulse 1.6s ease-in-out infinite; }

@@ -1,21 +1,29 @@
 /**
  * KPR — Syllabus okuma (Cloudflare Pages Function)  POST /api/syllabus
  *
- * İstek:  { data: <base64>, mediaType: "application/pdf" | "image/jpeg", fileName }
+ * İstek:  { text: <cihazda çıkarılmış metin>, fileName }   (uygulamanın kullandığı yol: ucuz, Word'de de çalışır)
+ *         ya da { data: <base64>, mediaType: "application/pdf" | "image/jpeg", fileName }
  * Cevap:  { result: { course, sessions, items, weeks, grading, attendance, warnings } }
  *         (importer.js'teki kontrol ekranının beklediği biçim)
  *
  * Ortam değişkenleri (Cloudflare → Pages → Settings → Variables and Secrets):
  *   ANTHROPIC_API_KEY  (zorunlu, "Encrypt" ile gizli)
  *   KPR_MODEL          (isteğe bağlı, varsayılan claude-sonnet-5)
- * Bağlama (isteğe bağlı): KPR_LIMITS  → KV namespace; kişi başı günlük 5 okuma sınırı
+ *   KPR_MONTHLY_BUDGET_USD (isteğe bağlı, varsayılan 20) · KPR_PRICE_IN / KPR_PRICE_OUT ($/milyon token, varsayılan 2 / 10)
+ * Bağlama (isteğe bağlı): KPR_LIMITS  → KV namespace; kişi başı günlük 5 okuma sınırı,
+ *   aylık harcama sayacı ve ortak sonuç önbelleği
  *
- * KVKK: dosya ve içerik hiçbir yerde saklanmaz, loglanmaz. Sadece Anthropic API'ye gönderilir.
+ * Ortak önbellek: aynı metin (SHA-256 özeti) ikinci kez gelirse Claude çağrılmaz, okunmuş sonuç döner ve
+ * günlük sayaç artmaz. Saklanan yalnızca okunmuş özettir; hoca adı, e-posta, ofis ve ofis saati çıkarılır.
+ * KVKK: dosya ve metnin kendisi hiçbir yerde saklanmaz, loglanmaz. Sadece Anthropic API'ye gönderilir.
  */
 
 const API_URL = "https://api.anthropic.com/v1/messages";
 const DEFAULT_MODEL = "claude-sonnet-5";
 const MAX_B64 = Math.ceil((4 * 1024 * 1024 * 4) / 3) + 1024; // 4 MB dosya
+const MAX_TEXT = 300_000; // karakter (~90 bin token); daha uzunu çok dersli derleme demektir
+const CACHE_TTL = 60 * 60 * 24 * 180; // ortak önbellek: 180 gün (bir dönem + yedek)
+const DEFAULT_BUDGET_USD = 20;
 const DAILY_LIMIT = 5;
 const TIMEOUT_MS = 70_000;
 
@@ -206,10 +214,12 @@ function parseJSON(text) {
   }
 }
 
-async function callClaude({ env, data, mediaType, mode, signal }) {
-  const file = mediaType === "application/pdf"
-    ? { type: "document", source: { type: "base64", media_type: "application/pdf", data } }
-    : { type: "image", source: { type: "base64", media_type: mediaType, data } };
+async function callClaude({ env, data, mediaType, text, mode, signal }) {
+  const file = typeof text === "string"
+    ? { type: "text", text: `<syllabus>\n${text}\n</syllabus>` }
+    : mediaType === "application/pdf"
+      ? { type: "document", source: { type: "base64", media_type: "application/pdf", data } }
+      : { type: "image", source: { type: "base64", media_type: mediaType, data } };
   const body = {
     model: env.KPR_MODEL || DEFAULT_MODEL,
     max_tokens: 8000,
@@ -231,12 +241,48 @@ async function callClaude({ env, data, mediaType, mode, signal }) {
   const out = await res.json().catch(() => ({}));
   if (!res.ok) return { status: res.status, error: out?.error?.message || `HTTP ${res.status}` };
 
+  const usage = { input: Number(out.usage?.input_tokens) || 0, output: Number(out.usage?.output_tokens) || 0 };
   if (mode === "structured") {
-    const text = arr(out.content).filter((b) => b.type === "text").map((b) => b.text).join("");
-    return { result: parseJSON(text), stop: out.stop_reason };
+    const body = arr(out.content).filter((b) => b.type === "text").map((b) => b.text).join("");
+    return { result: parseJSON(body), stop: out.stop_reason, usage };
   }
   const tool = arr(out.content).find((b) => b.type === "tool_use");
-  return { result: tool?.input || null, stop: out.stop_reason };
+  return { result: tool?.input || null, stop: out.stop_reason, usage };
+}
+
+/* ------------------------------------------------------------------ */
+/* Ortak önbellek ve aylık harcama (KV bağlıysa)                       */
+/* ------------------------------------------------------------------ */
+
+async function sha256hex(s) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** Önbelleğe giden sonuç: hoca iletişim bilgileri çıkarılır (başka öğrenciye gidecek). */
+export function shareable(result) {
+  return { ...result, course: { ...result.course, instructor: "", email: "", office: "", office_hours: "" } };
+}
+
+const monthKey = () => `b:${new Date().toISOString().slice(0, 7)}`;
+const price = (env, k, d) => (Number.isFinite(Number(env[k])) && Number(env[k]) > 0 ? Number(env[k]) : d);
+
+/** Bu ay harcanan, milyonda bir dolar cinsinden (tam sayı). */
+async function spent(env) {
+  return env.KPR_LIMITS ? Number(await env.KPR_LIMITS.get(monthKey())) || 0 : 0;
+}
+
+export async function overBudget(env) {
+  if (!env.KPR_LIMITS) return false;
+  const budget = price(env, "KPR_MONTHLY_BUDGET_USD", DEFAULT_BUDGET_USD);
+  return (await spent(env)) >= budget * 1e6;
+}
+
+async function addSpend(env, usage) {
+  if (!env.KPR_LIMITS || !usage) return;
+  const micro = Math.ceil(usage.input * price(env, "KPR_PRICE_IN", 2) + usage.output * price(env, "KPR_PRICE_OUT", 10));
+  // KV sonunda tutarlıdır: aynı anda gelen istekler sayacı biraz eksik sayabilir; sınır yaklaşık bir tavan.
+  await env.KPR_LIMITS.put(monthKey(), String((await spent(env)) + micro), { expirationTtl: 60 * 60 * 24 * 40 });
 }
 
 /* ------------------------------------------------------------------ */
@@ -279,22 +325,38 @@ export async function onRequestPost({ request, env }) {
   } catch {
     return fail(400, "İstek okunamadı.");
   }
-  const { data, mediaType } = payload || {};
-  if (typeof data !== "string" || !data) return fail(400, "Dosya gelmedi.");
-  if (!["application/pdf", "image/jpeg", "image/png"].includes(mediaType)) return fail(415, "Sadece PDF veya fotoğraf yükleyebilirsin.");
-  if (data.length > MAX_B64) return fail(413, "Dosya en fazla 4 MB olabilir. Sadece ilgili sayfaları yüklemeyi dene.");
+  const { data, mediaType, text } = payload || {};
+  if (typeof text === "string") {
+    if (text.trim().length < 50) return fail(400, "Metin çok kısa; syllabus okunamadı.");
+    if (text.length > MAX_TEXT) return fail(413, "Belge çok uzun. Sadece bu dersin sayfalarını yükle.");
+  } else {
+    if (typeof data !== "string" || !data) return fail(400, "Dosya gelmedi.");
+    if (!["application/pdf", "image/jpeg", "image/png"].includes(mediaType)) return fail(415, "Sadece PDF veya fotoğraf yükleyebilirsin.");
+    if (data.length > MAX_B64) return fail(413, "Dosya en fazla 4 MB olabilir. Sadece ilgili sayfaları yüklemeyi dene.");
+  }
 
+  // Ortak önbellek: bu metin daha önce okunduysa Claude'a gitmeden döner, günlük hak harcanmaz
+  const cacheKey = env.KPR_LIMITS ? `c:${await sha256hex(typeof text === "string" ? `t:${text}` : `d:${data}`)}` : null;
+  if (cacheKey) {
+    const hit = await env.KPR_LIMITS.get(cacheKey);
+    if (hit) {
+      try { return json({ result: sanitize(JSON.parse(hit)), cached: true }); } catch { /* bozuk kayıt: yeniden oku */ }
+    }
+  }
+
+  if (await overBudget(env)) return fail(503, "Bu ayın yapay zekâ okuma kotası doldu. Syllabus cihazında okundu; ay başında tekrar dene.");
   if (await overLimit(request, env)) return fail(429, `Bugünkü ${DAILY_LIMIT} okuma hakkını kullandın. Yarın tekrar dene ya da dersi elle ekle.`);
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
-    let r = await callClaude({ env, data, mediaType, mode: "structured", signal: ctrl.signal });
+    let r = await callClaude({ env, data, mediaType, text, mode: "structured", signal: ctrl.signal });
     // Yapılandırılmış çıktı reddedilirse (ör. şema desteği) aynı şemayla araç çağrısını dene
     if (r.status === 400) {
       console.error(`[syllabus] yapılandırılmış çıktı reddedildi, araç yoluna geçiliyor: ${String(r.error).slice(0, 300)}`);
-      r = await callClaude({ env, data, mediaType, mode: "tool", signal: ctrl.signal });
+      r = await callClaude({ env, data, mediaType, text, mode: "tool", signal: ctrl.signal });
     }
+    await addSpend(env, r.usage);
 
     if (r.status) {
       // Sunucu kaydı: sadece durum kodu ve API'nin hata metni (anahtar ve dosya içeriği yazılmaz)
@@ -304,7 +366,9 @@ export async function onRequestPost({ request, env }) {
       return fail(502, "Syllabus okunamadı. Tekrar dene.");
     }
     if (!r.result) return fail(502, r.stop === "max_tokens" ? "Syllabus çok uzun. Sadece takvim ve değerlendirme sayfalarını yükle." : "Syllabus okunamadı. Tekrar dene.");
-    return json({ result: sanitize(r.result) });
+    const result = sanitize(r.result);
+    if (cacheKey) await env.KPR_LIMITS.put(cacheKey, JSON.stringify(shareable(result)), { expirationTtl: CACHE_TTL });
+    return json({ result });
   } catch (err) {
     if (err.name === "AbortError") return fail(504, "Okuma çok uzun sürdü. Daha kısa bir dosya yükle.");
     return fail(500, "Beklenmeyen bir hata oldu. Tekrar dene.");
