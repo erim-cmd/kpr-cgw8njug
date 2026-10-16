@@ -241,6 +241,18 @@ const EXCERPT_BUDGET = 4200; // bağlamın syllabus metninden seçilen paragrafl
 // Soru kelimelerinden atılanlar (her soruda geçer, paragraf seçmeye yardım etmez)
 const STOP = new Set("bir bu su ve ile icin mi mu mi mı ne nasil kac hangi var yok olmali olur olarak gibi daha cok en de da ki ben benim bana dersin dersi ders syllabus the a an of to in on for is are be do does what how many which when can should course class".split(" ")); // i18n-ok
 
+// Türkçe soru, İngilizce syllabus (ve tersi): sık kavramların karşılıkları (ilk 5 harf, katlanmış)
+const SYN = [
+  ["kazan", "cikti", "outco", "objec", "learn", "goal", "yeter", "compe", "hedef", "ozell", "skill", "becer"], // i18n-ok
+  ["rapor", "repor"], ["sayfa", "page", "kelim", "word", "uzunl", "lengt"], // i18n-ok
+  ["odev", "assig", "homew"], ["sinav", "exam", "vize", "midte", "final", "quiz"], // i18n-ok
+  ["devam", "atten", "yokla", "absen"], ["kitap", "kayna", "textb", "readi", "refer", "okuma"], // i18n-ok
+  ["proje", "proje", "proj"], ["sunum", "prese"], ["gec", "late", "gecik"], ["not", "grade", "puan", "score", "degerl", "asses"], // i18n-ok
+  ["teslim", "submi", "deadl", "due"], ["konu", "topic", "icer", "conte", "hafta", "week", "sched"], // i18n-ok
+  ["lab", "labor", "deney", "exper"], ["kopya", "intih", "plagi", "cheat", "yapay", "ai"], // i18n-ok
+]; // i18n-ok
+const synOf = (w) => SYN.find((g) => g.some((x) => w.startsWith(x) || x.startsWith(w))) || [w];
+
 /** Metni ~500 karakterlik paragraflara böler (satır sınırında). */
 function chunks(text) {
   const out = [];
@@ -260,13 +272,15 @@ function chunks(text) {
  * kelimelerin ilk 5 harfi aranır ("raporu" → "rapor"). Dönüş: [{ course, text, score }] metindeki sırasıyla.
  */
 export function excerpts(question, courses, budget = EXCERPT_BUDGET) {
-  const words = [...new Set(fold(question).split(/[^a-z0-9]+/).filter((w) => w.length >= 3 && !STOP.has(w)))].map((w) => (w.length > 5 ? w.slice(0, 5) : w));
-  if (!words.length) return [];
+  const base = [...new Set(fold(question).split(/[^a-z0-9]+/).filter((w) => w.length >= 3 && !STOP.has(w)))].map((w) => (w.length > 5 ? w.slice(0, 5) : w));
+  // Her soru kelimesi bir kavram grubudur: grubun herhangi bir karşılığı geçen paragraf puan alır
+  const groups = base.map((w) => [...new Set([w, ...synOf(w)])]);
+  if (!groups.length) return [];
   const scored = [];
   for (const c of courses) {
     chunks(c.text).forEach((txt, i) => {
       const f = fold(txt);
-      const score = words.reduce((n, w) => n + (f.includes(w) ? (/\d/.test(w) ? 2 : 1) : 0), 0);
+      const score = groups.reduce((n, g) => n + (g.some((w) => f.includes(w)) ? (g.some((w) => /\d/.test(w)) ? 2 : 1) : 0), 0);
       if (score) scored.push({ course: c, text: txt, score, i });
     });
   }
@@ -300,7 +314,9 @@ export function buildContext(question, state, { courseId = null } = {}) {
     const ranked = [...by.entries()].sort((a, b) => b[1] - a[1]);
     if (ranked.length === 1 || ranked[0][1] >= 2 * ranked[1][1]) course = state.courses.find((c) => c.id === ranked[0][0]);
   }
-  const quotes = (course ? ex.filter((x) => x.course.id === course.id) : ex).map((x) => (course ? x.text : `[${name(x.course)}] ${x.text}`));
+  let quotes = (course ? ex.filter((x) => x.course.id === course.id) : ex).map((x) => (course ? x.text : `[${name(x.course)}] ${x.text}`));
+  // Hiç paragraf eşleşmediyse: dersin syllabus'unun başı (tanım, kazanımlar genelde oradadır)
+  if (course && !quotes.length && course.text) quotes = chunks(course.text).reduce((acc, c) => (acc.join("").length + c.length <= EXCERPT_BUDGET ? [...acc, c] : acc), []);
   const today = new Date().toISOString().slice(0, 10);
   const tasksOf = (c, max) => state.tasks.filter((x) => x.courseId === c.id && !x.done).sort(byDue).slice(0, max).map((x) => ({ title: x.title, type: x.type, due: x.due || null, time: x.time || null }));
   const brief = (c) => ({ code: c.code, name: c.name, grading: c.grading.map((g) => ({ name: g.name, weight: g.weight })), upcoming: tasksOf(c, 3) });
