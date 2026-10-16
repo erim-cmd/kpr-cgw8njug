@@ -21,8 +21,6 @@ export default {
   "Örn. finalden kaç almam lazım?": "E.g. what do I need on the final",
   "Sor": "Ask",
   "Örnek sorular": "Sample questions",
-  "Cevaplar sadece senin derslerinden (syllabus, görevler, notlar) gelir; internete bağlanmaz. Bulamazsa bulamadığını söyler.":
-    "Answers come only from your own courses (syllabus, tasks, grades); nothing goes online. If it can't find something, it says so.",
   "Sohbeti temizle": "Clear chat",
 
   // ders.js

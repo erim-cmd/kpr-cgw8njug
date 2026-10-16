@@ -1,7 +1,7 @@
 # Asistan'a yapay zekâ bağlama — az token tasarımı
 
 Buğra'nın notu (7 Ekim 2026): "Yapay zekâ asistanı bağlarken fazla token yemeyen bir şekilde bağlayın."
-Bu belge o bağlantının nasıl kurulacağını anlatır. Henüz kod yok; bağlamaya karar verildiğinde buna göre yapılır.
+Bu belge o bağlantının tasarımıdır. **v2.30.0'da (16 Eki 2026) bağlandı:** `functions/api/ask.js`, `asistan-core.js` `buildContext`, `asistan.js` "Yapay zekâya sor"; testler `test/ai-ask.mjs`. Bağlama notlar, devamsızlık ve ad girmez.
 
 ## Temel fikir: önce cihaz, sonra yapay zekâ
 

@@ -5,19 +5,52 @@
  *      (sınav sayısı, devam şartı, not dağılımı, kritik kurallar) yan yana karşılaştırılır. Aday ders değildir:
  *      takvime, görevlere ve GNO'ya girmez. Dosya saklanmaz, yalnızca özet (store → electives).
  *   2. İlgi alanı seçimi (çoklu çip + Tamam); seçimler cihazda, store → settings.interests.
- *   3. Öneriler: eşleştirme gelene kadar küçük "Önizleme" listesi (sahte ders öneri gibi gösterilmez).
+ *   3. Öneriler: öğrenci kendi elindeki seçmeli listesini (PDF/Word) yükler; metin cihazda çıkarılır, rızayla
+ *      yapay zekâya gider (functions/api/electives.js) ve ilgi alanıyla eşleşen dersler gerekçesi ve listeden alıntısıyla
+ *      gelir. Sunucu belgede olmayan dersi atar, birebir olmayan alıntıyı boşaltır. Sonuç yalnız cihazda (kpr:suggest:v1).
+ *      Yapay zekâ yoksa küçük "Önizleme" listesi (sahte ders öneri gibi gösterilmez).
+ *   4. Sınav çakışması: adayın syllabus'undaki sınav tarihi, öğrencinin kendi derslerinden bir sınavla aynı günse uyarı.
  * Okuma önce cihazda; okuma eksikse (not toplamı tutmuyor, tarihsiz sınav) öğrenciye yapay zekâ ile okuma
  * önerilir. Rıza verilirse yalnızca cihazda çıkarılmış syllabus metni gönderilir (importer.js readWithAI).
  */
 
-import { store, INTERESTS } from "./store.js";
-import { esc, toast } from "./ui.js";
+import { store, INTERESTS, isExam } from "./store.js";
+import { esc, toast, openSheet, closeSheet } from "./ui.js";
 import { icon } from "./icons.js";
-import { t, pct, localize } from "./i18n.js";
+import { t, pct, localize, getLang } from "./i18n.js";
 import { infoNote } from "./components.js";
+import { fmtShort } from "./dates.js";
+import { endpointStatus, postJSON } from "./api.js";
 
-// Öneri listesi: eşleştirme gelene kadar boş (sahte ders öneri gibi gösterilmez)
-const SUGGESTIONS = [];
+const EL_API = "api/electives";
+const SUGGEST_KEY = "kpr:suggest:v1";
+let aiState = null; // null | "ready" | "off" | "none"
+let matching = false;
+
+/** Son eşleştirme: { courses, interests } — yalnız bu cihazda. Bozuk/yoksa boş. */
+function loadSuggestions() {
+  try {
+    const v = JSON.parse(localStorage.getItem(SUGGEST_KEY) || "null");
+    return v && Array.isArray(v.courses) ? v : { courses: [], interests: [] };
+  } catch { return { courses: [], interests: [] }; }
+}
+function saveSuggestions(v) {
+  try { localStorage.setItem(SUGGEST_KEY, JSON.stringify(v)); } catch { /* depolama yoksa oturumda kalır */ }
+  suggestions = v;
+}
+let suggestions = loadSuggestions();
+
+/**
+ * Adayın sınavı, öğrencinin kendi derslerindeki bir sınavla aynı gün mü?
+ * Dönüş: [{ date, title, with }] — with: çakışan dersin kodu/adı ve sınavı.
+ */
+export function examClashes(e, tasks, courses) {
+  const byId = new Map(courses.map((c) => [c.id, c]));
+  const mine = tasks.filter((x) => isExam(x) && x.due && !x.done);
+  return (e.examDates || []).flatMap((x) =>
+    mine.filter((m) => m.due === x.date).map((m) => ({ date: x.date, title: x.title, with: `${byId.get(m.courseId)?.code || byId.get(m.courseId)?.name || ""} ${m.title}`.trim() }))
+  );
+}
 
 // Eşleştirme gelene kadar arayüzün nasıl görüneceğini gösteren ÖRNEK satırlar.
 // "Önizleme" etiketiyle ve soluk çizilir; gerçek bir ders önerisi değildir, okul verisi içermez.
@@ -40,8 +73,9 @@ let reading = false; // syllabus okunuyor
  */
 export function courseCard(c, preview = false) {
   const fit = Math.max(0, Math.min(100, Math.round(Number(c.fit) || 0)));
-  return `<li class="el-row${preview ? " is-preview" : ""}">
-    <b>${esc(c.code)}</b><span>${esc(c.name)}</span><em aria-label="${t("Uyum yüzde {n}", { n: fit })}">${pct(fit)}</em>
+  const why = !preview && c.reason ? `<p class="el-why">${esc(c.reason)}${c.quote ? `<q>${esc(c.quote)}</q>` : `<small>${t("Yapay zekânın yorumu; listede birebir alıntı yok.")}</small>`}</p>` : "";
+  return `<li class="el-row${preview ? " is-preview" : ""}${why ? " has-why" : ""}">
+    <b>${esc(c.code)}</b><span>${esc(c.name)}</span><em aria-label="${t("Uyum yüzde {n}", { n: fit })}">${pct(fit)}</em>${why}
   </li>`;
 }
 
@@ -68,9 +102,16 @@ function candidateCard(e) {
     </div>
     <p class="cand-stats">${stats.map(esc).join(" · ")}</p>
     ${g.length ? `<p class="cand-grading">${g.map((x) => `${esc(x.name)} ${pct(x.weight)}`).join(" · ")}${bonus.length ? ` · ${bonus.map((x) => `${esc(x.name)} +${pct(x.weight)}`).join(" · ")}` : ""}</p>` : `<p class="cand-grading muted">${t("Not dağılımı syllabus'ta bulunamadı.")}</p>`}
+    ${clashes(e)}
     ${e.finalMin !== null ? `<p class="cand-rule">${t("Final barajı {n}", { n: e.finalMin })}</p>` : ""}
     ${e.rules.filter((r) => !/^Derslerin en az/.test(r) && !/^En fazla \d+/.test(r) && !/^Finalden en az/.test(r)).map((r) => `<p class="cand-rule">${esc(r)}</p>`).join("")}
   </li>`;
+}
+
+function clashes(e) {
+  const st = store.get();
+  return examClashes(e, st.tasks, st.courses).slice(0, 2)
+    .map((x) => `<p class="cand-clash">${t("Sınav çakışması: {tarih} — {aday} ile {ders} aynı gün", { tarih: fmtShort(x.date), aday: esc(x.title), ders: esc(x.with) })}</p>`).join("");
 }
 
 function candidatesBlock(list) {
@@ -119,6 +160,57 @@ function previewList(saved) {
   </div>`;
 }
 
+/** Öneriler: liste yükle (yapay zekâ hazırsa) → eşleşen dersler; yoksa önizleme. */
+function suggestBlock(saved) {
+  if (aiState === null && store.get().settings.aiReading === true) {
+    aiState = "none";
+    endpointStatus(EL_API).then((st) => { aiState = st; if (st === "ready") globalThis.dispatchEvent?.(new Event("kpr:render")); });
+  }
+  const list = suggestions.courses;
+  const stale = list.length && suggestions.interests.join() !== saved.join();
+  const upload = aiState === "ready" && saved.length ? `<label class="btn btn-ghost el-upload${matching ? " is-busy" : ""}">
+      ${icon.upload}${matching ? t("Eşleştiriliyor…") : list.length ? t("Başka bir liste yükle") : t("Seçmeli listesini yükle")}
+      <input type="file" class="visually-hidden" data-change="elective-list" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.txt,text/plain" ${matching ? "disabled" : ""}>
+    </label>` : "";
+  if (list.length) {
+    return `<ul class="el-rows">${list.map((c) => courseCard(c)).join("")}</ul>
+      ${stale ? `<p class="fine">${t("İlgi alanların değişti; güncel öneri için listeyi yeniden yükle.")}</p>` : ""}
+      <p class="fine">${t("Bu bir öneridir, kayıt değildir. Gerekçeler yüklediğin listeden; yapay zekâ yanılabilir.")}</p>${upload}`;
+  }
+  return `${upload ? `<p class="fine">${t("Elindeki seçmeli ders listesini (PDF ya da Word) yükle; ilgi alanına uyan dersleri gerekçesiyle sıralayalım.")}</p>${upload}` : ""}${previewList(saved)}`;
+}
+
+/** Liste eşleştirmesi için rıza penceresi (ne gideceği açıkça yazar). */
+function listConsent() {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (v) => { if (!done) { done = true; resolve(v); } };
+    {
+      const d = openSheet(`<form class="sheet-form" novalidate>
+        <header class="sheet-head"><h2>${t("Yapay zekâ ile eşleştir")}</h2><button type="button" class="icon-btn" data-close aria-label="${t("Kapat")}">${icon.close}</button></header>
+        <div class="sheet-body">
+          <p class="lead-text">${t("Listedeki dersler ilgi alanlarınla eşleştirilecek.")}</p>
+          <label class="consent"><input type="checkbox" name="ok"><span>${t("Listenin metni ve seçtiğim ilgi alanları yapay zekâya (Anthropic) gönderilsin. Derslerim, notlarım ve adım gönderilmez.")}</span></label>
+        </div>
+        <footer class="sheet-foot">
+          <button type="button" class="btn btn-ghost" data-close>${t("Vazgeç")}</button>
+          <button type="submit" class="btn btn-primary">${t("Eşleştir")}</button>
+        </footer>
+      </form>`, (dlg) => {
+        const form = dlg.querySelector("form");
+        form.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const box = form.elements.namedItem("ok");
+          if (!box.checked) { box.setCustomValidity(t("Devam etmek için kutuyu işaretle.")); box.reportValidity(); box.addEventListener("change", () => box.setCustomValidity(""), { once: true }); return; }
+          finish(true);
+          closeSheet();
+        });
+      });
+      d?.addEventListener?.("close", () => finish(false), { once: true });
+    }
+  });
+}
+
 export function view() {
   const st = store.get();
   const saved = st.settings.interests;
@@ -136,7 +228,7 @@ export function view() {
     <section class="section">
       <div class="section-head"><h2>${t("Öneriler")}</h2></div>
       ${open ? interestCard(draft) : interestTags(saved)}
-      ${SUGGESTIONS.length ? `<ul class="el-rows">${SUGGESTIONS.map((c) => courseCard(c)).join("")}</ul>` : previewList(saved)}
+      ${suggestBlock(saved)}
     </section>`;
 }
 
@@ -182,6 +274,32 @@ async function readElectiveWithAI(saved, text, reasons, render) {
 }
 
 export const changes = {
+  async "elective-list"(el, { render }) {
+    const file = el.files?.[0];
+    if (!file || matching) return;
+    const saved = store.get().settings.interests;
+    if (!saved.length) return toast(t("Önce ilgi alanlarını seç."));
+    const { extractText, DocError } = await import("./doc-text.js");
+    let text;
+    try {
+      ({ text } = await extractText(file));
+    } catch (err) {
+      return toast(err instanceof DocError ? err.message : t("Dosya okunamadı. Başka bir dosya dene."));
+    }
+    if (!(await listConsent())) return;
+    matching = true;
+    render();
+    const r = await postJSON(EL_API, { text, interests: saved.map((k) => INTERESTS[k]), lang: getLang() }, {
+      timeout: 70_000,
+      errors: { offline: t("internet bağlantısı yok"), timeout: t("eşleştirme çok uzun sürdü"), network: t("sunucuya ulaşılamadı") },
+    });
+    matching = false;
+    if (r.body?.courses) {
+      saveSuggestions({ courses: r.body.courses, interests: [...saved] });
+      toast(r.body.courses.length ? t("{n} ders ilgi alanına uyuyor", { n: r.body.courses.length }) : t("Bu listede ilgi alanına uyan ders bulunamadı."));
+    } else toast(t("Eşleştirilemedi ({hata}).", { hata: r.error }));
+    render();
+  },
   async "elective-file"(el, { render }) {
     const file = el.files?.[0];
     if (!file || reading) return;

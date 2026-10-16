@@ -21,7 +21,8 @@ import { t, pct, locale, localize, readerText } from "./i18n.js";
 
 // Türkçe sabit (testler karşılaştırır); cevapta notFound() kullanılır, o dile göre çevrilir
 export const NOT_FOUND = "Bunu derslerinin bilgilerinde bulamadım."; // i18n-ok
-const notFound = () => ({ text: t("Bunu derslerinin bilgilerinde bulamadım."), source: "" });
+// missing: cihazda cevap yok → arayüz (rızayla) yapay zekâya sormayı önerebilir
+const notFound = () => ({ text: t("Bunu derslerinin bilgilerinde bulamadım."), source: "", missing: true });
 
 // Kural türleri (syllabus-local.js parsePolicies ile aynı adlar)
 const KIND_RE = {
@@ -211,7 +212,7 @@ export function answer(question, state, { courseId = null } = {}) {
     const p = pick(cands, chosen);
     if (p.ask) return p.ask;
     const res = p.course && ruleAnswer(kind, p.course, state);
-    return res || (chosen ? { text: t("{ders} syllabus'unda {kural} ile ilgili bir kural bulamadım.", { ders: name(chosen), kural: KIND_LABEL[kind] }), source: "" } : notFound());
+    return res || (chosen ? { text: t("{ders} syllabus'unda {kural} ile ilgili bir kural bulamadım.", { ders: name(chosen), kural: KIND_LABEL[kind] }), source: "", missing: true } : notFound());
   }
   // 3) "Sınavım ne zaman / kaç gün kaldı" → görevler
   if (DATE_RE.test(f)) {
@@ -228,6 +229,59 @@ export function answer(question, state, { courseId = null } = {}) {
     return (p.course && contactAnswer(q, p.course)) || notFound();
   }
   return notFound();
+}
+
+/* ------------------------------------------------------------------ */
+/* Yapay zekâ bağlamı (functions/api/ask.js)                            */
+/* ------------------------------------------------------------------ */
+
+export const CONTEXT_MAX = 6000; // karakter (~1.500 token; docs/asistan-yapay-zeka.md)
+
+/**
+ * Sorunun geçtiği dersin syllabus bilgisi, kısa JSON metni. Gönderilmeyenler: notlar, devamsızlıklar, önceki not,
+ * hedef harf, öğrencinin adı. Ders belli değilse ve tek ders varsa o; birden çoksa her dersin kısa özeti.
+ * Dönüş: { context, label } ya da null (ders yok).
+ */
+export function buildContext(question, state, { courseId = null } = {}) {
+  if (!state.courses.length) return null;
+  const found = findCourse(question, state.courses);
+  const course = state.courses.find((c) => c.id === courseId) || (found && !Array.isArray(found) ? found : null) || (state.courses.length === 1 ? state.courses[0] : null);
+  const today = new Date().toISOString().slice(0, 10);
+  const tasksOf = (c, max) => state.tasks.filter((x) => x.courseId === c.id && !x.done).sort(byDue).slice(0, max).map((x) => ({ title: x.title, type: x.type, due: x.due || null, time: x.time || null }));
+  const brief = (c) => ({ code: c.code, name: c.name, grading: c.grading.map((g) => ({ name: g.name, weight: g.weight })), upcoming: tasksOf(c, 3) });
+  let data;
+  if (course) {
+    const week = currentWeekOf(course, state);
+    data = {
+      today,
+      course: {
+        code: course.code, name: course.name, credit: course.credit, ects: course.ects, instructor: course.instructor,
+        office: course.office, officeHours: course.officeHours, email: course.email,
+        sessions: course.sessions.map((s) => ({ day: s.day, start: s.start, end: s.end, room: s.room })),
+        grading: course.grading.map((g) => ({ name: g.name, weight: g.weight, ...(g.bonus ? { bonus: true } : {}) })),
+        attendance: { minPercent: course.attendPct, maxAbsences: course.absLimit }, finalMin: course.finalMin,
+        letterScale: course.scale, currentWeek: week ?? null,
+        rules: course.policies.filter((p) => !p.hidden).map((p) => ({ kind: p.kind, rule: p.rule, consequence: p.consequence, source: p.source })),
+        weeks: course.weeks.map((w) => ({ n: w.n, date: w.date, topic: w.topic, note: w.note })),
+      },
+      upcoming: tasksOf(course, 8),
+    };
+  } else data = { today, courses: state.courses.map(brief) };
+  let text = JSON.stringify(data);
+  // Sınır: önce haftalık plan, sonra kuralların kaynak cümleleri kısalır
+  if (text.length > CONTEXT_MAX && data.course) {
+    data.course.weeks = data.course.weeks.slice(0, 16).map((w) => ({ ...w, topic: String(w.topic || "").slice(0, 80) }));
+    text = JSON.stringify(data);
+  }
+  if (text.length > CONTEXT_MAX && data.course) {
+    data.course.rules = data.course.rules.map((r) => ({ ...r, source: String(r.source || "").slice(0, 100) }));
+    text = JSON.stringify(data);
+  }
+  if (text.length > CONTEXT_MAX && data.course) {
+    data.course.weeks = [];
+    text = JSON.stringify(data);
+  }
+  return { context: text.slice(0, CONTEXT_MAX), label: course ? name(course) : t("derslerin") };
 }
 
 // Örnek sorular: dile göre değişir (İngilizce sorular da aşağıdaki İngilizce anahtar kelimelerle anlaşılır)

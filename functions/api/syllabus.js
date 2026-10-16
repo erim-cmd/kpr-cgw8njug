@@ -18,21 +18,15 @@
  * KVKK: dosya ve metnin kendisi hiçbir yerde saklanmaz, loglanmaz. Sadece Anthropic API'ye gönderilir.
  */
 
-const API_URL = "https://api.anthropic.com/v1/messages";
+import { API_URL, json, fail, sha256hex, overBudget, addSpend, priceOf, overLimit as overDaily } from "../../server/ai-shared.js";
+export { overBudget };
+
 const DEFAULT_MODEL = "claude-sonnet-5-5";
 const MAX_B64 = Math.ceil((4 * 1024 * 1024 * 4) / 3) + 1024; // 4 MB dosya
 const MAX_TEXT = 300_000; // karakter (~90 bin token); daha uzunu çok dersli derleme demektir
 const CACHE_TTL = 60 * 60 * 24 * 180; // ortak önbellek: 180 gün (bir dönem + yedek)
-const DEFAULT_BUDGET_USD = 20;
 const DAILY_LIMIT = 5;
 const TIMEOUT_MS = 70_000;
-
-const json = (body, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
-  });
-const fail = (status, error) => json({ error }, status);
 
 /* ------------------------------------------------------------------ */
 /* Çıktı şeması: model tam olarak bu JSON'u döndürür                   */
@@ -254,54 +248,12 @@ async function callClaude({ env, data, mediaType, text, mode, signal }) {
 /* Ortak önbellek ve aylık harcama (KV bağlıysa)                       */
 /* ------------------------------------------------------------------ */
 
-async function sha256hex(s) {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
+const SONNET_PRICE = { in: 2, out: 10 }; // $/milyon token (claude-sonnet-5-5); KPR_PRICE_IN / KPR_PRICE_OUT ile değişir
+const overLimit = (request, env) => overDaily(request, env, "rl", DAILY_LIMIT);
 
 /** Önbelleğe giden sonuç: hoca iletişim bilgileri çıkarılır (başka öğrenciye gidecek). */
 export function shareable(result) {
   return { ...result, course: { ...result.course, instructor: "", email: "", office: "", office_hours: "" } };
-}
-
-const monthKey = () => `b:${new Date().toISOString().slice(0, 7)}`;
-const price = (env, k, d) => (Number.isFinite(Number(env[k])) && Number(env[k]) > 0 ? Number(env[k]) : d);
-
-/** Bu ay harcanan, milyonda bir dolar cinsinden (tam sayı). */
-async function spent(env) {
-  return env.KPR_LIMITS ? Number(await env.KPR_LIMITS.get(monthKey())) || 0 : 0;
-}
-
-export async function overBudget(env) {
-  if (!env.KPR_LIMITS) return false;
-  const budget = price(env, "KPR_MONTHLY_BUDGET_USD", DEFAULT_BUDGET_USD);
-  return (await spent(env)) >= budget * 1e6;
-}
-
-async function addSpend(env, usage) {
-  if (!env.KPR_LIMITS || !usage) return;
-  const micro = Math.ceil(usage.input * price(env, "KPR_PRICE_IN", 2) + usage.output * price(env, "KPR_PRICE_OUT", 10));
-  // KV sonunda tutarlıdır: aynı anda gelen istekler sayacı biraz eksik sayabilir; sınır yaklaşık bir tavan.
-  await env.KPR_LIMITS.put(monthKey(), String((await spent(env)) + micro), { expirationTtl: 60 * 60 * 24 * 40 });
-}
-
-/* ------------------------------------------------------------------ */
-/* Günlük sınır (KV bağlıysa)                                           */
-/* ------------------------------------------------------------------ */
-
-async function overLimit(request, env) {
-  if (!env.KPR_LIMITS) return false;
-  const ip = request.headers.get("cf-connecting-ip") || "unknown";
-  const day = new Date().toISOString().slice(0, 10);
-  // KVKK: IP açık hâliyle yazılmaz; gün + IP'nin SHA-256 özeti anahtar olur ve 26 saatte silinir.
-  // Not: IPv4 uzayı küçük olduğundan özet deneme yoluyla geri çözülebilir; bu tam anonimleştirme değildir.
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${day}:${ip}`));
-  const who = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
-  const key = `rl:${day}:${who}`;
-  const count = Number(await env.KPR_LIMITS.get(key)) || 0;
-  if (count >= DAILY_LIMIT) return true;
-  await env.KPR_LIMITS.put(key, String(count + 1), { expirationTtl: 60 * 60 * 26 });
-  return false;
 }
 
 /* ------------------------------------------------------------------ */
@@ -356,7 +308,7 @@ export async function onRequestPost({ request, env }) {
       console.error(`[syllabus] yapılandırılmış çıktı reddedildi, araç yoluna geçiliyor: ${String(r.error).slice(0, 300)}`);
       r = await callClaude({ env, data, mediaType, text, mode: "tool", signal: ctrl.signal });
     }
-    await addSpend(env, r.usage);
+    await addSpend(env, r.usage, priceOf(env, "KPR_PRICE", SONNET_PRICE));
 
     if (r.status) {
       // Sunucu kaydı: sadece durum kodu ve API'nin hata metni (anahtar ve dosya içeriği yazılmaz)
