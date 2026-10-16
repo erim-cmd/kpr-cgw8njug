@@ -40,6 +40,7 @@ const KIND_LABEL = localize(
   { devam: "attendance", gec_teslim: "late submission", telafi: "excuses/make-ups", butunleme: "resits", baraj: "the final exam minimum", not_kurali: "grading", durustluk: "academic integrity", diger: "this" }
 );
 
+const OUTCOME_RE = /kazan|ogrenme cikti|cikti|ne ogren|neler ogren|bitince|hedefi ne|amaci ne|outcome|objective|what will i learn|learn in this|skills? (will|do) i/; // i18n-ok
 const NEED_RE = /(finalden|finalde|kalan(lardan)?|vizeden|sinavdan).{0,25}(kac|ne kadar)|kac (almam|almaliyim|almam lazim|almam gerek|almam gerekiyor|alirsam)|gecmek icin|hedef harf|harf (icin|almak)|(what|how much) (do|should|must) i (need|get|score)|what (score|grade) do i need|need (to get |to score )?on the (final|midterm|rest)|to pass\b|target grade/; // i18n-ok
 const DATE_RE = /ne zaman|kac gun|hangi gun|tarih(i|i ne)|kalan gun|gun kaldi|when|how many days|what day|which day|what date|days (left|until)|how long until/; // i18n-ok
 const WEEK_RE = /bu hafta|neye calis|ne calis|haftaya ne|bu haftaki|ne var|this week|next week|what should i study|coming up|upcoming|next 7 days/; // i18n-ok
@@ -172,6 +173,22 @@ function weekAnswer(state, chosen) {
   return { text: parts.join("\n\n"), source: topics.length ? t("görevlerin + syllabus") : t("görevlerin") };
 }
 
+function outcomesAnswer(c) {
+  return {
+    text: `${t("{ders} dersini bitirince:", { ders: name(c) })}\n${c.outcomes.map((x, i) => `${i + 1}. ${x}`).join("\n")}`,
+    source: src(c, t("syllabus · öğrenme çıktıları")),
+  };
+}
+
+/** findCourse + 4 harfli ad kelimeleri ("Algı Yönetimi" → "algı"); tek eşleşme yoksa null. */
+export function courseByName(q, courses) {
+  const f = findCourse(q, courses);
+  if (f && !Array.isArray(f)) return f;
+  const qw = fold(q).split(/[^a-z0-9]+/);
+  const hits = courses.filter((c) => fold(c.name).split(/[^a-z0-9]+/).some((w) => w.length >= 4 && !STOP.has(w) && qw.some((x) => x.startsWith(w))));
+  return hits.length === 1 ? hits[0] : null;
+}
+
 function contactAnswer(q, c) {
   const f = fold(q);
   const parts = [];
@@ -197,6 +214,19 @@ export function answer(question, state, { courseId = null } = {}) {
   const chosen = state.courses.find((c) => c.id === courseId) || (found && !Array.isArray(found) ? found : null);
   const multi = Array.isArray(found) ? found : null;
 
+  // 0) "Bu derste ne kazanırım" → syllabus'taki öğrenme çıktıları (0 token)
+  if (OUTCOME_RE.test(f) && !NEED_RE.test(f)) {
+    const course = chosen || (multi ? null : courseByName(q, state.courses)) || (state.courses.length === 1 ? state.courses[0] : null);
+    if (!course && multi) return chipsFor(multi);
+    if (!course) {
+      const withOut = state.courses.filter((c) => c.outcomes?.length);
+      const p = pick(withOut, null);
+      if (p.ask) return p.ask;
+      if (p.course) return outcomesAnswer(p.course);
+      return notFound();
+    }
+    return course.outcomes?.length ? outcomesAnswer(course) : { ...notFound(), text: t("{ders} syllabus'unda kazanımlar bulunamadı.", { ders: name(course) }) };
+  }
   // 1) "Finalden kaç almalıyım" → hedef harf hesabı
   if (NEED_RE.test(f)) {
     const cands = multi || state.courses.filter((c) => c.grading.length);
@@ -337,7 +367,7 @@ export function buildContext(question, state, { courseId = null } = {}) {
         sessions: course.sessions.map((s) => ({ day: s.day, start: s.start, end: s.end, room: s.room })),
         grading: course.grading.map((g) => ({ name: g.name, weight: g.weight, ...(g.bonus ? { bonus: true } : {}) })),
         attendance: { minPercent: course.attendPct, maxAbsences: course.absLimit }, finalMin: course.finalMin,
-        letterScale: course.scale, currentWeek: week ?? null,
+        letterScale: course.scale, currentWeek: week ?? null, learningOutcomes: course.outcomes || [],
         rules: course.policies.filter((p) => !p.hidden).map((p) => ({ kind: p.kind, rule: p.rule, consequence: p.consequence, source: p.source })),
         weeks: course.weeks.map((w) => ({ n: w.n, date: w.date, topic: w.topic, note: w.note })),
       },

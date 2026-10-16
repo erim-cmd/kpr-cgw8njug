@@ -183,6 +183,8 @@ function normCourse(c) {
     weeks: normWeeks(c.weeks),
     // Syllabus'un cihazda çıkarılmış metni (yalnız bu cihazda): Asistan soruyla ilgili paragrafları buradan seçer
     text: typeof c.text === "string" ? c.text.slice(0, TEXT_MAX) : "",
+    // Öğrenme çıktıları / kazanımlar (syllabus'tan; Asistan ve ders sayfası)
+    outcomes: arr(c.outcomes).map((x) => str(x, 200)).filter(Boolean).slice(0, 12),
   };
 }
 

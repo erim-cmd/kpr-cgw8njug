@@ -37,6 +37,7 @@ for (const [name, e] of Object.entries(exp)) {
     // Harf tablosu: beklenmiyorsa boş olmalı (uydurma tablo yok)
     const sc = Object.fromEntries((r.scale || []).map((x) => [x.letter, x.min]));
     ok(JSON.stringify(sc) === JSON.stringify(e.scale || {}), `scale: ${JSON.stringify(sc)} ≠ ${JSON.stringify(e.scale || {})}`);
+    ok((r.outcomes || []).length === (e.outcomes_count || 0), `outcomes: ${(r.outcomes || []).length} ≠ ${e.outcomes_count || 0}`);
     ok(r.final_min === e.final_min, `final_min: ${r.final_min} ≠ ${e.final_min}`);
     // Öğeler: beklenen her öğe için başlığı anahtar kelimeyi içeren, tarihi/saati/haftası eşleşen bir kayıt
     for (const [t, date, time, week] of e.items) {

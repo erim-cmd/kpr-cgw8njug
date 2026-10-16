@@ -554,7 +554,8 @@
       "1",
       "2",
       "3"
-    ]
+    ],
+    "outcomes_count": 9
   },
   "tr_bau_syn2": {
     "code": "GEP 1020",
@@ -619,7 +620,8 @@
       "C-": 68,
       "D+": 64,
       "D": 60
-    }
+    },
+    "outcomes_count": 4
   },
   "en_bau_syn3": {
     "code": "ENM 4116",
@@ -756,7 +758,8 @@
     ],
     "warnings_exclude": [
       "bozuk okunuyor"
-    ]
+    ],
+    "outcomes_count": 4
   },
   "en_sube_tba": {
     "code": "ME 2020",

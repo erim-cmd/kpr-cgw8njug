@@ -1192,3 +1192,6 @@ dialog.sheet.full .sheet-body { flex: 1; padding-bottom: calc(24px + var(--safe-
 .el-why q::before, .el-why q::after { content: ""; }
 .el-why small { display: block; margin-top: 4px; color: var(--text-dim); }
 .cand-clash { margin: 6px 0 0; color: var(--danger-text); font-size: var(--fs-xs); font-weight: 600; }
+
+/* Ders sayfası: kazanımlar */
+.cd-outcomes { margin: 8px 0 0; padding-left: 22px; display: grid; gap: 6px; font-size: var(--fs-sm); color: var(--text-muted); }

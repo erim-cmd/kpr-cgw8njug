@@ -157,6 +157,15 @@ function planBlock(c, st, state) {
   </section>`;
 }
 
+/** Kazanımlar (öğrenme çıktıları): katlı, dokununca açılır. */
+function outcomesBlock(c, st) {
+  if (!c.outcomes?.length) return "";
+  return `<section class="cd-sec">
+    <button type="button" class="cd-plan-sum" data-toggle="outcomes" aria-expanded="${!!st.outcomes}"><span><b>${t("Bu dersten kazanacakların")}</b> · ${t("{n} madde", { n: c.outcomes.length })}</span>${st.outcomes ? "▴" : "▾"}</button>
+    ${st.outcomes ? `<ol class="cd-outcomes">${c.outcomes.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>` : ""}
+  </section>`;
+}
+
 /* ------------------------------------------------------------------ */
 /* 7. Hedef harf                                                       */
 /* ------------------------------------------------------------------ */
@@ -216,6 +225,7 @@ function inner(c, state) {
       ${infoBlock(c)}
       ${flagsBlock(c, st)}
       ${planBlock(c, st, state)}
+      ${outcomesBlock(c, st)}
       ${gradingBlock(c, state.tasks)}
       ${targetBlock(c, st)}
       <p class="fine cd-src">${t("Bilgiler syllabus'tan alındı")} · <button type="button" class="link" data-edit>${t("Düzenle")}</button></p>

@@ -429,6 +429,8 @@ function openReview(r, { reader = "local", aiError = "", file = null, text = "",
   const att = r.attendance || { percent: null, max_absences: null, source: "" };
   // Hocanın harf tablosu cihazda okunur (yapay zekâ şemasında yok); derste zaten tablo varsa ezilmez
   const scale = existing?.scale?.length ? [] : ((r.scale || []).length ? r.scale : local?.scale || []);
+  // Kazanımlar cihazda okunur (yapay zekâ şemasında yok)
+  const outcomes = (r.outcomes || []).length ? r.outcomes : local?.outcomes || [];
   r.warnings = r.warnings || [];
   const found = [
     sessions.length && t("{n} ders saati", { n: sessions.length }),
@@ -640,6 +642,7 @@ function openReview(r, { reader = "local", aiError = "", file = null, text = "",
             finalMin: r.final_min ?? existing?.finalMin ?? null,
             scale: scale.length ? scale : existing?.scale ?? [],
             text: lastText || existing?.text || "",
+            outcomes: outcomes.length ? outcomes : existing?.outcomes ?? [],
           },
           tasks
         );

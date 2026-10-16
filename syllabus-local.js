@@ -1904,6 +1904,43 @@ function parseWeeks(lines, flines, termYear) {
  * alt sınırlar kesin azalan, hepsi 0–100. Tutmazsa boş döner (öğrenci tabloyu elle girer ya da örnekle başlar).
  * Katsayı sütunu ("A | 4,00 | 90-100") atlanır; tek sayı yalnız "≥ 90", "90 ve üzeri", "90 and above" biçiminde kabul edilir.
  */
+/**
+ * Öğrenme çıktıları / kazanımlar ("Course Learning Outcomes (CLOs)", "Ders Öğrenme Kazanımları (DK)", "Learning
+ * Outcomes"). Başlığın altındaki numaralı/madde işaretli liste okunur; giriş cümlesi ("By the end of this course…",
+ * "Bu dersi başarıyla tamamlayan öğrenciler;") atlanır, satıra bölünmüş madde birleştirilir. Tablo başlığı
+ * ("Week | Learning Outcomes") başlık sayılmaz. Bulunamazsa boş (uydurma yok). En fazla 12 madde.
+ */
+function parseOutcomes(lines, flines) {
+  const HEAD = /^(\d+\.?\s*)?((ders(in|i)?|course|program)\s+)?(ogrenme\s+)?(kazanimlar\w*|ciktilar\w*|learning\s+outcomes?|outcomes)(\s*\([a-z]{1,4}s?\))?\s*:?$/;
+  const ITEM = /^\s*(?:(?:clo|dk|lo|ok|ög|og|pc)\s*-?\s*\d{1,2}\s*[.:)\-–]?|\d{1,2}\s*[.)\-–]|[•●▪◦\-–*])\s+(.+)$/i;
+  for (let i = 0; i < lines.length; i++) {
+    const fl = flines[i].trim();
+    if (!fl || fl.includes("\t") || fl.length > 70 || !HEAD.test(fl)) continue;
+    const out = [];
+    let blank = 0;
+    for (let j = i + 1; j < Math.min(lines.length, i + 60) && out.length <= 12; j++) {
+      const raw = lines[j].trim();
+      if (!raw) { if (out.length && ++blank > 1) break; continue; }
+      blank = 0;
+      if (/^[☐☒■□]/.test(raw) || raw.includes("\t")) { if (out.length) break; continue; }
+      const m = ITEM.exec(raw);
+      if (m) { out.push(m[1].trim()); continue; }
+      if (!out.length) {
+        // giriş cümlesi: "By the end of this course, you will be able to:" / "…öğrenciler;"
+        if (/[:;]$/.test(raw) || /by the end|able to|basariyla|tamamlayan|ogrenciler/.test(flines[j])) continue;
+        break;
+      }
+      // Bölünmüş madde: küçük harfle ya da noktasız önceki maddenin devamı
+      const prev = out[out.length - 1];
+      if (/^[a-zçğıöşü(]/.test(raw) || !/[.;!?]$/.test(prev)) { out[out.length - 1] = `${prev} ${raw}`; continue; }
+      break;
+    }
+    const items = out.map((x) => cut(clean(x), 200)).filter((x) => x.length >= 8);
+    if (items.length) return items.slice(0, 12);
+  }
+  return [];
+}
+
 const SCALE_ORDER = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D"];
 function parseScale(lines) {
   const N = String.raw`(\d{1,3}(?:[.,]\d{1,2})?)`;
@@ -2166,6 +2203,7 @@ export function parseSyllabus(text, now = new Date()) {
     attendance: { percent: att.percent, max_absences: att.max_absences, unit: att.unit && unitTr(att.unit) !== "ders" ? unitTr(att.unit) : "", source: att.source },
     final_min: finalMin ? finalMin.value : null,
     scale: kurul ? [] : parseScale(lines),
+    outcomes: parseOutcomes(lines, flines),
     policies,
     // Metin bozuksa "… bulunamadı" uyarıları gürültü: nedeni söyleyen tek uyarı kalır
     warnings: garbled ? [GARBLED] : [...warnings].slice(0, 8),
