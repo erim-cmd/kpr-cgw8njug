@@ -26,6 +26,7 @@ import { todayISO, fmtFull } from "./dates.js";
 import { enableNotifications, checkReminders, sync, permissionState } from "./notify.js";
 import { applyTheme } from "./theme.js";
 import { setLang, getLang, t } from "./i18n.js";
+import { startSync } from "./sync.js";
 
 // Kayıtlı veri eski biçimdeyse ekran çizilmeden önce yeni biçime geçir (bir kez; migrate.js)
 runMigrations();
@@ -302,6 +303,8 @@ store.subscribe(() => {
   syncTimer = setTimeout(sync, 800);
 });
 onInstallChange(render);
+// Hesap açıksa bulutla eşitle (hesapsızda hiçbir şey yapmaz)
+startSync();
 
 // Uygulama ikonuna uzun basınca çıkan kısayol: #/gorevler?yeni=1
 function handleShortcut() {

@@ -110,3 +110,6 @@ jobs:
 
       - name: GNO — önceki not düşülmez (UMIS HESAPLA)
         run: node test/gno-retake.mjs
+
+      - name: Hesap ve bulut eşitleme (bellek deposu)
+        run: node test/account.mjs

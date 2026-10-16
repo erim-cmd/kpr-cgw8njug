@@ -35,7 +35,8 @@
     <div class="summary">
       <strong>Kısaca</strong>
       <ul>
-        <li>Köprü'de hesap yok. Derslerin, görevlerin ve notların <strong>sadece senin cihazında</strong> saklanır; bize ulaşmaz.</li>
+        <li>Hesap <strong>isteğe bağlıdır</strong>. Hesap açmazsan derslerin, görevlerin ve notların <strong>sadece senin cihazında</strong> saklanır; bize ulaşmaz.</li>
+        <li><strong>Hesap açarsan</strong> e-postan, şifrenin tek yönlü özeti (şifrenin kendisi saklanmaz) ve uygulamadaki verilerin (dersler, syllabus metinleri, görevler, notlar, devamsızlık, profil, ayarlar) telefonunda ve bilgisayarında aynı olsun diye Köprü sunucusunda (Cloudflare, yurt dışı) saklanır. Hesabını Profil → Hesap → Hesabı sil ile istediğin an silebilirsin; buluttaki verilerin hemen silinir, cihazındaki veriler kalır.</li>
         <li>Syllabus <strong>yalnızca cihazında okunur</strong>, okunması için hiçbir yere gönderilmez. Asistan'ın cevap verebilmesi için çıkarılan metin yalnız cihazında saklanır.</li>
         <li><strong>Asistan</strong> önce cihazında cevaplar. Cevap bulamazsa ve sen rıza kutusunu işaretleyip "Yapay zekâya sor"a dokunursan (rızan bu cihazda hatırlanır) <strong>sorun ve o dersin syllabus bilgileri</strong> (tarihler, not dağılımı, kurallar, haftalık plan, yaklaşan işlerin ve syllabus metninden soruyla ilgili birkaç paragraf; metnin kendisi yalnız cihazında saklanır) yapay zekâya gönderilir. Notların, devamsızlığın ve adın gönderilmez. Sorun saklanmaz; aynı soru tekrar token harcamasın diye cevap 24 saat önbellekte tutulur.</li>
         <li><strong>Seçmeli Keşfi</strong>'nde yüklediğin seçmeli ders listesinin metni ve seçtiğin ilgi alanları, rızanla yapay zekâya gönderilir. Derslerin, notların ve adın gönderilmez. Önerilerin yalnız cihazında saklanır; aynı liste + ilgi alanları için cevap 30 gün önbellekte tutulur.</li>
@@ -46,7 +47,7 @@
     </div>
 
     <h2>1. Veri sorumlusu</h2>
-    <p>6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında veri sorumlusu, Köprü'yü geliştiren ve işleten <strong>[AD SOYAD]</strong>'dır (gerçek kişi). İletişim: <strong>[E-POSTA ADRESİ]</strong></p>
+    <p>6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında veri sorumlusu, Köprü'yü geliştiren ve işleten <strong>Nuri Erim Özçeşmeci</strong>'dır (gerçek kişi). İletişim: <a href="mailto:ermegeozcesmeci@gmail.com">ermegeozcesmeci@gmail.com</a></p>
 
     <h2>2. Hangi veriler, nerede işleniyor?</h2>
     <div class="table-wrap">
@@ -54,6 +55,7 @@
         <thead><tr><th>Veri</th><th>Nerede</th><th>Amaç</th><th>Saklama</th></tr></thead>
         <tbody>
           <tr><td>Adın (hitap için), dersler, ders saatleri, sınav/ödev tarihleri, notların</td><td>Yalnızca cihazındaki tarayıcı depolaması. Bize iletilmez.</td><td>Uygulamanın çalışması</td><td>Sen silene kadar (Profil → Veri ve gizlilik → Her şeyi sil)</td></tr>
+          <tr><td>Hesap (yalnız açarsan): e-posta, şifrenin PBKDF2 özeti, uygulama verilerin (dersler, syllabus metinleri, görevler, notlar, devamsızlık, profil, ayarlar)</td><td>Cloudflare D1 (Köprü sunucusu, yurt dışı)</td><td>Giriş ve telefon/bilgisayar arasında eşitleme; Asistan'ın cevapları</td><td>Hesabı silene kadar; oturum anahtarlarının yalnız SHA-256 özeti, 180 gün</td></tr>
           <tr><td>Yüklediğin syllabus dosyası (PDF/Word/metin) ve içeriği</td><td>Yalnızca cihazında okunur; çıkarılan metin cihazında saklanır</td><td>Dosyadan ders bilgilerinin çıkarılması, Asistan'ın cevapları</td><td>Köprü sunucusuna gönderilmez. Dersi silince metin de silinir</td></tr>
           <tr><td>Asistan'a sorduğun soru ve o dersin syllabus bilgileri (yalnız "Yapay zekâya sor" rızayla seçilirse)</td><td>Köprü sunucusu (Cloudflare) üzerinden Anthropic'e iletilir; cevap Cloudflare KV'de</td><td>Cihazda bulunamayan sorunun cevaplanması</td><td>Sorunun kendisi saklanmaz; cevap ve sorunun SHA-256 özeti 24 saat (aynı soru tekrar token harcamasın)</td></tr>
           <tr><td>Yüklediğin seçmeli ders listesinin metni ve seçtiğin ilgi alanları (yalnız rızayla)</td><td>Köprü sunucusu (Cloudflare) üzerinden Anthropic'e iletilir; öneriler Cloudflare KV'de ve cihazında</td><td>Seçmeli derslerin ilgi alanınla eşleştirilmesi</td><td>Liste metni saklanmaz; özeti ve öneriler 30 gün</td></tr>
@@ -68,7 +70,7 @@
 
     <h2>3. Hukuki sebepler</h2>
     <ul>
-      <li><strong>Açık rıza (KVKK m. 5/1 ve m. 9):</strong> Asistan sorusunun ve seçmeli listenin yurt dışındaki yapay zekâ hizmetine aktarılması, rıza kutusunu işaretleyip dokunarak verdiğin açık rızaya dayanır. Asistan'daki rızan bu cihazda hatırlanır; sonraki sorular cihazda cevaplanamazsa yeniden sormadan yapay zekâya gider. Rıza vermezsen Köprü'nün diğer her özelliği aynı şekilde çalışır.</li>
+      <li><strong>Açık rıza (KVKK m. 5/1 ve m. 9):</strong> Asistan sorusunun ve seçmeli listenin yurt dışındaki yapay zekâ hizmetine aktarılması, rıza kutusunu işaretleyip dokunarak verdiğin açık rızaya dayanır. Asistan'daki rızan bu cihazda hatırlanır; sonraki sorular cihazda cevaplanamazsa yeniden sormadan yapay zekâya gider. Hesap açarken verilerinin yurt dışındaki Köprü sunucusunda (Cloudflare) saklanması da kayıt ekranındaki kutuyu işaretleyerek verdiğin açık rızaya dayanır; hesabı silerek geri alırsın. Rıza vermezsen Köprü'nün diğer her özelliği aynı şekilde çalışır.</li>
       <li><strong>Meşru menfaat (KVKK m. 5/2-f):</strong> Kötüye kullanımı önlemek için günlük sayaç tutulması ve sitenin güvenliğine yönelik teknik kayıtlar.</li>
     </ul>
 
@@ -76,7 +78,7 @@
     <ul>
       <li><strong>Anthropic, PBC (ABD):</strong> Asistan ve Seçmeli Keşfi'nin kullandığı yapay zekâ hizmeti. Anthropic, API üzerinden gönderilen içerikleri model eğitimi için kullanmayacağını ve sınırlı bir süre sonunda sileceğini taahhüt etmektedir. Ayrıntılar: <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">anthropic.com/legal/privacy</a></li>
       <li><strong>Open-Meteo (İsviçre):</strong> Hava durumu hizmeti. Yalnızca seçtiğin şehrin sabit koordinatı gönderilir; çerez ve yönlendiren adres gönderilmez. Her internet isteğinde olduğu gibi IP adresin Open-Meteo'nun sunucusuna ulaşır. Hava durumunu kapatırsan hiç istek yapılmaz. Ayrıntılar: <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">open-meteo.com/en/terms</a></li>
-      <li><strong>Cloudflare, Inc. (ABD):</strong> Sitenin ve sunucu fonksiyonunun barındırılması. Ayrıntılar: <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">cloudflare.com/privacypolicy</a></li>
+      <li><strong>Cloudflare, Inc. (ABD):</strong> Sitenin, sunucu fonksiyonunun ve (hesap açarsan) hesap verilerinin barındırılması. Ayrıntılar: <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">cloudflare.com/privacypolicy</a></li>
     </ul>
     <p>Veriler bu taraflar dışında kimseyle paylaşılmaz, satılmaz ve reklam amacıyla kullanılmaz.</p>
 
@@ -97,7 +99,8 @@
     <div class="summary">
       <strong>In short</strong>
       <ul>
-        <li>Köprü has no accounts. Your courses, tasks and grades are stored <strong>only on your device</strong>; they never reach us.</li>
+        <li>An account is <strong>optional</strong>. Without one, your courses, tasks and grades are stored <strong>only on your device</strong>; they never reach us.</li>
+        <li><strong>If you create an account</strong>, your email, a one-way hash of your password (the password itself is never stored) and your app data (courses, syllabus texts, tasks, grades, absences, profile, settings) are stored on the Köprü server (Cloudflare, abroad) so they're the same on your phone and computer. Delete your account any time via Profile → Account → Delete account; your cloud data is deleted at once, data on your device stays.</li>
         <li>Your syllabus is <strong>read only on your device</strong> and is never sent anywhere to be read. The extracted text is stored only on your device so the Assistant can answer from it.</li>
         <li>The <strong>Assistant</strong> answers on your device first. If it finds nothing and you tick the consent box and tap "Ask the AI" (your consent is remembered on this device), <strong>your question and that course's syllabus details</strong> (dates, grade breakdown, rules, weekly plan, your upcoming tasks and a few paragraphs of the syllabus text that match the question; the text itself is stored only on your device) are sent to the AI. Your grades, absences and name are not sent. Your question is not stored; the answer is cached for 24 hours so the same question costs no tokens again.</li>
         <li>In <strong>Elective Explorer</strong>, the text of the elective list you upload and the interests you pick are sent to the AI with your consent. Your courses, grades and name are not sent. Suggestions are stored only on your device; the answer for the same list + interests is cached for 30 days.</li>
@@ -108,7 +111,7 @@
     </div>
 
     <h2>1. Data controller</h2>
-    <p>Under the Turkish Personal Data Protection Law No. 6698 ("KVKK"), the data controller is <strong>[AD SOYAD]</strong> (a natural person), who develops and runs Köprü. Contact: <strong>[E-POSTA ADRESİ]</strong></p>
+    <p>Under the Turkish Personal Data Protection Law No. 6698 ("KVKK"), the data controller is <strong>Nuri Erim Özçeşmeci</strong> (a natural person), who develops and runs Köprü. Contact: <a href="mailto:ermegeozcesmeci@gmail.com">ermegeozcesmeci@gmail.com</a></p>
 
     <h2>2. What data is processed, and where?</h2>
     <div class="table-wrap">
@@ -116,6 +119,7 @@
         <thead><tr><th>Data</th><th>Where</th><th>Purpose</th><th>Retention</th></tr></thead>
         <tbody>
           <tr><td>Your name (for greeting), courses, class times, exam/assignment dates, grades</td><td>Only your device's browser storage. Never sent to us.</td><td>Running the app</td><td>Until you delete it (Profile → Data &amp; privacy → Delete everything)</td></tr>
+          <tr><td>Account (only if you create one): email, PBKDF2 hash of your password, your app data (courses, syllabus texts, tasks, grades, absences, profile, settings)</td><td>Cloudflare D1 (Köprü server, abroad)</td><td>Logging in and syncing between phone and computer; the Assistant's answers</td><td>Until you delete the account; only SHA-256 hashes of session keys, 180 days</td></tr>
           <tr><td>The syllabus file you upload (PDF/Word/text) and its contents</td><td>Read only on your device; the extracted text is stored on your device</td><td>Extracting course details from the file, the Assistant's answers</td><td>Not sent to the Köprü server. Deleting the course deletes the text</td></tr>
           <tr><td>The question you ask the Assistant and that course's syllabus details (only if "Ask the AI" is chosen with consent)</td><td>Passed to Anthropic through the Köprü server (Cloudflare); the answer in Cloudflare KV</td><td>Answering a question not found on your device</td><td>The question itself is not stored; the answer and the SHA-256 hash of the question 24 hours (so the same question costs no tokens again)</td></tr>
           <tr><td>The text of the elective list you upload and the interests you pick (only with consent)</td><td>Passed to Anthropic through the Köprü server (Cloudflare); suggestions in Cloudflare KV and on your device</td><td>Matching electives with your interests</td><td>The list text isn't stored; its hash and the suggestions 30 days</td></tr>
@@ -130,7 +134,7 @@
 
     <h2>3. Legal grounds</h2>
     <ul>
-      <li><strong>Explicit consent (KVKK art. 5/1 and art. 9):</strong> Transferring your Assistant question and elective list abroad to an AI service relies on the explicit consent you give by ticking the consent box and tapping. Your Assistant consent is remembered on this device; later questions the device can't answer go to the AI without asking again. Without consent, every other Köprü feature works the same.</li>
+      <li><strong>Explicit consent (KVKK art. 5/1 and art. 9):</strong> Transferring your Assistant question and elective list abroad to an AI service relies on the explicit consent you give by ticking the consent box and tapping. Your Assistant consent is remembered on this device; later questions the device can't answer go to the AI without asking again. Storing your data on the Köprü server abroad (Cloudflare) when you create an account also relies on the explicit consent you give by ticking the box on the sign-up screen; deleting the account withdraws it. Without consent, every other Köprü feature works the same.</li>
       <li><strong>Legitimate interest (KVKK art. 5/2-f):</strong> Keeping a daily counter to prevent abuse, and technical logs for the security of the site.</li>
     </ul>
 
@@ -138,7 +142,7 @@
     <ul>
       <li><strong>Anthropic, PBC (USA):</strong> The AI service used by the Assistant and Elective Explorer. Anthropic commits not to use content sent through its API for model training and to delete it after a limited period. Details: <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">anthropic.com/legal/privacy</a></li>
       <li><strong>Open-Meteo (Switzerland):</strong> Weather service. Only the fixed coordinates of the city you chose are sent; no cookies or referrer. As with any internet request, your IP address reaches Open-Meteo's server. If you turn weather off, no request is made. Details: <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">open-meteo.com/en/terms</a></li>
-      <li><strong>Cloudflare, Inc. (USA):</strong> Hosting of the site and server function. Details: <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">cloudflare.com/privacypolicy</a></li>
+      <li><strong>Cloudflare, Inc. (USA):</strong> Hosting of the site, the server function and (if you create one) account data. Details: <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">cloudflare.com/privacypolicy</a></li>
     </ul>
     <p>Data is not shared with anyone beyond these parties, never sold and never used for advertising.</p>
 

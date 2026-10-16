@@ -12,7 +12,7 @@ export async function onRequest({ request, next }) {
     return new Response(null, {
       status: allow ? 204 : 403,
       headers: allow
-        ? { "access-control-allow-origin": origin, "access-control-allow-methods": "GET, POST", "access-control-allow-headers": "content-type, x-kpr-device", "access-control-max-age": "86400", vary: "origin" }
+        ? { "access-control-allow-origin": origin, "access-control-allow-methods": "GET, POST", "access-control-allow-headers": "content-type, x-kpr-device, authorization", "access-control-max-age": "86400", vary: "origin" }
         : {},
     });
   }

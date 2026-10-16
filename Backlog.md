@@ -3,7 +3,7 @@
 Yarım kalan ve sıradaki işler. Bitenler en alta "Yapıldı"ya taşınır.
 
 ## Açık
-- [ ] **Hesap + bulut senkron (geri bildirim 1/1):** Kayıt ol / Giriş yap, tek hesapla telefon + bilgisayar, veriler bulutta; Asistan buluttaki sekme verisiyle cevaplar. Plan: Cloudflare D1, e-posta + şifre (PBKDF2), oturum, `/api/sync`, ilk girişte yerel veriyle birleştirme. CLAUDE.md'deki "hesap sistemi yok" kuralı Erim'in isteğiyle değişiyor (16 Eki 2026). Bekleyen: veri sorumlusu adı/e-postası (gizlilik metni), "şifremi unuttum" olmadan başlanıp başlanmayacağı.
+- [ ] **Hesap + bulut eşitleme — açılış (v2.33 kodu hazır, PR açık):** Erim'in onayıyla 19 Eki toplantısından sonra birleştirilecek. Kalan: Cloudflare'de D1 `kpr-db` + `KPR_DB` bağlantısı (`docs/YAYIN.md` 4b), canlıda kayıt/giriş/iki cihaz denemesi, 2–3 arkadaşla deneme. "Şifremi unuttum" alan adı + e-posta servisiyle birlikte (sonra). Hedef GNO (`kpr:target-gno`) ve Asistan izni gibi küçük cihaz tercihleri eşitlenmiyor.
 - [ ] **Seçmeli Keşfi — kalan:** rızayla yalnız özetin öğrenciler arasında paylaşılması (ortak önbellek altyapısı hazır). BAU kataloğu kazınmaz.
 - [ ] **Cihaz içi model (hocayla araştırma):** 52 etiketli syllabus (geliştirme 33 + yeni 19, git dışı `test-syllabus/`) üzerinde küçük modelle bilgi çıkarımı; kural tabanlı okuyucu alt sınır, bulut modeli üst sınır.
 - [ ] **İngilizce — kalan:** tanıtım sitesi (`index.html`) yalnız Türkçe; site uygulama son hâline gelince revize edilecek (Kuluçka kararı), çeviri o zaman.
