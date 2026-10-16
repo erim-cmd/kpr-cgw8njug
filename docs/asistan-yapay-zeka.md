@@ -24,10 +24,10 @@ Yapay zekâ bunun yerine geçmez, **arkasına** eklenir:
 
 ## Model ve maliyet
 
-- Sohbet için **Claude Haiku 4.5**: girdi $1, çıktı $5 / milyon token. Syllabus okuma (daha zor iş) Sonnet'te kalabilir.
+- Sohbet için **Claude Haiku 5.5**: girdi $1, çıktı $5 / milyon token. Syllabus okuma (daha zor iş) Sonnet'te kalabilir.
 - Soru başına ~1.800 girdi + ~300 çıktı token ≈ **0,3 sent**.
 - Örnek: 50 öğrenci × günde 5 soru × 30 gün = 7.500 soru ≈ **20–25 $/ay**; sorulardan yarısı cihazda cevaplanırsa yaklaşık yarısı.
-- Prompt caching bu boyutta işe yaramaz: Haiku 4.5'te önbelleğe alınabilen en kısa istem 4.096 token. Bağlamı önbelleğe sığsın diye şişirmek yerine küçük tutmak daha ucuz.
+- Prompt caching bu boyutta işe yaramaz: Haiku 5.5'te önbelleğe alınabilen en kısa istem 4.096 token. Bağlamı önbelleğe sığsın diye şişirmek yerine küçük tutmak daha ucuz.
 
 ## Sınırlar ve güvenlik
 
@@ -44,7 +44,7 @@ Kapsam dışı soruya cevap: "Bunu derslerinin bilgilerinde bulamadım." — yap
 
 ## Yapılacaklar (bağlanırken)
 
-1. `functions/api/ask.js`: bağlam + soru al, Haiku 4.5'e gönder, `max_tokens` 300, günlük sınır, 24 saat cevap önbelleği.
+1. `functions/api/ask.js`: bağlam + soru al, Haiku 5.5'e gönder, `max_tokens` 300, günlük sınır, 24 saat cevap önbelleği.
 2. `asistan.js`: yerel cevap yoksa "Yapay zekâya sor" düğmesi; rıza kutusu.
 3. `asistan-core.js`: sorudan dersi ve ilgili alanları seçip ≤ 1.500 token bağlam üreten fonksiyon + testi.
 4. Sahte cevapla test (gerçek ücretli çağrı yok — CLAUDE.md).
