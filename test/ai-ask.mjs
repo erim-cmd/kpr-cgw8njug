@@ -46,6 +46,14 @@ const exData = JSON.parse(ex.context);
 ok(ex.label === "MCH 2016", `ders adı geçmeden de metinden doğru ders bulunur: ${ex.label}`);
 ok(exData.syllabusExcerpts.some((x) => x.includes("en fazla 5 sayfa")), "ilgili paragraf bağlamda");
 ok(ex.context.length <= CONTEXT_MAX && !exData.syllabusExcerpts.some((x) => x.includes("Limit ve türev")), `sınır içinde ve alakasız ders yok: ${ex.context.length}`);
+const en = normalize({ profile: { name: "x" }, tasks: [], courses: [{ id: "g", name: "Critical Thinking", code: "GEP 1615",
+  text: filler + "\nLearning Outcomes: Students will be able to evaluate arguments and write evidence-based essays.\n" + filler + "\nThe final report must not exceed 2000 words.\n" + filler }] }, true);
+const enOut = JSON.parse(buildContext("Bu dersi bitince hangi özellikleri kazanırım?", en).context).syllabusExcerpts;
+ok(enOut.some((x) => x.includes("Learning Outcomes")), "Türkçe soru → İngilizce 'Learning Outcomes' paragrafı");
+const enRep = JSON.parse(buildContext("Bu dersin raporu kaç kelime olmalı?", en).context).syllabusExcerpts;
+ok(enRep.some((x) => x.includes("2000 words")), "rapor/kelime → report/words");
+const none = JSON.parse(buildContext("zzz qqq", en).context).syllabusExcerpts;
+ok(none.length > 0, "eşleşme yoksa syllabus'un başı gider");
 const many = buildContext("bu dönem en zor ders hangisi?", state);
 ok(many && Array.isArray(JSON.parse(many.context).courses), "ders belli değilse kısa ders listesi");
 ok(answer("laboratuvar raporu kaç sayfa olmalı", state).missing === true, "cihazda cevap yoksa missing");
