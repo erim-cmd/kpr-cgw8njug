@@ -109,6 +109,20 @@ globalThis.Capacitor = { isNativePlatform: () => true };
 ok(api.apiUrl("api/ask") === `${api.SERVER}/api/ask`, "iOS: tam adres");
 delete globalThis.Capacitor;
 
+/* 5b) Günlük sınır cihaz başına; aynı IP (kampüs) için üst tavan */
+const shared = await import("../server/ai-shared.js");
+const env3 = { KPR_LIMITS: kv() };
+const dreq = (dev, ip = "10.0.0.1") => ({ headers: { get: (k) => (k === "cf-connecting-ip" ? ip : k === "x-kpr-device" ? dev : null) } });
+let blocked = false;
+for (let i = 0; i < 5; i++) blocked ||= await shared.overLimit(dreq("aaaaaaaa-1111-2222-3333-444444444444"), env3, "rl", 5);
+ok(!blocked && (await shared.overLimit(dreq("aaaaaaaa-1111-2222-3333-444444444444"), env3, "rl", 5)) === true, "cihaz kendi 5 hakkını kullanınca durur");
+ok((await shared.overLimit(dreq("bbbbbbbb-1111-2222-3333-444444444444"), env3, "rl", 5)) === false, "aynı IP'deki başka cihazın hakkı ayrı");
+let capHit = false;
+for (let i = 0; i < 200 && !capHit; i++) capHit = await shared.overLimit(dreq(`cccccccc-0000-0000-0000-${String(i).padStart(12, "0")}`), env3, "rl", 5);
+ok(capHit, "kimlik değiştirerek sınırsız kullanım yok: IP üst tavanı (5 × 30)");
+ok(![...env3.KPR_LIMITS.m.keys()].some((k) => k.includes("10.0.0.1") || k.includes("aaaaaaaa")), "IP ve cihaz kimliği açık yazılmaz");
+ok((await shared.overLimit(dreq("kisa"), { KPR_LIMITS: kv() }, "rl", 5)) === false, "geçersiz kimlik: IP'ye göre sayılır");
+
 /* 6) Seçmeli: sınav çakışması */
 const { examClashes } = await import("../secmeli.js");
 const cand = { examDates: [{ date: "2026-11-18", title: "Midterm" }, { date: "2026-12-01", title: "Quiz" }] };

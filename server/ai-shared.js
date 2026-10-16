@@ -42,17 +42,37 @@ export async function addSpend(env, usage, price) {
 }
 export const priceOf = (env, prefix, def) => ({ in: num(env, `${prefix}_IN`, def.in), out: num(env, `${prefix}_OUT`, def.out) });
 
-/** Kişi başı günlük sınır. scope: "rl" (syllabus), "ask", "el" — her uçun kendi sayacı. */
-export async function overLimit(request, env, scope, limit) {
-  if (!env.KPR_LIMITS) return false;
-  const ip = request.headers.get("cf-connecting-ip") || "unknown";
-  const day = new Date().toISOString().slice(0, 10);
-  // Not: IPv4 uzayı küçük olduğundan özet deneme yoluyla geri çözülebilir; bu tam anonimleştirme değildir.
-  const who = (await sha256hex(`${day}:${ip}`)).slice(0, 32);
-  const key = `${scope}:${day}:${who}`;
+export const IP_CAP_FACTOR = 30; // aynı IP'den (kampüs Wi-Fi'ı) tüm cihazlar için günlük üst tavan = sınır × 30
+const DEVICE = /^[A-Za-z0-9-]{16,64}$/;
+
+/** Sayaç anahtarını artırır; sınıra ulaşılmışsa artırmadan true döner. */
+async function bump(env, key, limit) {
   const count = Number(await env.KPR_LIMITS.get(key)) || 0;
   if (count >= limit) return true;
   await env.KPR_LIMITS.put(key, String(count + 1), { expirationTtl: 60 * 60 * 26 });
+  return false;
+}
+
+/**
+ * Günlük sınır. scope: "rl" (syllabus), "ask", "el" — her uçun kendi sayacı.
+ * Uygulama "x-kpr-device" başlığında rastgele, kişiye bağlı olmayan bir cihaz kimliği yollar: sınır cihaz başına sayılır
+ * (kampüs Wi-Fi'ında yüzlerce öğrenci aynı IP'den çıkar; IP'ye göre saymak herkesi aynı hakka bağlardı). Kimlik
+ * değiştirilerek sınırın aşılmaması için aynı IP'ye ayrıca sınır × 30 üst tavan uygulanır. Başlık yoksa (eski sürüm)
+ * IP başına sayılır. KVKK: ne IP ne kimlik açık yazılır; gün + değerin SHA-256 özeti anahtar olur, 26 saatte silinir.
+ * Not: IPv4 uzayı küçük olduğundan IP özeti deneme yoluyla geri çözülebilir; bu tam anonimleştirme değildir.
+ */
+export async function overLimit(request, env, scope, limit) {
+  if (!env.KPR_LIMITS) return false;
+  const ip = request.headers.get("cf-connecting-ip") || "unknown";
+  const device = request.headers.get("x-kpr-device") || "";
+  const day = new Date().toISOString().slice(0, 10);
+  const ipKey = `${scope}:${day}:${(await sha256hex(`${day}:${ip}`)).slice(0, 32)}`;
+  if (!DEVICE.test(device)) return bump(env, ipKey, limit);
+  const devKey = `${scope}:${day}:d:${(await sha256hex(`${day}:${device}`)).slice(0, 32)}`;
+  const devCount = Number(await env.KPR_LIMITS.get(devKey)) || 0;
+  if (devCount >= limit) return true;
+  if (await bump(env, `${ipKey}:cap`, limit * IP_CAP_FACTOR)) return true;
+  await env.KPR_LIMITS.put(devKey, String(devCount + 1), { expirationTtl: 60 * 60 * 26 });
   return false;
 }
 
