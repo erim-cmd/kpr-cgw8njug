@@ -2,9 +2,9 @@
 
 import { localize, t } from "./i18n.js";
 import { TASK_TYPES, POLICY_KINDS, isExam, isLight } from "./store.js";
-import { esc } from "./ui.js";
+import { esc, isJust } from "./ui.js";
 import { icon } from "./icons.js";
-import { daysUntil, relLabel, fmtShort, toMin, toISO, todayIdx, DAYS, DAYS_SHORT } from "./dates.js";
+import { daysUntil, relLabel, fmtShort, fmtFull, toMin, toISO, todayIdx, DAYS, DAYS_SHORT } from "./dates.js";
 import { density } from "./density.js";
 import { installMode, isDismissed } from "./install.js";
 
@@ -28,7 +28,7 @@ export function sessionItem(s, now = null, absentDate = null) {
   }
   const absent = absentDate && s.course.absences.some((a) => a.date === absentDate && a.start === s.start);
   const absBtn = absentDate && (state === "past" || absent)
-    ? `<button type="button" class="abs-btn ${absent ? "on" : ""}" data-action="mark-absent" data-id="${esc(s.course.id)}" data-start="${esc(s.start)}" data-date="${esc(absentDate)}" aria-pressed="${!!absent}">${absent ? t("Gitmedim ✓") : t("Gitmedim")}</button>`
+    ? `<button type="button" class="abs-btn ${absent ? "on" : ""}${absent && isJust(`abs:${s.course.id}:${absentDate}:${s.start}`) ? " pop" : ""}" data-action="mark-absent" data-id="${esc(s.course.id)}" data-start="${esc(s.start)}" data-date="${esc(absentDate)}" aria-pressed="${!!absent}">${absent ? t("Gitmedim ✓") : t("Gitmedim")}</button>`
     : "";
   const meta = [s.course.code, s.room].filter(Boolean).map(esc).join(" · ");
   // Bugün başlamasına 2 saatten az kalan ders: "40 dk sonra"
@@ -51,7 +51,7 @@ export function taskItem(task, courses) {
   const cls = task.done ? "done" : n < 0 ? "overdue" : n <= 2 ? "soon" : "";
   const when = task.done ? fmtShort(task.due) : relLabel(n);
   const sub = task.done ? (task.time || "") : `${fmtShort(task.due)}${task.time ? " · " + task.time : ""}`;
-  return `<li class="task ${cls}">
+  return `<li class="task ${cls}${task.done && isJust("task:" + task.id) ? " pop" : ""}">
     <button class="check" data-action="toggle-task" data-id="${esc(task.id)}" aria-pressed="${task.done}"
       aria-label="${task.done ? t("{gorev}: tamamlanmadı olarak işaretle", { gorev: esc(task.title) }) : t("{gorev}: tamamlandı olarak işaretle", { gorev: esc(task.title) })}">${icon.check}</button>
     <button class="task-body" data-action="edit-task" data-id="${esc(task.id)}">
@@ -119,6 +119,15 @@ export function flagItem(p, withHide = false) {
     ${p.source || withHide ? `<p class="flag-foot">${p.source ? `<small class="irow-src">“${esc(p.source)}”</small>` : ""}
       ${withHide ? `<button type="button" class="link" data-hide-policy="${esc(p.id)}">${t("Gizle")}</button>` : ""}</p>` : ""}
   </li>`;
+}
+
+/**
+ * Tarih kutusu: tarayıcının biçimi ("09/28/2026") yerine "28 Eylül 2026" yazar; dokununca telefonun tarih seçicisi açılır.
+ * Görünmez yerel <input type="date"> yüzün üstünde durur (değer, data-change, name aynen çalışır); app.js yüzü günceller.
+ */
+export function dateField(value, attrs, label, empty = t("Tarih seç")) {
+  const v = /^\d{4}-\d{2}-\d{2}$/.test(value || "") ? value : "";
+  return `<span class="date-field${v ? "" : " is-empty"}"><span class="date-face" aria-hidden="true" data-empty="${esc(empty)}">${v ? fmtFull(v) : esc(empty)}</span><input type="date" class="date-native" value="${v}" ${attrs} aria-label="${esc(label)}"></span>`;
 }
 
 /** Açıklama / yönetmelik notu: ekranda tek satırlık "ⓘ" bağlantısı, dokununca açılır. */

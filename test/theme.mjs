@@ -49,5 +49,18 @@ for (const [fg, bg] of [["on-accent", "cyan"], ["on-violet", "violet-solid"], ["
   check(r >= 4.5, `--${fg} / --${bg} = ${r.toFixed(2)} < 4.5`);
 }
 
+// 3) Koyu tema: ana yazı tonları kartta da okunur (text-dim önce 3.6:1'di — Tasarım İyileştirme, Öncelik 2)
+const darkBlock = css.match(/:root\s*\{([\s\S]*?)\n\}/);
+const dark = Object.fromEntries([...(darkBlock?.[1] || "").matchAll(/--([\w-]+):\s*(#[0-9A-Fa-f]{6})/g)].map((m) => [m[1], m[2]]));
+for (const fg of ["text", "text-muted", "text-dim"]) {
+  for (const bg of ["bg", "surface", "surface-2"]) {
+    const r = ratio(dark[fg], dark[bg]);
+    check(r >= 4.5, `koyu: --${fg} (${dark[fg]}) / --${bg} (${dark[bg]}) = ${r.toFixed(2)} < 4.5`);
+  }
+}
+// Kart gölgesi: iki temada da tanımlı
+check(/--card-shadow:\s*none/.test(darkBlock?.[1] || ""), "koyu tema --card-shadow: none");
+check(/--card-shadow:\s*0 /.test(block?.[1] || ""), "açık tema --card-shadow gölge");
+
 console.log(`Görünüm: ${ok} doğru · ${fail ? fail + " hata" : "sorun yok"}`);
 process.exit(fail ? 1 : 0);

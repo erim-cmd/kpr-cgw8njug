@@ -43,7 +43,8 @@ export function targetText(p, target) {
 let showRetake = false; // "tekrar aldığım ders var" açılınca önceki not seçimi görünür
 let showResult = false; // UMIS'teki gibi: HESAPLA'ya basınca sonuç kutusu açılır
 
-const fmt1 = (n) => (n === null || n === undefined ? "" : Number(n).toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
+// Kredi/AKTS: tam sayı ondalıksız ("8 / 18"), yarım kredi "7,5"
+const fmt1 = (n) => (n === null || n === undefined ? "" : Number(n).toLocaleString(locale(), { minimumFractionDigits: 0, maximumFractionDigits: 1 }));
 
 function currentBlock(state, p) {
   const { courses } = state;

@@ -1,7 +1,7 @@
 /** KPR — Ders ve görev ekleme/düzenleme formları, ders detayı ve not hesaplayıcı (alttan açılan sayfa). */
 
 import { store, COLORS, TASK_TYPES, QUICK_TYPES, QUICK_LABEL } from "./store.js";
-import { esc, openSheet, closeSheet, toast, armDelete } from "./ui.js";
+import { esc, openSheet, closeSheet, toast, armDelete, haptic } from "./ui.js";
 import { DAYS, todayIdx, todayISO, toMin, toISO, fmtShort } from "./dates.js";
 import { icon } from "./icons.js";
 import { canAsk, enableNotifications } from "./notify.js";
@@ -348,6 +348,7 @@ export function openTaskForm(task = null, defaults = {}) {
           due.addEventListener("input", () => due.setCustomValidity(""), { once: true });
           return;
         }
+        haptic();
         store.saveTask({
           ...task,
           done: task?.done ?? false,

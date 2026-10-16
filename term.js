@@ -17,7 +17,7 @@ import { icon } from "./icons.js";
 import { projection, standing, fmtGpa } from "./gpa.js";
 import { attendance } from "./attendance.js";
 import { readTarget, saveTarget, targetText, openBaseForm, section as gpaSection, actions as gpaActions, changes as gpaChanges } from "./gpa-view.js";
-import { startCard, infoNote } from "./components.js";
+import { startCard, infoNote, dateField } from "./components.js";
 import { openNumberSheet } from "./grade-sheet.js";
 import { density } from "./density.js";
 import { fmtShort, parseISO, toISO, todayISO } from "./dates.js";
@@ -176,7 +176,7 @@ function flowBlock(state) {
   const today = todayISO();
   const head = `<div class="section-head"><h2>${t("Dönem akışı")}</h2>${cur !== null ? `<span class="u-term">${t("{n}. hafta / {total}", { n: cur + 1, total: d.weeks.length })}</span>` : ""}</div>`;
   const start = `<label class="flow-start">${t("Dönem başlangıcı")}${d.guessed ? ` <small>${t("(tahmini, ilk teslimden)")}</small>` : ""}
-      <input type="date" value="${d.guessed ? "" : state.settings.termStart}" data-change="term-start" aria-label="${t("Dönem başlangıç tarihi")}"></label>`;
+      ${dateField(d.guessed ? "" : state.settings.termStart, 'data-change="term-start"', t("Dönem başlangıç tarihi"))}</label>`;
   if (!d.weeks.some(important)) {
     return `<section class="section" id="akis">${head}
       <p class="calc-note">${t("Henüz değerlendirme tarihi yok. Syllabus yükleyince haftaların burada sıralanır.")}</p>${start}</section>`;

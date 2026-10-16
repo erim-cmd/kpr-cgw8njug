@@ -12,7 +12,7 @@
 import { store, COLORS, TASK_TYPES } from "./store.js";
 import { esc, openSheet, closeSheet, toast } from "./ui.js";
 import { icon } from "./icons.js";
-import { flagItem, sortFlags } from "./components.js";
+import { flagItem, sortFlags, infoNote } from "./components.js";
 import { sessionRow, gradeRow, swatches, bindRows, readSessions, readGrading, openCourseForm } from "./forms.js";
 import { mergeIntoCourse } from "./course-merge.js";
 import { extractText, DocError } from "./doc-text.js";
@@ -197,7 +197,8 @@ export function openImport({ into = null } = {}) {
     `<form class="sheet-form" data-step="pick">
       ${head(t("Syllabus'tan ekle"))}
       <div class="sheet-body">
-        <p class="lead-text">${t("Dersin syllabus'unu (izlence) yükle. Köprü ders bilgilerini, ders saatlerini, vize-final ve ödev tarihlerini, not dağılımını, devam şartını ve dikkat edilecek kuralları bulsun. Kaydetmeden önce her şeyi kontrol edebilirsin.")}</p>
+        <p class="lead-text">${t("Syllabus'u yükle; tarihler, not dağılımı ve kurallar çıksın.")}</p>
+        ${infoNote(t("Neler bulunur?"), t("Ders bilgileri, ders saatleri, vize-final ve ödev tarihleri, not dağılımı, devam şartı ve dikkat edilecek kurallar. Kaydetmeden önce her şeyi kontrol edebilirsin."))}
         <label class="drop" data-drop>
           <input type="file" name="file" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.txt,text/plain" required class="visually-hidden">
           <span class="drop-icon">${icon.upload}</span>
