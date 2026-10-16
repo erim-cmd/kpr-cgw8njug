@@ -17,6 +17,27 @@ export const apiUrl = (path) => (native() ? `${SERVER}/${path.replace(/^\/+/, ""
 /** GitHub Pages yalnız statik dosya sunar; orada sunucu yok (sormak konsola kırmızı hata düşürür). */
 export const noServer = () => !native() && /\.github\.io$/i.test(globalThis.location?.hostname || "");
 
+/**
+ * Cihaz kimliği: rastgele, kişiye bağlı değil, yalnız bu cihazda. Sunucu günlük sınırı cihaz başına sayar
+ * (kampüs Wi-Fi'ında herkes aynı IP'den çıkar). Depolama yoksa boş: sunucu IP'ye göre sayar.
+ */
+export function deviceId() {
+  try {
+    let id = localStorage.getItem("kpr:device");
+    if (!id || !/^[A-Za-z0-9-]{16,64}$/.test(id)) {
+      id = globalThis.crypto?.randomUUID?.() || "";
+      if (id) localStorage.setItem("kpr:device", id);
+    }
+    return id || "";
+  } catch {
+    return "";
+  }
+}
+export const apiHeaders = () => {
+  const id = deviceId();
+  return id ? { "content-type": "application/json", "x-kpr-device": id } : { "content-type": "application/json" };
+};
+
 const ready = new Map(); // path → "ready" | "off" | "none" (oturum boyunca)
 
 /** Uç hazır mı? GET her zaman 200 + { ready } döner; Claude çağrılmaz, sayaç artmaz. */
@@ -41,7 +62,7 @@ export async function postJSON(path, payload, { timeout = 60_000, errors = {} } 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeout);
   try {
-    const res = await fetch(apiUrl(path), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload), signal: ctrl.signal });
+    const res = await fetch(apiUrl(path), { method: "POST", headers: apiHeaders(), body: JSON.stringify(payload), signal: ctrl.signal });
     const body = await res.json().catch(() => ({}));
     if (res.ok) return { body };
     return { error: body.error || `HTTP ${res.status}` };

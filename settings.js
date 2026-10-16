@@ -24,7 +24,7 @@ import { THEMES, applyTheme } from "./theme.js";
 import { LANGS, setLang, t, localize } from "./i18n.js";
 import { CITIES } from "./weather.js";
 
-export const APP_VERSION = "2.30.0";
+export const APP_VERSION = "2.30.1";
 const BRAND = "Köprü"; // i18n-ok — marka adı çevrilmez
 
 // Sınıf etiketleri (store.js YEARS anahtarları)

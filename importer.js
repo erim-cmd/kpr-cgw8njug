@@ -19,7 +19,7 @@ import { extractText, DocError } from "./doc-text.js";
 import { parseSyllabus } from "./syllabus-local.js";
 import { t, localize, pct, decimal, readerText } from "./i18n.js";
 import { DAYS_SHORT } from "./dates.js";
-import { apiUrl, noServer } from "./api.js";
+import { apiUrl, noServer, apiHeaders } from "./api.js";
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -100,7 +100,7 @@ export async function readWithAI(input) {
   try {
     const res = await fetch(apiUrl(API), {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: apiHeaders(),
       body: JSON.stringify(payload),
       signal: ctrl.signal,
     });
