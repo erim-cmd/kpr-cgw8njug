@@ -235,7 +235,52 @@ export function answer(question, state, { courseId = null } = {}) {
 /* Yapay zekâ bağlamı (functions/api/ask.js)                            */
 /* ------------------------------------------------------------------ */
 
-export const CONTEXT_MAX = 6000; // karakter (~1.500 token; docs/asistan-yapay-zeka.md)
+export const CONTEXT_MAX = 8000; // karakter (~2.000 token; docs/asistan-yapay-zeka.md)
+const EXCERPT_BUDGET = 4200; // bağlamın syllabus metninden seçilen paragraflara ayrılan kısmı
+
+// Soru kelimelerinden atılanlar (her soruda geçer, paragraf seçmeye yardım etmez)
+const STOP = new Set("bir bu su ve ile icin mi mu mi mı ne nasil kac hangi var yok olmali olur olarak gibi daha cok en de da ki ben benim bana dersin dersi ders syllabus the a an of to in on for is are be do does what how many which when can should course class".split(" ")); // i18n-ok
+
+/** Metni ~500 karakterlik paragraflara böler (satır sınırında). */
+function chunks(text) {
+  const out = [];
+  let buf = "";
+  for (const line of String(text || "").split(/\n+/)) {
+    const l = line.replace(/\s+/g, " ").trim();
+    if (!l) continue;
+    if (buf && buf.length + l.length > 500) { out.push(buf); buf = ""; }
+    buf += (buf ? " " : "") + l;
+  }
+  if (buf) out.push(buf);
+  return out;
+}
+
+/**
+ * Sorunun kelimelerine en çok uyan syllabus paragrafları (cihazda; ağ yok). Türkçe ekleri tolere etmek için
+ * kelimelerin ilk 5 harfi aranır ("raporu" → "rapor"). Dönüş: [{ course, text, score }] metindeki sırasıyla.
+ */
+export function excerpts(question, courses, budget = EXCERPT_BUDGET) {
+  const words = [...new Set(fold(question).split(/[^a-z0-9]+/).filter((w) => w.length >= 3 && !STOP.has(w)))].map((w) => (w.length > 5 ? w.slice(0, 5) : w));
+  if (!words.length) return [];
+  const scored = [];
+  for (const c of courses) {
+    chunks(c.text).forEach((txt, i) => {
+      const f = fold(txt);
+      const score = words.reduce((n, w) => n + (f.includes(w) ? (/\d/.test(w) ? 2 : 1) : 0), 0);
+      if (score) scored.push({ course: c, text: txt, score, i });
+    });
+  }
+  scored.sort((a, b) => b.score - a.score || a.i - b.i);
+  const picked = [];
+  let used = 0;
+  for (const x of scored) {
+    if (used + x.text.length > budget) continue;
+    picked.push(x);
+    used += x.text.length;
+    if (picked.length >= 8) break;
+  }
+  return picked.sort((a, b) => (a.course.id === b.course.id ? a.i - b.i : 0));
+}
 
 /**
  * Sorunun geçtiği dersin syllabus bilgisi, kısa JSON metni. Gönderilmeyenler: notlar, devamsızlıklar, önceki not,
@@ -245,7 +290,17 @@ export const CONTEXT_MAX = 6000; // karakter (~1.500 token; docs/asistan-yapay-z
 export function buildContext(question, state, { courseId = null } = {}) {
   if (!state.courses.length) return null;
   const found = findCourse(question, state.courses);
-  const course = state.courses.find((c) => c.id === courseId) || (found && !Array.isArray(found) ? found : null) || (state.courses.length === 1 ? state.courses[0] : null);
+  let course = state.courses.find((c) => c.id === courseId) || (found && !Array.isArray(found) ? found : null) || (state.courses.length === 1 ? state.courses[0] : null);
+  // Ders belli değilse: sorunun kelimeleri hangi dersin syllabus'unda geçiyorsa o ders (açık ara öndeyse)
+  const pool = course ? [course] : Array.isArray(found) ? found : state.courses;
+  const ex = excerpts(question, pool);
+  if (!course && ex.length) {
+    const by = new Map();
+    for (const x of ex) by.set(x.course.id, (by.get(x.course.id) || 0) + x.score);
+    const ranked = [...by.entries()].sort((a, b) => b[1] - a[1]);
+    if (ranked.length === 1 || ranked[0][1] >= 2 * ranked[1][1]) course = state.courses.find((c) => c.id === ranked[0][0]);
+  }
+  const quotes = (course ? ex.filter((x) => x.course.id === course.id) : ex).map((x) => (course ? x.text : `[${name(x.course)}] ${x.text}`));
   const today = new Date().toISOString().slice(0, 10);
   const tasksOf = (c, max) => state.tasks.filter((x) => x.courseId === c.id && !x.done).sort(byDue).slice(0, max).map((x) => ({ title: x.title, type: x.type, due: x.due || null, time: x.time || null }));
   const brief = (c) => ({ code: c.code, name: c.name, grading: c.grading.map((g) => ({ name: g.name, weight: g.weight })), upcoming: tasksOf(c, 3) });
@@ -265,8 +320,9 @@ export function buildContext(question, state, { courseId = null } = {}) {
         weeks: course.weeks.map((w) => ({ n: w.n, date: w.date, topic: w.topic, note: w.note })),
       },
       upcoming: tasksOf(course, 8),
+      syllabusExcerpts: quotes,
     };
-  } else data = { today, courses: state.courses.map(brief) };
+  } else data = { today, courses: state.courses.map(brief), syllabusExcerpts: quotes };
   let text = JSON.stringify(data);
   // Sınır: önce haftalık plan, sonra kuralların kaynak cümleleri kısalır
   if (text.length > CONTEXT_MAX && data.course) {
@@ -279,6 +335,10 @@ export function buildContext(question, state, { courseId = null } = {}) {
   }
   if (text.length > CONTEXT_MAX && data.course) {
     data.course.weeks = [];
+    text = JSON.stringify(data);
+  }
+  while (text.length > CONTEXT_MAX && data.syllabusExcerpts.length > 1) {
+    data.syllabusExcerpts.pop();
     text = JSON.stringify(data);
   }
   return { context: text.slice(0, CONTEXT_MAX), label: course ? name(course) : t("derslerin") };

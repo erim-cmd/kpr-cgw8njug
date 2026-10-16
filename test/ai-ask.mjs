@@ -35,6 +35,17 @@ const ctx = JSON.parse(b.context);
 ok(ctx.course.code === "MCH 2016" && ctx.course.rules[0].rule === "Mazeret sınavı yok.", "kurallar gider");
 ok(ctx.upcoming[0].title === "Ödev 2", "yaklaşan işler gider");
 ok(!b.context.includes("77") && !b.context.includes("Deniz") && !b.context.includes("2026-10-01") && !/"prevGrade"|"targetLetter"|"score"/.test(b.context), "not, ad, devamsızlık, hedef gitmez");
+// Syllabus metninden soruyla ilgili paragraf (özette olmayan bilgi: rapor sayfa sınırı)
+const filler = Array.from({ length: 60 }, (_, i) => `Hafta ${i + 1}: Thevenin ve Norton eşdeğer devreleri üzerine konu anlatımı ve problem çözümü.`).join("\n");
+const withText = normalize({ profile: { name: "x" }, tasks: [], courses: [
+  { id: "c1", name: "Devre Analizi", code: "MCH 2016", text: filler + "\nLaboratuvar raporu en fazla 5 sayfa olmalıdır ve deneyden bir hafta sonra teslim edilir.\n" + filler },
+  { id: "c2", name: "Kalkülüs", code: "MAT 1001", text: "Ödevler haftalık verilir. Limit ve türev konuları işlenir.\n".repeat(20) },
+] }, true);
+const ex = buildContext("Laboratuvar raporu kaç sayfa olmalı?", withText);
+const exData = JSON.parse(ex.context);
+ok(ex.label === "MCH 2016", `ders adı geçmeden de metinden doğru ders bulunur: ${ex.label}`);
+ok(exData.syllabusExcerpts.some((x) => x.includes("en fazla 5 sayfa")), "ilgili paragraf bağlamda");
+ok(ex.context.length <= CONTEXT_MAX && !exData.syllabusExcerpts.some((x) => x.includes("Limit ve türev")), `sınır içinde ve alakasız ders yok: ${ex.context.length}`);
 const many = buildContext("bu dönem en zor ders hangisi?", state);
 ok(many && Array.isArray(JSON.parse(many.context).courses), "ders belli değilse kısa ders listesi");
 ok(answer("laboratuvar raporu kaç sayfa olmalı", state).missing === true, "cihazda cevap yoksa missing");
