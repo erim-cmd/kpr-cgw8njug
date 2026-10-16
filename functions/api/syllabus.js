@@ -8,7 +8,7 @@
  *
  * Ortam değişkenleri (Cloudflare → Pages → Settings → Variables and Secrets):
  *   ANTHROPIC_API_KEY  (zorunlu, "Encrypt" ile gizli)
- *   KPR_MODEL          (isteğe bağlı, varsayılan claude-sonnet-5)
+ *   KPR_MODEL          (isteğe bağlı, varsayılan claude-sonnet-5-5)
  *   KPR_MONTHLY_BUDGET_USD (isteğe bağlı, varsayılan 20) · KPR_PRICE_IN / KPR_PRICE_OUT ($/milyon token, varsayılan 2 / 10)
  * Bağlama (isteğe bağlı): KPR_LIMITS  → KV namespace; kişi başı günlük 5 okuma sınırı,
  *   aylık harcama sayacı ve ortak sonuç önbelleği
@@ -19,7 +19,7 @@
  */
 
 const API_URL = "https://api.anthropic.com/v1/messages";
-const DEFAULT_MODEL = "claude-sonnet-5";
+const DEFAULT_MODEL = "claude-sonnet-5-5";
 const MAX_B64 = Math.ceil((4 * 1024 * 1024 * 4) / 3) + 1024; // 4 MB dosya
 const MAX_TEXT = 300_000; // karakter (~90 bin token); daha uzunu çok dersli derleme demektir
 const CACHE_TTL = 60 * 60 * 24 * 180; // ortak önbellek: 180 gün (bir dönem + yedek)

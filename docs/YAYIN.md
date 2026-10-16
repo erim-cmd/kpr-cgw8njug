@@ -27,7 +27,7 @@ Site şu an GitHub Pages'te duruyor; orada sunucu çalışmadığı için syllab
 ## 3. Gizli anahtar ve günlük sınır **[SEN]**
 1. Pages projesi → Settings → **Variables and Secrets** → Add:
    - `ANTHROPIC_API_KEY` = 1. adımdaki anahtar → **Encrypt** seç (Production ve Preview).
-   - (İsteğe bağlı) `KPR_MODEL` = `claude-sonnet-5` (varsayılan zaten bu; daha ucuzu `claude-haiku-4-5-20251001`).
+   - (İsteğe bağlı) `KPR_MODEL` = `claude-sonnet-5-5` (varsayılan zaten bu; daha ucuzu `claude-haiku-5-5`).
 2. Workers & Pages → **KV** → Create namespace: `kpr-limits`.
 3. Pages projesi → Settings → **Bindings** → Add → KV namespace → Variable name: `KPR_LIMITS`, namespace: `kpr-limits`.
    (Bu olmazsa sınırsız okuma açık kalır; maliyet riski.)
