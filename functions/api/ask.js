@@ -19,7 +19,7 @@ const DEFAULT_MODEL = "claude-haiku-5-5";
 const HAIKU_PRICE = { in: 1, out: 5 }; // $/milyon token, temkinli üst tahmin; KPR_ASK_PRICE_IN / _OUT ile değişir
 export const DAILY_LIMIT = 20;
 const CACHE_TTL = 60 * 60 * 24;
-const MAX_CONTEXT = 6000;
+const MAX_CONTEXT = 9000;
 const TIMEOUT_MS = 30_000;
 
 const TOOL = {
@@ -37,7 +37,7 @@ const TOOL = {
   },
 };
 
-const system = (lang) => `You are Köprü's course assistant for a university student. Answer ONLY from the <context> JSON about the student's own course (syllabus data the student uploaded). Today's date is inside the context.
+const system = (lang) => `You are Köprü's course assistant for a university student. Answer ONLY from the <context> JSON about the student's own course: structured data read from the syllabus the student uploaded, plus "syllabusExcerpts" (paragraphs of the syllabus text that match the question — read them carefully, the answer is often there). Today's date is inside the context.
 Rules:
 - If the answer is not in the context, set found=false and say briefly that it isn't in the course information. Never guess, never use outside knowledge about the university or its procedures.
 - Keep it short: at most 4 sentences, plain text, no markdown, no lists.

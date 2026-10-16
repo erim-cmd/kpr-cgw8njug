@@ -148,6 +148,7 @@ function normWeeks(list) {
     .slice(0, 20);
 }
 
+export const TEXT_MAX = 60_000; // karakter; tek dersin syllabus'u için fazlasıyla yeter
 function normCourse(c) {
   const name = str(c?.name, 80);
   if (!name) return null;
@@ -180,6 +181,8 @@ function normCourse(c) {
     absLimit: Number.isInteger(c.absLimit) && c.absLimit >= 0 && c.absLimit <= 200 ? c.absLimit : null,
     absences: arr(c.absences).map(normAbsence).filter(Boolean).slice(0, 300),
     weeks: normWeeks(c.weeks),
+    // Syllabus'un cihazda çıkarılmış metni (yalnız bu cihazda): Asistan soruyla ilgili paragrafları buradan seçer
+    text: typeof c.text === "string" ? c.text.slice(0, TEXT_MAX) : "",
   };
 }
 

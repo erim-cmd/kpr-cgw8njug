@@ -297,9 +297,12 @@ function showError(message, file) {
   });
 }
 
+let lastText = ""; // son okunan syllabus metni: kayıtta derse yazılır (Asistan bağlamı)
+
 async function run(file, { ai = false, local = null, text = "" } = {}) {
   if (!file) return;
   ai = ai && aiAllowed() && !!local && !!text;
+  lastText = text || "";
   const stop = showProgress(ai);
   try {
     // 2b) Öğrenci rıza verip "Yapay zekâ ile tekrar oku"ya dokunduysa: cihazın çıkardığı metin gönderilir
@@ -311,6 +314,7 @@ async function run(file, { ai = false, local = null, text = "" } = {}) {
     }
     // 1) Her zaman önce cihaz içi okuma
     const { text: body } = await extractText(file);
+    lastText = body;
     const result = parseSyllabus(body);
     // İlerleme ekranı bir an görünsün (çok hızlı biter)
     await new Promise((r) => setTimeout(r, 400));
@@ -386,7 +390,7 @@ function readWeeks(form) {
 function openMerge(r) {
   const course = store.get().courses.find((c) => c.id === target);
   if (!course) return openReview(r, {});
-  const { course: merged, added } = mergeIntoCourse(course, r);
+  const { course: merged, added } = mergeIntoCourse(course, { ...r, sourceText: lastText });
   const weeks = r.weeks || [];
   openSheet(
     `<div class="sheet-form">
@@ -635,6 +639,7 @@ function openReview(r, { reader = "local", aiError = "", file = null, text = "",
             weeks: (r.weeks || []).length ? readWeeks(form) : existing?.weeks ?? [],
             finalMin: r.final_min ?? existing?.finalMin ?? null,
             scale: scale.length ? scale : existing?.scale ?? [],
+            text: lastText || existing?.text || "",
           },
           tasks
         );
