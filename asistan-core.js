@@ -304,7 +304,13 @@ export function excerpts(question, courses, budget = EXCERPT_BUDGET) {
 export function buildContext(question, state, { courseId = null } = {}) {
   if (!state.courses.length) return null;
   const found = findCourse(question, state.courses);
-  let course = state.courses.find((c) => c.id === courseId) || (found && !Array.isArray(found) ? found : null) || (state.courses.length === 1 ? state.courses[0] : null);
+  // Ad eşleşmesi: findCourse 5+ harfli kelimeye bakar; burada 4 harfli ad kelimeleri de ("Algı Yönetimi" → "algı")
+  const byShort = () => {
+    const qw = fold(question).split(/[^a-z0-9]+/);
+    const hits = state.courses.filter((c) => fold(c.name).split(/[^a-z0-9]+/).some((w) => w.length >= 4 && !STOP.has(w) && qw.some((q) => q.startsWith(w))));
+    return hits.length === 1 ? hits[0] : null;
+  };
+  let course = state.courses.find((c) => c.id === courseId) || (found && !Array.isArray(found) ? found : null) || byShort() || (state.courses.length === 1 ? state.courses[0] : null);
   // Ders belli değilse: sorunun kelimeleri hangi dersin syllabus'unda geçiyorsa o ders (açık ara öndeyse)
   const pool = course ? [course] : Array.isArray(found) ? found : state.courses;
   const ex = excerpts(question, pool);
@@ -357,7 +363,9 @@ export function buildContext(question, state, { courseId = null } = {}) {
     data.syllabusExcerpts.pop();
     text = JSON.stringify(data);
   }
-  return { context: text.slice(0, CONTEXT_MAX), label: course ? name(course) : t("derslerin") };
+  // Metni olmayan ders (metin özelliğinden önce eklenmiş): arayüz syllabus'u yeniden yüklemeyi önerir
+  const noText = course ? !course.text : !pool.some((c) => c.text);
+  return { context: text.slice(0, CONTEXT_MAX), label: course ? name(course) : t("derslerin"), courseId: course?.id || null, noText };
 }
 
 // Örnek sorular: dile göre değişir (İngilizce sorular da aşağıdaki İngilizce anahtar kelimelerle anlaşılır)

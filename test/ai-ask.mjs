@@ -54,6 +54,9 @@ const enRep = JSON.parse(buildContext("Bu dersin raporu kaç kelime olmalı?", e
 ok(enRep.some((x) => x.includes("2000 words")), "rapor/kelime → report/words");
 const none = JSON.parse(buildContext("zzz qqq", en).context).syllabusExcerpts;
 ok(none.length > 0, "eşleşme yoksa syllabus'un başı gider");
+const short = normalize({ profile: { name: "x" }, tasks: [], courses: [{ id: "a", name: "Algı Yönetimi", code: "GEP 1615" }, { id: "b", name: "Kalkülüs", code: "MAT 1001" }] }, true);
+const sb = buildContext("Algı dersinde ne kazanıyorum", short);
+ok(sb.label === "GEP 1615" && sb.noText === true && sb.courseId === "a", `4 harfli ad + metin yok bildirimi: ${sb.label} ${sb.noText}`);
 const many = buildContext("bu dönem en zor ders hangisi?", state);
 ok(many && Array.isArray(JSON.parse(many.context).courses), "ders belli değilse kısa ders listesi");
 ok(answer("laboratuvar raporu kaç sayfa olmalı", state).missing === true, "cihazda cevap yoksa missing");
