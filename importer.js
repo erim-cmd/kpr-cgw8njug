@@ -17,7 +17,7 @@ import { sessionRow, gradeRow, swatches, bindRows, readSessions, readGrading, op
 import { mergeIntoCourse } from "./course-merge.js";
 import { extractText, DocError } from "./doc-text.js";
 import { parseSyllabus } from "./syllabus-local.js";
-import { t, localize, pct, decimal } from "./i18n.js";
+import { t, localize, pct, decimal, readerText } from "./i18n.js";
 import { DAYS_SHORT } from "./dates.js";
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -449,7 +449,7 @@ function openReview(r, { reader = "local", aiError = "", file = null, text = "",
           <button type="button" class="btn btn-ghost" data-ai-read>${t("Yapay zekâ ile tekrar oku")}</button>
         </div>` : ""}
         ${existing ? `<p class="info-box">${t("{ders} dersin zaten kayıtlı. Kaydedince bu dersin bilgileri güncellenir, yeni tarihler eklenir.", { ders: esc(existing.name) })}</p>` : ""}
-        ${r.warnings.length ? `<ul class="warn-box">${r.warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}
+        ${r.warnings.length ? `<ul class="warn-box">${r.warnings.map((w) => `<li>${esc(readerText(w))}</li>`).join("")}</ul>` : ""}
 
         <h3 class="mini-title">${t("Ders")}</h3>
         <label class="field"><span>${t("Ders adı")}</span><input name="name" value="${esc(r.course.name)}" required maxlength="80"></label>

@@ -17,7 +17,7 @@ import { attendance, attendanceText } from "./attendance.js";
 import { targetResult, currentWeekOf } from "./ders-calc.js";
 import { groupOf } from "./weights.js";
 import { daysUntil, fmtShort, byDue, relLabel } from "./dates.js";
-import { t, pct, locale, localize } from "./i18n.js";
+import { t, pct, locale, localize, readerText } from "./i18n.js";
 
 // Türkçe sabit (testler karşılaştırır); cevapta notFound() kullanılır, o dile göre çevrilir
 export const NOT_FOUND = "Bunu derslerinin bilgilerinde bulamadım."; // i18n-ok
@@ -106,7 +106,7 @@ function ruleAnswer(kind, c, state) {
     if (c.attendPct !== null || c.absLimit !== null) parts.push(`${name(c)}: ${c.attendPct !== null ? t("devam şartı {p}", { p: pct(c.attendPct) }) : t("en fazla {n} devamsızlık", { n: c.absLimit })}. ${attendanceText(a)}.`);
   }
   for (const p of list) {
-    parts.push(`${p.rule}${p.consequence ? ` ${p.consequence}` : ""}${p.source ? `\nSyllabus: “${p.source}”` : ""}`);
+    parts.push(`${readerText(p.rule)}${p.consequence ? ` ${readerText(p.consequence)}` : ""}${p.source ? `\nSyllabus: “${p.source}”` : ""}`);
   }
   if (!parts.length) return null;
   return { text: parts.join("\n\n"), source: src(c, list.length ? "syllabus" : t("hesaplama")) };

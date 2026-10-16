@@ -23,9 +23,9 @@ h3 { font-size: 1.12rem; line-height: 1.3; }
 /* ---- Üst menü ---- */
 .nav {
   position: sticky; top: 0; z-index: 20;
-  background: rgba(20, 26, 40, 0.82);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
   backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(46, 58, 85, 0.6);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 }
 .nav-inner { display: flex; align-items: center; gap: 24px; height: 64px; }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
@@ -256,3 +256,8 @@ h3 { font-size: 1.12rem; line-height: 1.3; }
 .m-focus-main small { color: var(--text-muted); font-size: 10px; }
 .m-focus-main strong { font: 700 15px var(--font-display); color: var(--danger); }
 .m-done { justify-self: start; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); font-size: 10px; font-weight: 600; }
+
+/* İki dilli sabit sayfa (gizlilik.html, page-lang.js): seçili olmayan dil gizli */
+html[lang="tr"] [data-lang="en"], html[lang="en"] [data-lang="tr"] { display: none !important; }
+.lang-switch { color: var(--text-muted); font-size: 0.88rem; text-decoration: none; margin-left: auto; }
+.lang-switch:hover { color: var(--text); }

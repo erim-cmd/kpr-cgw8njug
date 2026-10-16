@@ -79,7 +79,7 @@
 }
 
 /* Açık tema: uygulama <html data-theme="light"> ile açar (theme.js / theme-boot.js).
-   Tanıtım sitesi data-theme almaz, koyu kalır. Vurgu renkleri beyaz zeminde okunacak kadar koyu
+   Tanıtım sitesi (index.html) data-theme almaz, koyu kalır; gizlilik.html uygulamanın temasını izler. Vurgu renkleri beyaz zeminde okunacak kadar koyu
    (yazı olarak kullanılanlar ≥ 4.5:1 — test/theme.mjs denetler). */
 :root[data-theme="light"] {
   color-scheme: light;

@@ -26,7 +26,7 @@ import { calcGrades, targetResult, currentWeekOf, fmtNum, impactLine, letterNeed
 import { openNumberSheet, openLetterSheet } from "./grade-sheet.js";
 import { taskWeight, labelOf } from "./weights.js";
 import { openMailSheet } from "./mail.js";
-import { t, pct, locale } from "./i18n.js";
+import { t, pct, locale, readerText } from "./i18n.js";
 
 const ONLINE = /teams|zoom|online|cevrimici|çevrimiçi|uzaktan|meet\b/i;
 
@@ -87,8 +87,8 @@ function flagsBlock(c, st) {
   const list = st.allFlags ? shown : shown.slice(0, 2);
   const item = (p) => `<li class="flag ${p.severity}">
       <span class="flag-tag">${SEV_LABEL[p.severity]} · ${POLICY_KINDS[p.kind]}</span>
-      <p class="flag-rule">${esc(p.rule)}</p>
-      ${p.consequence ? `<p class="flag-cons">→ ${esc(p.consequence)}</p>` : ""}
+      <p class="flag-rule">${esc(readerText(p.rule))}</p>
+      ${p.consequence ? `<p class="flag-cons">→ ${esc(readerText(p.consequence))}</p>` : ""}
       ${p.source ? `<details class="flag-src"><summary>${t("Syllabus'ta ne yazıyor?")}</summary><small class="irow-src">“${esc(p.source)}”</small></details>` : ""}
       <button type="button" class="link flag-hide" data-hide-policy="${esc(p.id)}">${t("Gizle")}</button>
     </li>`;

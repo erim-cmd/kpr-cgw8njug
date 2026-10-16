@@ -1,6 +1,6 @@
 /** KPR — Birden çok ekranda kullanılan HTML parçaları. */
 
-import { localize, t } from "./i18n.js";
+import { localize, t, readerText } from "./i18n.js";
 import { TASK_TYPES, POLICY_KINDS, isExam, isLight } from "./store.js";
 import { esc, isJust } from "./ui.js";
 import { icon } from "./icons.js";
@@ -114,8 +114,8 @@ export const sortFlags = (list) => [...list].sort((a, b) => SEV_ORDER[a.severity
 export function flagItem(p, withHide = false) {
   return `<li class="flag ${p.severity}">
     <span class="flag-tag">${SEV_LABEL[p.severity]} · ${POLICY_KINDS[p.kind]}</span>
-    <p class="flag-rule">${esc(p.rule)}</p>
-    ${p.consequence ? `<p class="flag-cons">→ ${esc(p.consequence)}</p>` : ""}
+    <p class="flag-rule">${esc(readerText(p.rule))}</p>
+    ${p.consequence ? `<p class="flag-cons">→ ${esc(readerText(p.consequence))}</p>` : ""}
     ${p.source || withHide ? `<p class="flag-foot">${p.source ? `<small class="irow-src">“${esc(p.source)}”</small>` : ""}
       ${withHide ? `<button type="button" class="link" data-hide-policy="${esc(p.id)}">${t("Gizle")}</button>` : ""}</p>` : ""}
   </li>`;
