@@ -29,6 +29,7 @@ const parsed = {
   final_min: 35,
   policies: [{ kind: "gec_teslim", severity: "kritik", rule: "Geç teslim yok", consequence: "", source: "x" }],
   weeks: [{ n: 1, date: null, topic: "Giriş", note: null }, { n: 2, date: null, topic: "Döküm", note: null }],
+  scale: [{ letter: "A", min: 92 }, { letter: "B", min: 80 }, { letter: "C", min: 65 }, { letter: "D", min: 50 }],
 };
 
 const { course: m, added } = mergeIntoCourse(mine, parsed);
@@ -47,6 +48,7 @@ ok(saved.weeks.length === 2 && saved.grading[0].score === 72 && saved.absences.l
 // Boş ders: her şey dolar; plan zaten varsa değişmez; iki kez yüklemek değiştirmez
 const blank = normalize({ profile: { name: "x" }, tasks: [], courses: [{ id: "c2", name: "Boş" }] }).courses[0];
 const b = mergeIntoCourse(blank, parsed).course;
+ok(b.scale.length === 4 && b.scale[0].min === 92, "boş derse harf tablosu eklenmedi");
 ok(b.attendPct === 70 && b.grading.length === 2 && b.grading.every((g) => g.score === null) && b.sessions.length === 1 && b.policies.length === 1, "boş derse eklenmedi");
 const again = mergeIntoCourse(b, { ...parsed, weeks: [{ n: 1, topic: "Başka", date: null, note: null }] });
 ok(again.added.length === 0 && again.course.weeks[0].topic === "Giriş", "ikinci yükleme bir şey değiştirdi");

@@ -74,7 +74,7 @@ ok(/name="notifyWeekly" checked/.test(notify) && notify.includes("Pazar 20:00'de
 // Tatil ve ara dönem: Sessiz saatler'in altında; aç/kapa + iki tarih, varsayılan kapalı
 const iQuiet = notify.indexOf("Sessiz saatler"), iPause = notify.indexOf("Tatil ve ara dönem");
 ok(iQuiet > 0 && iPause > iQuiet && iPause < notify.indexOf('name="pauseOn"'), "Tatil ve ara dönem Sessiz saatler'in altında");
-ok(!/name="pauseOn" checked/.test(notify) && notify.includes('name="pauseOn"') && /type="date" name="pauseStart" value=""/.test(notify) && /type="date" name="pauseEnd" value=""/.test(notify), "duraklatma varsayılan kapalı, tarihler boş");
+ok(!/name="pauseOn" checked/.test(notify) && notify.includes('name="pauseOn"') && /type="date" class="date-native" value="" name="pauseStart"/.test(notify) && /type="date" class="date-native" value="" name="pauseEnd"/.test(notify), "duraklatma varsayılan kapalı, tarihler boş");
 // Ayar doğrulaması (store.js normalize)
 const S = (s) => normalize({ settings: s }).settings;
 ok(S({}).notifyWeekly === true && S({ notifyWeekly: false }).notifyWeekly === false, "notifyWeekly varsayılan açık, kapatılabilir");

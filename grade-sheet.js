@@ -11,7 +11,7 @@
  */
 
 import { esc } from "./ui.js";
-import { t, localize } from "./i18n.js";
+import { t, localize, decimal } from "./i18n.js";
 
 /* ------------------------------------------------------------------ */
 /* Tuş takımı mantığı (saf)                                            */
@@ -102,7 +102,8 @@ function open(html, setup) {
 }
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0", "del"];
-const KEY_LABEL = localize({ ",": "Virgül", del: "Sil" }, { ",": "Comma", del: "Delete" });
+const KEY_LABEL = localize({ ",": "Virgül", del: "Sil" }, { ",": "Decimal point", del: "Delete" });
+// Arabellek her dilde virgüllü tutulur (press/parseBuffer); ekranda dilin ayırıcısı görünür (İngilizce nokta)
 
 /**
  * Sayı girişi. unit: "/ 100", "/ 4,00", "kredi"… impact(v) → kısa canlı etki metni ya da "".
@@ -113,17 +114,17 @@ export function openNumberSheet({ context, value = null, min = 0, max = 100, dec
   const opts = { max, decimals };
   return open(
     `<p class="gs-ctx">${esc(context)}</p>
-    <p class="gs-value" aria-live="polite"><b data-v>${esc(buf || "—")}</b>${unit ? ` <span>${esc(unit)}</span>` : ""}</p>
+    <p class="gs-value" aria-live="polite"><b data-v>${esc(decimal(buf) || "—")}</b>${unit ? ` <span>${esc(unit)}</span>` : ""}</p>
     <p class="gs-impact" data-impact aria-live="polite" hidden></p>
-    ${quick.length ? `<div class="gs-quick">${quick.map((q) => `<button type="button" data-quick="${q}">${esc(formatValue(q, decimals))}</button>`).join("")}</div>` : ""}
+    ${quick.length ? `<div class="gs-quick">${quick.map((q) => `<button type="button" data-quick="${q}">${esc(decimal(formatValue(q, decimals)))}</button>`).join("")}</div>` : ""}
     <div class="gs-keys" role="group" aria-label="${t("Sayı tuşları")}">
-      ${KEYS.map((k) => `<button type="button" data-key="${k}" aria-label="${KEY_LABEL[k] || k}" ${k === "," && !decimals ? "disabled" : ""}>${k === "del" ? "⌫" : k}</button>`).join("")}
+      ${KEYS.map((k) => `<button type="button" data-key="${k}" aria-label="${KEY_LABEL[k] || k}" ${k === "," && !decimals ? "disabled" : ""}>${k === "del" ? "⌫" : k === "," ? decimal(",") : k}</button>`).join("")}
     </div>
     <button type="button" class="btn btn-primary gs-save" data-save data-autofocus>${esc(saveLabel)}</button>
     ${clearLabel && value !== null && value !== undefined ? `<button type="button" class="link gs-clear" data-clear>${esc(clearLabel)}</button>` : ""}`,
     (d) => {
       const show = () => {
-        d.querySelector("[data-v]").textContent = buf || "—";
+        d.querySelector("[data-v]").textContent = decimal(buf) || "—";
         const v = parseBuffer(buf);
         const ok = v !== null && v >= min && v <= max;
         d.querySelector("[data-save]").disabled = !ok;

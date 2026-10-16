@@ -13,6 +13,7 @@
  * aynı nesnenin değerleri yerinde değişir, kullanan kod değişmez.
  */
 import EN from "./lang/en.js";
+import { readerEn } from "./lang/reader-en.js";
 
 export const LANGS = { tr: "Türkçe", en: "English" };
 
@@ -33,6 +34,9 @@ export function t(s, vars) {
   if (v && typeof v === "object") v = vars && Number(vars.n) === 1 ? v.one : v.other;
   return fill(typeof v === "string" ? v : s, vars);
 }
+
+/** Okuyucunun ürettiği (veride Türkçe saklanan) uyarı ve kural metni: İngilizcede ekranda çevrilir. */
+export const readerText = (s) => (lang === "en" ? readerEn(s) : s);
 
 /** Yüzde: Türkçe "%40", İngilizce "40%". Değer olduğu gibi yazılır (biçimlendirme çağıranda). */
 export const pct = (x) => (lang === "en" ? `${x}%` : `%${x}`);

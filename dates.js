@@ -46,6 +46,8 @@ export function relLabel(n) {
 
 export const fmtLong = (d) => d.toLocaleDateString(locale(), { weekday: "long", day: "numeric", month: "long" });
 // "3 Ekim": Türkçede "3 Eki" kısaltması ek gibi okunuyor, ay adı tam yazılır
+/** "28 Eylül 2026" / "28 September 2026" — tarih kutularının görünen yüzü. */
+export const fmtFull = (iso) => parseISO(iso).toLocaleDateString(locale(), { day: "numeric", month: "long", year: "numeric" });
 export const fmtShort = (iso) => parseISO(iso).toLocaleDateString(locale(), { day: "numeric", month: "long" });
 
 /**

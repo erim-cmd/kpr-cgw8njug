@@ -24,6 +24,9 @@ for (const [name, e] of Object.entries(exp)) {
     for (const k of ["code", "name", "instructor", "email", "office", "credit", "ects"]) ok(c[k] === e[k] || (e[k] === "" && !c[k]), `${k}: ${JSON.stringify(c[k])} ≠ ${JSON.stringify(e[k])}`);
     const ses = r.sessions.map((s) => [s.day, s.start, s.end, s.room]);
     ok(JSON.stringify(ses) === JSON.stringify(e.sessions), `sessions: ${JSON.stringify(ses)} ≠ ${JSON.stringify(e.sessions)}`);
+    // Şube etiketleri (kontrol ekranındaki "Hangi şubedesin?"): beklenmiyorsa hiç olmamalı
+    const secs = r.sessions.map((s) => s.section || "");
+    ok(JSON.stringify(secs.some(Boolean) ? secs : []) === JSON.stringify(e.sections || []), `sections: ${JSON.stringify(secs)} ≠ ${JSON.stringify(e.sections || [])}`);
     const g = Object.fromEntries(r.grading.map((x) => [x.name, x.weight]));
     ok(JSON.stringify(g) === JSON.stringify(e.grading), `grading: ${JSON.stringify(g)} ≠ ${JSON.stringify(e.grading)}`);
     // Bonus bileşenler (ek puan): 100'lük dağılıma katılmaz; listede olmayan hiçbir bileşen bonus sayılmamalı
@@ -31,6 +34,9 @@ for (const [name, e] of Object.entries(exp)) {
     ok(JSON.stringify(gb) === JSON.stringify(e.grading_bonus || []), `bonus: ${JSON.stringify(gb)} ≠ ${JSON.stringify(e.grading_bonus || [])}`);
     ok(r.attendance.percent === e.attendance, `attendance %: ${r.attendance.percent} ≠ ${e.attendance}`);
     if ("max_absences" in e) ok(r.attendance.max_absences === e.max_absences, `max_absences: ${r.attendance.max_absences} ≠ ${e.max_absences}`);
+    // Harf tablosu: beklenmiyorsa boş olmalı (uydurma tablo yok)
+    const sc = Object.fromEntries((r.scale || []).map((x) => [x.letter, x.min]));
+    ok(JSON.stringify(sc) === JSON.stringify(e.scale || {}), `scale: ${JSON.stringify(sc)} ≠ ${JSON.stringify(e.scale || {})}`);
     ok(r.final_min === e.final_min, `final_min: ${r.final_min} ≠ ${e.final_min}`);
     // Öğeler: beklenen her öğe için başlığı anahtar kelimeyi içeren, tarihi/saati/haftası eşleşen bir kayıt
     for (const [t, date, time, week] of e.items) {

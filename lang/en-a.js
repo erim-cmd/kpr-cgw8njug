@@ -25,7 +25,7 @@ export default {
   "Yenile": "Reload",
 
   // courses.js
-  "{n} açık görev": { one: "{n} open task", other: "{n} open tasks" },
+  "{n} kredi": { one: "{n} credit", other: "{n} credits" },
   "{n} kritik kural": { one: "{n} critical rule", other: "{n} critical rules" },
   "Saat eklenmedi": "No times added",
   "Bu dönemki derslerin": "Your courses this term",
@@ -126,7 +126,13 @@ export default {
   "okuma çok uzun sürdü": "reading took too long",
   "sunucuya ulaşılamadı": "couldn't reach the server",
   "Syllabus'tan ekle": "Add from syllabus",
-  "Dersin syllabus'unu (izlence) yükle. Köprü ders bilgilerini, ders saatlerini, vize-final ve ödev tarihlerini, not dağılımını, devam şartını ve dikkat edilecek kuralları bulsun. Kaydetmeden önce her şeyi kontrol edebilirsin.": "Upload your course syllabus. Köprü finds the course details, class times, midterm, final and homework dates, grade breakdown, attendance requirement and rules to watch. You can check everything before saving.",
+  "Syllabus'u yükle; tarihler, not dağılımı ve kurallar çıksın.": "Upload the syllabus to get dates, grade breakdown and rules.",
+  "Neler bulunur?": "What does it find?",
+  "Harf tablosu syllabus'tan: {liste}": "Letter scale from the syllabus: {liste}",
+  "harf tablosu": "letter scale",
+  "Hangi şubedesin?": "Which section are you in?",
+  "Şube {n}": "Section {n}",
+  "Ders bilgileri, ders saatleri, vize-final ve ödev tarihleri, not dağılımı, devam şartı ve dikkat edilecek kurallar. Kaydetmeden önce her şeyi kontrol edebilirsin.": "Course details, class times, midterm, final and homework dates, grade breakdown, attendance requirement and rules to watch. You can check everything before saving.",
   "Dosya seç": "Choose a file",
   "PDF, Word (.docx) ya da metin": "PDF, Word (.docx) or text",
   "Aydınlatma metnini": "privacy notice",

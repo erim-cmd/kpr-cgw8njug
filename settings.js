@@ -15,7 +15,7 @@ import { store, YEARS } from "./store.js";
 import { runMigrations } from "./migrate.js";
 import { esc, openSheet, toast } from "./ui.js";
 import { icon } from "./icons.js";
-import { infoNote } from "./components.js";
+import { infoNote, dateField } from "./components.js";
 import { todayISO } from "./dates.js";
 import { installMode, isStandalone, isNativeApp, promptInstall } from "./install.js";
 import { permissionState, enableNotifications, disableNotifications, testNotification, sync } from "./notify.js";
@@ -24,7 +24,7 @@ import { THEMES, applyTheme } from "./theme.js";
 import { LANGS, setLang, t, localize } from "./i18n.js";
 import { CITIES } from "./weather.js";
 
-export const APP_VERSION = "2.28.0";
+export const APP_VERSION = "2.29.0";
 const BRAND = "Köprü"; // i18n-ok — marka adı çevrilmez
 
 // Sınıf etiketleri (store.js YEARS anahtarları)
@@ -169,8 +169,8 @@ function notifyPage(state) {
     </div><p class="fine">${t("Bu saatlere düşen teslim hatırlatması, sessiz saatler başlamadan 3 saat önce gelir.")}</p></section>
     <section><h3 class="mini-title">${t("Tatil ve ara dönem")}</h3><div class="group">
       ${switchRow("pauseOn", t("Ders hatırlatmalarını duraklat"), t("Bu tarihlerde ders, günün özeti ve haftaya bakış gelmez. Sınav ve teslim hatırlatmaları gelir."), s.pauseOn)}
-      <label class="group-row"><div><strong>${t("Başlangıç")}</strong></div><input type="date" name="pauseStart" value="${esc(s.pauseStart)}" aria-label="${t("Tatil başlangıcı")}"></label>
-      <label class="group-row"><div><strong>${t("Bitiş")}</strong></div><input type="date" name="pauseEnd" value="${esc(s.pauseEnd)}" aria-label="${t("Tatil bitişi")}"></label>
+      <label class="group-row"><div><strong>${t("Başlangıç")}</strong></div>${dateField(s.pauseStart, 'name="pauseStart"', t("Tatil başlangıcı"))}</label>
+      <label class="group-row"><div><strong>${t("Bitiş")}</strong></div>${dateField(s.pauseEnd, 'name="pauseEnd"', t("Tatil bitişi"))}</label>
     </div></section>
     ${on ? `<section><div class="group"><div class="group-row"><div><strong>${t("Deneme")}</strong><p>${t("Bildirimlerin nasıl göründüğüne bak.")}</p></div>
       <button class="btn btn-ghost" type="button" data-act="notify-test">${t("Gönder")}</button></div></div></section>` : ""}

@@ -95,3 +95,9 @@ jobs:
 
       - name: Dil desteği (İngilizce sözlük, çevrilmemiş metin)
         run: node test/i18n.mjs
+
+      - name: Ders kartı (en yakın iş)
+        run: node test/courses.mjs
+
+      - name: İngilizce okuyucu metinleri
+        run: node test/reader-en.mjs

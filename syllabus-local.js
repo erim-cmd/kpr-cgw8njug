@@ -1050,6 +1050,14 @@ function parseSessions(text, flines, lines, pairsBy) {
     });
   }
   // "Course Room: <boş> · e-mail: …" → etiketin değeri yan hücrenin etiketi olur; e-posta/etiket/tire derslik değildir
+  // Şube tablosu ("Section | Day | Time | Room"): satırın başındaki şube numarası/harfi saate etiket olur
+  const sectionTable = flines.some((l) => /(^|\t)(section|sections|sube|subeler|grup|group)(\t|$)/.test(l.trim()));
+  const sectionOf = (line) => {
+    const inl = /\b(?:section|şube|sube|grup|group)\s*#?\s*(\d{1,2}|[A-H])\b/i.exec(line);
+    if (inl) return inl[1].toUpperCase();
+    const lead = sectionTable && /^\s*(\d{1,2}|[A-H])\s*\t/.exec(line);
+    return lead ? lead[1].toUpperCase() : "";
+  };
   const globalRoom = (pairsBy.room || []).map((p) => p.v).find((v) => v && !/@|^\s*[-–—]\s*$|^\s*(e-?mail|e-?posta|mail|office|ofis|tel)\b/i.test(v)) || "";
 
   for (const c of candidates) {
@@ -1093,7 +1101,8 @@ function parseSessions(text, flines, lines, pairsBy) {
       for (const d of use) {
         if (d.day < 0) continue;
         if (r.stop <= r.start) continue;
-        sessions.push({ day: d.day, start: r.start, end: r.stop, room: clean(room || leadRoom || globalRoom), _i: d.i, _c: c });
+        const section = sectionOf(c);
+        sessions.push({ day: d.day, start: r.start, end: r.stop, room: clean(room || leadRoom || globalRoom), ...(section ? { section } : {}), _i: d.i, _c: c });
       }
     }
   }
@@ -1889,6 +1898,59 @@ function parseWeeks(lines, flines, termYear) {
   return weeks.sort((a, b) => a.n - b.n).slice(0, 20);
 }
 
+/**
+ * Hocanın harf tablosu ("90–100 A … <60 F", "A: 90-100, A-: 85-89", yatay "A | A- | …" / "90-100 | 85-89 | …").
+ * Yalnız BAU harfleri (A … D); F'nin alt sınırı gerekmez. Uydurma olmasın diye sıkı: en az 4 harf, harf sırasıyla
+ * alt sınırlar kesin azalan, hepsi 0–100. Tutmazsa boş döner (öğrenci tabloyu elle girer ya da örnekle başlar).
+ * Katsayı sütunu ("A | 4,00 | 90-100") atlanır; tek sayı yalnız "≥ 90", "90 ve üzeri", "90 and above" biçiminde kabul edilir.
+ */
+const SCALE_ORDER = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D"];
+function parseScale(lines) {
+  const N = String.raw`(\d{1,3}(?:[.,]\d{1,2})?)`;
+  const RANGE = String.raw`(?:${N}\s*(?:-|–|—|~|to|ile)\s*${N}|(?:≥|>=|=>)\s*${N}|${N}\s*(?:ve üzeri|ve uzeri|and above|or above|or higher|\+(?!\d)))`;
+  // "A-" bitişik eksi = harf; "A-90" gibi rakama bitişik eksi aralık sayılmaz
+  const LET = String.raw`(?<![\w+\-])([ABCD](?:\+|-(?!\d))?|F)(?![\w+\-])`;
+  const SEP = String.raw`(?:[\s:=()\[\]|→>]|\t)*(?:\d[.,]\d{1,2}(?:[\s:=()\[\]|→>]|\t)+)?`;
+  const lowOf = (m, at) => {
+    const v = [m[at], m[at + 1], m[at + 2], m[at + 3]].map((x) => (x === undefined ? null : Number(x.replace(",", "."))));
+    if (v[0] !== null && v[1] !== null) return Math.min(v[0], v[1]) <= 100 && Math.max(v[0], v[1]) <= 100 ? Math.min(v[0], v[1]) : null;
+    const one = v[2] ?? v[3];
+    return one !== null && one <= 100 ? one : null;
+  };
+  const found = [];
+  const fwd = new RegExp(LET + SEP + RANGE, "g");
+  const back = new RegExp(RANGE + SEP + LET, "g");
+  lines.forEach((l, i) => {
+    for (const m of l.matchAll(fwd)) found.push({ letter: m[1], min: lowOf(m, 2), i });
+    for (const m of l.matchAll(back)) found.push({ letter: m[5], min: lowOf(m, 1), i });
+  });
+  // Yatay tablo: harf başlık satırı + altında aynı sayıda aralık
+  const cellRe = new RegExp("^\\s*" + RANGE + "\\s*$");
+  for (let i = 0; i + 1 < lines.length; i++) {
+    const head = lines[i].split("\t").map((x) => x.trim());
+    const lets = head.filter((x) => /^([ABCD][+-]?|F)$/.test(x));
+    if (lets.length < 4) continue;
+    let j = i + 1;
+    while (j < lines.length && !lines[j].trim()) j++;
+    const vals = (lines[j] || "").split("\t").map((x) => x.trim());
+    if (vals.length !== head.length) continue;
+    head.forEach((h, k) => {
+      const m = cellRe.exec(vals[k] || "");
+      if (/^([ABCD][+-]?|F)$/.test(h) && m) found.push({ letter: h, min: lowOf(m, 1), i });
+    });
+  }
+  // Harf başına ilk geçen (tablo genelde tek); sonra sıra ve tutarlılık
+  const by = new Map();
+  for (const f of found) if (f.min !== null && SCALE_ORDER.includes(f.letter) && !by.has(f.letter)) by.set(f.letter, f);
+  const rows = SCALE_ORDER.filter((l) => by.has(l)).map((l) => ({ letter: l, min: by.get(l).min }));
+  if (rows.length < 4) return [];
+  for (let k = 1; k < rows.length; k++) if (!(rows[k].min < rows[k - 1].min)) return [];
+  // Tablo dağınık olmasın: harfler belgenin küçük bir bölümünde (en çok 30 satır)
+  const idx = rows.map((r) => by.get(r.letter).i);
+  if (Math.max(...idx) - Math.min(...idx) > 30) return [];
+  return rows;
+}
+
 export function parseSyllabus(text, now = new Date()) {
   const norm = text.normalize("NFC").replace(/\r/g, "").replace(/[   ]/g, " ").replace(/[‐‑‒]/g, "-")
     // Bağlantılar ("https://…/S%CB20SINAV…pdf"): içlerindeki %XX kodları not yüzdesi sanılmasın (Muğla)
@@ -2043,7 +2105,10 @@ export function parseSyllabus(text, now = new Date()) {
   const online = flines.some((l) => /(derslik|classroom|zaman|time|delivery|verilis)[^\t]*\t\s*(cevrimici|online|uzaktan)/.test(l));
   if (!sessions.length) warnings.add(online ? "Ders çevrimiçi, saati yazmıyor; UMIS'teki saatini gir." : "Ders saatleri bulunamadı.");
   // "Section · Day · Time · Room" tablosunda birden çok şube: öğrenci yalnız birine gider
-  if (sessions.length > 1 && flines.some((l) => /(^|\t)(section|sections|sube|subeler|grup|group)(\t|$)/.test(l.trim())))
+  // Şube etiketi okunduysa kontrol ekranı "Hangi şubedesin?" diye sorar; okunamadıysa öğrenci diğerini elle siler
+  const sectionCount = new Set(sessions.map((s) => s.section).filter(Boolean)).size;
+  if (sectionCount > 1) warnings.add("Birden fazla şube listelenmiş; aşağıda kendi şubeni seç.");
+  else if (sessions.length > 1 && flines.some((l) => /(^|\t)(section|sections|sube|subeler|grup|group)(\t|$)/.test(l.trim())))
     warnings.add("Birden fazla şube listelenmiş; sadece kendi şubenin ders saatini bırak, diğerlerini sil.");
   // Finali olmayan derste (ör. vize + vize + final projesi) "final tarihi bulunamadı" yanıltıcı
   const hasFinalExam =
@@ -2100,6 +2165,7 @@ export function parseSyllabus(text, now = new Date()) {
     grading: grading.map(({ name, weight, bonus }) => ({ name, weight, ...(bonus ? { bonus: true } : {}) })).slice(0, 12),
     attendance: { percent: att.percent, max_absences: att.max_absences, unit: att.unit && unitTr(att.unit) !== "ders" ? unitTr(att.unit) : "", source: att.source },
     final_min: finalMin ? finalMin.value : null,
+    scale: kurul ? [] : parseScale(lines),
     policies,
     // Metin bozuksa "… bulunamadı" uyarıları gürültü: nedeni söyleyen tek uyarı kalır
     warnings: garbled ? [GARBLED] : [...warnings].slice(0, 8),

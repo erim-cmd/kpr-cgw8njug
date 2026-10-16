@@ -35,7 +35,7 @@
   --border: #2E3A55;
   --text: #EDF0F7;
   --text-muted: #9AA4BC;
-  --text-dim: #6F7A93;
+  --text-dim: #8C97AE; /* kartta (surface-2 dahil) ≥ 4.5:1 — test/theme.mjs */
   --cyan: #4CC9F0;
   --violet: #8B5CF6;
   --accent: #7C8CF8;
@@ -56,6 +56,7 @@
   --on-danger: #FFFFFF;     /* kırmızı (silme onayı) düğme yazısı */
   --shadow-1: rgba(0, 0, 0, 0.35); /* kart/yüzen düğme gölgesi */
   --shadow-2: rgba(0, 0, 0, 0.45); /* alt pencere gölgesi */
+  --card-shadow: none;      /* koyu temada kartlar çizgiyle ayrılır */
   /* Köşe: 3 değer + hap */
   --r-sm: 8px;
   --r-md: 12px;
@@ -78,7 +79,7 @@
 }
 
 /* Açık tema: uygulama <html data-theme="light"> ile açar (theme.js / theme-boot.js).
-   Tanıtım sitesi data-theme almaz, koyu kalır. Vurgu renkleri beyaz zeminde okunacak kadar koyu
+   Tanıtım sitesi (index.html) data-theme almaz, koyu kalır; gizlilik.html uygulamanın temasını izler. Vurgu renkleri beyaz zeminde okunacak kadar koyu
    (yazı olarak kullanılanlar ≥ 4.5:1 — test/theme.mjs denetler). */
 :root[data-theme="light"] {
   color-scheme: light;
@@ -106,6 +107,8 @@
   --on-danger: #FFFFFF;
   --shadow-1: rgba(20, 26, 40, 0.12);
   --shadow-2: rgba(20, 26, 40, 0.18);
+  /* Açık temada kartlar zeminden çok hafif gölgeyle ayrılır (yalnız çizgi yetmiyordu) */
+  --card-shadow: 0 1px 2px rgba(20, 26, 40, 0.06), 0 2px 6px rgba(20, 26, 40, 0.05);
 }
 
 * { box-sizing: border-box; }

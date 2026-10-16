@@ -12,12 +12,13 @@
 import { store, COLORS, TASK_TYPES } from "./store.js";
 import { esc, openSheet, closeSheet, toast } from "./ui.js";
 import { icon } from "./icons.js";
-import { flagItem, sortFlags } from "./components.js";
+import { flagItem, sortFlags, infoNote } from "./components.js";
 import { sessionRow, gradeRow, swatches, bindRows, readSessions, readGrading, openCourseForm } from "./forms.js";
 import { mergeIntoCourse } from "./course-merge.js";
 import { extractText, DocError } from "./doc-text.js";
 import { parseSyllabus } from "./syllabus-local.js";
-import { t, localize, pct, decimal } from "./i18n.js";
+import { t, localize, pct, decimal, readerText } from "./i18n.js";
+import { DAYS_SHORT } from "./dates.js";
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -197,7 +198,8 @@ export function openImport({ into = null } = {}) {
     `<form class="sheet-form" data-step="pick">
       ${head(t("Syllabus'tan ekle"))}
       <div class="sheet-body">
-        <p class="lead-text">${t("Dersin syllabus'unu (izlence) yükle. Köprü ders bilgilerini, ders saatlerini, vize-final ve ödev tarihlerini, not dağılımını, devam şartını ve dikkat edilecek kuralları bulsun. Kaydetmeden önce her şeyi kontrol edebilirsin.")}</p>
+        <p class="lead-text">${t("Syllabus'u yükle; tarihler, not dağılımı ve kurallar çıksın.")}</p>
+        ${infoNote(t("Neler bulunur?"), t("Ders bilgileri, ders saatleri, vize-final ve ödev tarihleri, not dağılımı, devam şartı ve dikkat edilecek kurallar. Kaydetmeden önce her şeyi kontrol edebilirsin."))}
         <label class="drop" data-drop>
           <input type="file" name="file" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.txt,text/plain" required class="visually-hidden">
           <span class="drop-icon">${icon.upload}</span>
@@ -417,7 +419,11 @@ function openReview(r, { reader = "local", aiError = "", file = null, text = "",
   const existing = code ? courses.find((c) => c.code.trim().toLowerCase() === code) : null;
   const color = existing?.color || COLORS[courses.length % COLORS.length];
   const sessions = r.sessions.filter((s) => TIME.test(s.start) && TIME.test(s.end));
+  // Birden çok şube okunduysa öğrenci kendininkini seçer; seçince yalnız o şubenin saatleri kalır
+  const sections = [...new Set(sessions.map((s) => s.section).filter(Boolean))];
   const att = r.attendance || { percent: null, max_absences: null, source: "" };
+  // Hocanın harf tablosu cihazda okunur (yapay zekâ şemasında yok); derste zaten tablo varsa ezilmez
+  const scale = existing?.scale?.length ? [] : ((r.scale || []).length ? r.scale : local?.scale || []);
   r.warnings = r.warnings || [];
   const found = [
     sessions.length && t("{n} ders saati", { n: sessions.length }),
@@ -443,7 +449,7 @@ function openReview(r, { reader = "local", aiError = "", file = null, text = "",
           <button type="button" class="btn btn-ghost" data-ai-read>${t("Yapay zekâ ile tekrar oku")}</button>
         </div>` : ""}
         ${existing ? `<p class="info-box">${t("{ders} dersin zaten kayıtlı. Kaydedince bu dersin bilgileri güncellenir, yeni tarihler eklenir.", { ders: esc(existing.name) })}</p>` : ""}
-        ${r.warnings.length ? `<ul class="warn-box">${r.warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}
+        ${r.warnings.length ? `<ul class="warn-box">${r.warnings.map((w) => `<li>${esc(readerText(w))}</li>`).join("")}</ul>` : ""}
 
         <h3 class="mini-title">${t("Ders")}</h3>
         <label class="field"><span>${t("Ders adı")}</span><input name="name" value="${esc(r.course.name)}" required maxlength="80"></label>
@@ -463,6 +469,10 @@ function openReview(r, { reader = "local", aiError = "", file = null, text = "",
         <fieldset class="field"><legend>${t("Renk")}</legend>${swatches(color)}</fieldset>
 
         <h3 class="mini-title">${t("Haftalık ders saatleri")}</h3>
+        ${sections.length > 1 ? `<fieldset class="info-box sec-pick" data-sec-pick aria-labelledby="sec-pick-q">
+          <p id="sec-pick-q" class="grade-choice-q">${t("Hangi şubedesin?")}</p>
+          ${sections.map((sec) => `<label class="consent"><input type="radio" name="section" value="${esc(sec)}"><span>${t("Şube {n}", { n: esc(sec) })} · ${sessions.filter((s) => s.section === sec).map((s) => `${DAYS_SHORT[s.day]} ${esc(s.start)}`).join(", ")}</span></label>`).join("")}
+        </fieldset>` : ""}
         <div class="srows" data-rows="sessions" data-empty="${t("Henüz saat eklenmedi.")}">${sessions.map(sessionRow).join("")}</div>
         <button type="button" class="btn btn-ghost" data-add="sessions">${icon.plus}${t("Saat ekle")}</button>
 
@@ -492,6 +502,7 @@ function openReview(r, { reader = "local", aiError = "", file = null, text = "",
         </fieldset>` : ""}
         <div class="srows" data-rows="grading" data-empty="${t("Not dağılımı bulunamadı. Syllabus'tan bakıp Bileşen ekle ile gir.")}">${r.grading.map(gradeRow).join("")}</div>
         <p class="calc-note" data-total aria-live="polite"></p>
+        ${scale.length ? `<p class="calc-note scale-found">${t("Harf tablosu syllabus'tan: {liste}", { liste: scale.map((x) => `${esc(x.letter)} ${decimal(x.min)}`).join(" · ") })}</p>` : ""}
         <label class="calc-note total-ok" data-total-ok hidden><input type="checkbox" name="totalOk"> ${t("Belgede de böyle; toplamı bu hâliyle kaydet")}</label>
         <button type="button" class="btn btn-ghost" data-add="grading">${icon.plus}${t("Bileşen ekle")}</button>
       </div>
@@ -543,6 +554,10 @@ function openReview(r, { reader = "local", aiError = "", file = null, text = "",
           run(file, { ai: true, local: r, text });
         });
       }
+
+      form.querySelector("[data-sec-pick]")?.addEventListener("change", (e) => {
+        sessionsBox.innerHTML = sessions.filter((s) => s.section === e.target.value).map(sessionRow).join("");
+      });
 
       // İki okuma ayrışınca: seçilen okumanın bileşenleri satırlara gelir
       const choiceBox = form.querySelector("[data-grade-choice]");
@@ -618,6 +633,7 @@ function openReview(r, { reader = "local", aiError = "", file = null, text = "",
             policies: (r.policies || []).length ? r.policies : existing?.policies ?? [],
             weeks: (r.weeks || []).length ? readWeeks(form) : existing?.weeks ?? [],
             finalMin: r.final_min ?? existing?.finalMin ?? null,
+            scale: scale.length ? scale : existing?.scale ?? [],
           },
           tasks
         );

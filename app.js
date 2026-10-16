@@ -6,7 +6,7 @@
 
 import { store } from "./store.js";
 import { runMigrations } from "./migrate.js";
-import { toast } from "./ui.js";
+import { toast, haptic, markJust } from "./ui.js";
 import { icon } from "./icons.js";
 import { openCourseForm, openTaskForm, openCourseDetail } from "./forms.js";
 import { openImport } from "./importer.js";
@@ -22,7 +22,7 @@ import * as asistan from "./asistan.js";
 import * as secmeli from "./secmeli.js";
 import { attendance } from "./attendance.js";
 import { dismiss } from "./today.js";
-import { todayISO } from "./dates.js";
+import { todayISO, fmtFull } from "./dates.js";
 import { enableNotifications, checkReminders, sync, permissionState } from "./notify.js";
 import { applyTheme } from "./theme.js";
 import { setLang, getLang, t } from "./i18n.js";
@@ -179,6 +179,7 @@ const globalActions = {
   "open-profile": () => openProfile(),
   "toggle-task": (el) => {
     const task = store.toggleTask(el.dataset.id);
+    if (task?.done) { markJust("task:" + task.id); haptic("success"); }
     if (task?.done) toast(t("Tamamlandı 🎉"), { label: t("Geri al"), onClick: () => store.toggleTask(task.id) });
   },
   install: () => promptInstall(),
@@ -213,6 +214,8 @@ const globalActions = {
       store.removeAbsence(c.id, existing.id);
       toast(t("Devamsızlık geri alındı"));
     } else {
+      markJust(`abs:${c.id}:${date}:${el.dataset.start}`);
+      haptic();
       store.addAbsence(c.id, date, el.dataset.start);
       // Sınıra yaklaşıldıysa uygulama içinde hemen uyar
       const a = attendance(find(store.get().courses, c.id), store.get().settings.termWeeks);
@@ -240,6 +243,19 @@ document.addEventListener("click", (e) => {
     e.preventDefault();
     fn(el, { render });
   }
+});
+
+// Tarih kutusu (components.js dateField): dokununca seçiciyi aç, değişince görünen yüzü güncelle
+document.addEventListener("click", (e) => {
+  const input = e.target.closest(".date-native");
+  if (input && typeof input.showPicker === "function") { try { input.showPicker(); } catch { /* bazı tarayıcılar izin vermez; yerel davranış kalır */ } }
+});
+document.addEventListener("input", (e) => {
+  const input = e.target.closest?.(".date-native");
+  const face = input?.previousElementSibling;
+  if (!face) return;
+  face.textContent = input.value ? fmtFull(input.value) : face.dataset.empty;
+  input.parentElement.classList.toggle("is-empty", !input.value);
 });
 
 $view.addEventListener("change", (e) => {
