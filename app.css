@@ -1173,3 +1173,7 @@ dialog.sheet.full .sheet-body { flex: 1; padding-bottom: calc(24px + var(--safe-
 @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
 .task.pop .check, .abs-btn.pop { animation: pop 0.32s ease-out; }
 .task.pop .task-title { transition: color 0.3s; }
+
+/* Şube seçimi (kontrol ekranı): her seçenek ≥ 44px dokunma alanı */
+.sec-pick { margin-bottom: 12px; }
+.sec-pick .consent { min-height: 44px; align-items: center; }

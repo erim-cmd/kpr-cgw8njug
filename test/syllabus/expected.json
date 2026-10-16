@@ -548,6 +548,12 @@
     ],
     "rules_exclude": [
       "bağıl"
+    ],
+    "sections": [
+      "4",
+      "1",
+      "2",
+      "3"
     ]
   },
   "tr_bau_syn2": {
@@ -601,7 +607,19 @@
     "weeks": [],
     "warnings_exclude": [
       "bozuk okunuyor"
-    ]
+    ],
+    "scale": {
+      "A": 96,
+      "A-": 92,
+      "B+": 88,
+      "B": 84,
+      "B-": 80,
+      "C+": 76,
+      "C": 72,
+      "C-": 68,
+      "D+": 64,
+      "D": 60
+    }
   },
   "en_bau_syn3": {
     "code": "ENM 4116",
@@ -791,7 +809,11 @@
       "Final tarihi bulunamadı",
       "bozuk okunuyor"
     ],
-    "weeks": []
+    "weeks": [],
+    "sections": [
+      "1",
+      "2"
+    ]
   },
   "en_ofis_ekseni": {
     "code": "FIN 4100",
@@ -2295,5 +2317,150 @@
       "toplamı",
       "Final tarihi bulunamadı"
     ]
+  },
+  "web_harf_satir": {
+    "code": "MAT 2051",
+    "name": "Lineer Cebir",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "sessions": [],
+    "grading": {
+      "Vize": 40,
+      "Final": 60
+    },
+    "attendance": null,
+    "final_min": null,
+    "items": [
+      [
+        "Vize",
+        ""
+      ],
+      [
+        "Final",
+        ""
+      ]
+    ],
+    "policies": [],
+    "scale": {
+      "A": 90,
+      "A-": 85,
+      "B+": 80,
+      "B": 75,
+      "B-": 70,
+      "C+": 65,
+      "C": 60
+    }
+  },
+  "web_harf_satirici": {
+    "code": "ENG 2201",
+    "name": "Technical Writing",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "sessions": [],
+    "grading": {
+      "Midterm": 40,
+      "Final": 60
+    },
+    "attendance": null,
+    "final_min": null,
+    "items": [
+      [
+        "Midterm",
+        ""
+      ],
+      [
+        "Final",
+        ""
+      ]
+    ],
+    "policies": [],
+    "scale": {
+      "A": 90,
+      "A-": 85,
+      "B+": 80,
+      "B": 75,
+      "B-": 70,
+      "C+": 65,
+      "C": 60,
+      "C-": 55,
+      "D+": 50,
+      "D": 45
+    }
+  },
+  "web_harf_yatay": {
+    "code": "FİZ 1001",
+    "name": "Fizik I",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "sessions": [],
+    "grading": {
+      "Ara Sınav": 40,
+      "Final Sınavı": 60
+    },
+    "attendance": null,
+    "final_min": null,
+    "items": [
+      [
+        "Ara Sınav",
+        ""
+      ],
+      [
+        "Final Sınavı",
+        ""
+      ]
+    ],
+    "policies": [],
+    "scale": {
+      "A": 90,
+      "A-": 85,
+      "B+": 80,
+      "B": 75,
+      "B-": 70,
+      "C+": 65,
+      "C": 60
+    }
+  },
+  "web_harf_katsayi": {
+    "code": "ECO 1101",
+    "name": "İktisada Giriş",
+    "instructor": "",
+    "email": "",
+    "office": "",
+    "credit": null,
+    "ects": null,
+    "sessions": [],
+    "grading": {
+      "Vize": 50,
+      "Final": 50
+    },
+    "attendance": null,
+    "final_min": null,
+    "items": [
+      [
+        "Vize",
+        ""
+      ],
+      [
+        "Final",
+        ""
+      ]
+    ],
+    "policies": [],
+    "scale": {
+      "A": 90,
+      "A-": 85,
+      "B+": 80,
+      "B": 75,
+      "B-": 70
+    }
   }
 }

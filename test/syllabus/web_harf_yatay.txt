@@ -1,0 +1,7 @@
+FİZ 1001 Fizik I
+Ders Kodu	FİZ 1001
+Not Dağılımı
+Ara Sınav	%40
+Final Sınavı	%60
+Harf Notu	A	A-	B+	B	B-	C+	C
+Puan	90-100	85-89	80-84	75-79	70-74	65-69	60-64

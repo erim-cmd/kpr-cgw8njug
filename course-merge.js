@@ -39,6 +39,7 @@ export function mergeIntoCourse(course, parsed) {
   fill("grading", (parsed.grading || []).map((g) => ({ name: g.name, weight: g.weight, score: null })), t("not dağılımı"));
   fill("policies", parsed.policies || [], t("dikkat edilecekler"));
   fill("finalMin", parsed.final_min ?? null, t("final barajı"));
+  fill("scale", parsed.scale || [], t("harf tablosu"));
   // Devam şartı: ikisinden biri girilmişse dokunma
   const att = parsed.attendance || {};
   if (empty(out.attendPct) && empty(out.absLimit)) {

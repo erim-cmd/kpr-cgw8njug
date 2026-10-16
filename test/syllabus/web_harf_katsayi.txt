@@ -1,0 +1,12 @@
+ECO 1101 İktisada Giriş
+Ders Kodu	ECO 1101
+Değerlendirme
+Vize	%50
+Final	%50
+Harf	Katsayı	Puan
+A	4,00	90-100
+A-	3,70	85-89
+B+	3,30	80-84
+B	3,00	75-79
+B-	2,70	70-74
+F	0,00	0-49

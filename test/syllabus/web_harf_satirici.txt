@@ -1,0 +1,7 @@
+ENG 2201 Technical Writing
+Course Code	ENG 2201
+Assessment
+Midterm	40%
+Final	60%
+Grading scale: A: 90-100, A-: 85-89, B+: 80-84, B: 75-79, B-: 70-74, C+: 65-69, C: 60-64, C-: 55-59, D+: 50-54, D: 45-49, F: 0-44.
+A student who misses the final exam receives F.
