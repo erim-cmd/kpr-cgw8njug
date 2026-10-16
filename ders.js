@@ -14,7 +14,7 @@
  */
 
 import { store, TASK_TYPES, isLight } from "./store.js";
-import { esc, openSheet, closeSheet, toast } from "./ui.js";
+import { esc, openSheet, closeSheet, toast, haptic } from "./ui.js";
 import { DAYS_SHORT, todayISO, toMin, daysUntil, fmtShort, relLabel, byDue } from "./dates.js";
 import { icon } from "./icons.js";
 import { attendance, attendanceText } from "./attendance.js";
@@ -139,30 +139,18 @@ function planBlock(c, st, state) {
   // Syllabus'ta okunabilir haftalık plan yoksa bölüm yok: öğrenciden yeniden yükleme istemek okuma hatasını ona yükler
   if (!c.weeks.length) return "";
   const cur = currentWeekOf(c, state);
-  const now = c.weeks.find((w) => w.n === cur);
-  const summary = now
-    ? `<b>${t("Bu hafta:")}</b> ${t("H{n}", { n: now.n })} · ${esc(now.topic)}`
-    : cur && cur > c.weeks[c.weeks.length - 1].n
-      ? t("Haftalık plan bitti")
-      : `<b>${t("Haftalık plan")}</b> · ${t("{n} hafta", { n: c.weeks.length })}`;
+  const dated = c.weeks.some((w) => w.date);
   const rows = c.weeks.map((w) => {
     const exam = EXAM_RE.test(w.topic) || EXAM_RE.test(w.note || "");
-    return `<li class="${w.n === cur ? "now" : ""}"><b>${t("H{n}", { n: w.n })}</b>
-      <span>${esc(w.topic)}${w.date || w.note ? `<small>${[w.date && fmtShort(w.date), w.note && esc(w.note)].filter(Boolean).join(" · ")}</small>` : ""}</span>
-      ${exam ? `<em class="tag-exam">${t("Sınav")}</em>` : ""}</li>`;
+    return `<tr class="${w.n === cur ? "now" : ""}"><th scope="row">${w.n}</th>${dated ? `<td class="cd-wk-date">${w.date ? fmtShort(w.date) : ""}</td>` : ""}
+      <td>${esc(w.topic)}${w.note ? `<small>${esc(w.note)}</small>` : ""}${exam ? ` <em class="tag-exam">${t("Sınav")}</em>` : ""}</td></tr>`;
   }).join("");
   return `<section class="cd-sec">
-    <button type="button" class="cd-plan-sum" data-toggle="plan" aria-expanded="${st.plan}"><span>${summary}</span>${st.plan ? "▴" : "▾"}</button>
-    ${st.plan ? `<ul class="cd-plan">${rows}</ul>` : ""}
-  </section>`;
-}
-
-/** Kazanımlar (öğrenme çıktıları): katlı, dokununca açılır. */
-function outcomesBlock(c, st) {
-  if (!c.outcomes?.length) return "";
-  return `<section class="cd-sec">
-    <button type="button" class="cd-plan-sum" data-toggle="outcomes" aria-expanded="${!!st.outcomes}"><span><b>${t("Bu dersten kazanacakların")}</b> · ${t("{n} madde", { n: c.outcomes.length })}</span>${st.outcomes ? "▴" : "▾"}</button>
-    ${st.outcomes ? `<ol class="cd-outcomes">${c.outcomes.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>` : ""}
+    <h3 class="mini-title">${t("Haftalık konular")}${cur ? ` <span class="cd-wk-now">${t("Bu hafta: {n}. hafta", { n: cur })}</span>` : ""}</h3>
+    <div class="cd-wk-wrap"><table class="cd-wk">
+      <thead><tr><th scope="col">${t("Hafta")}</th>${dated ? `<th scope="col">${t("Tarih")}</th>` : ""}<th scope="col">${t("Konu")}</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
   </section>`;
 }
 
@@ -225,7 +213,6 @@ function inner(c, state) {
       ${infoBlock(c)}
       ${flagsBlock(c, st)}
       ${planBlock(c, st, state)}
-      ${outcomesBlock(c, st)}
       ${gradingBlock(c, state.tasks)}
       ${targetBlock(c, st)}
       <p class="fine cd-src">${t("Bilgiler syllabus'tan alındı")} · <button type="button" class="link" data-edit>${t("Düzenle")}</button></p>
@@ -367,20 +354,26 @@ export function openCourseDetail(courseId) {
 /* ------------------------------------------------------------------ */
 
 function absenceBody(c) {
-  const a = attendance(c, store.get().settings.termWeeks);
+  const weeks = store.get().settings.termWeeks;
+  const a = attendance(c, weeks);
   const pct = a.limit ? Math.min(100, (a.used / a.limit) * 100) : a.used ? 100 : 0;
-  const list = [...c.absences].sort((x, y) => y.date.localeCompare(x.date));
-  const times = [...new Set(c.sessions.map((s) => s.start))].sort();
+  // Oturumlar (haftada birden çoksa her biri ayrı işaretlenir)
+  const starts = [...new Set(c.sessions.map((x) => x.start))].sort();
+  const slots = starts.length ? starts : [""];
+  const marked = (w, st) => c.absences.some((x) => x.week === w && x.start === st);
+  const grid = Array.from({ length: weeks }, (_, i) => i + 1).map((w) => {
+    if (a.exams.has(w)) return `<span class="wk-abs is-exam" title="${t("Sınav haftası: yoklama yok")}"><b>${w}</b><small>${t("Sınav")}</small></span>`;
+    return slots.map((st) => `<button type="button" class="wk-abs${marked(w, st) ? " on" : ""}" data-abs-week="${w}" data-abs-start="${esc(st)}" aria-pressed="${marked(w, st)}"
+      aria-label="${t("{n}. hafta{saat}: gelmedim", { n: w, saat: st ? ` ${st}` : "" })}"><b>${w}</b>${slots.length > 1 ? `<small>${esc(st)}</small>` : ""}</button>`).join("");
+  }).join("");
+  const dated = c.absences.filter((x) => x.date).sort((x, y) => y.date.localeCompare(x.date));
   return `<p class="abs-text ${a.level}">${attendanceText(a)}</p>
     ${a.limit !== null ? `<div class="bar ${a.level}" role="img" aria-label="${t("{used} / {limit} devamsızlık", { used: a.used, limit: a.limit })}"><i style="width:${pct}%"></i></div>` : `<p class="calc-note">${t("Devam şartını dersin {edit} ekranından gir; kalan hakkını hesaplayalım.", { edit: `<b>${t("Düzenle")}</b>` })}</p>`}
-    <h3 class="mini-title gap-t">${t("Geçmiş gün ekle")}</h3>
-    <div class="abs-add">
-      <input type="date" data-abs-date value="${todayISO()}" max="${todayISO()}" aria-label="${t("Devamsızlık tarihi")}">
-      ${times.length > 1 ? `<select data-abs-start aria-label="${t("Ders saati")}">${times.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("")}</select>` : times.length ? `<input type="hidden" data-abs-start value="${esc(times[0])}">` : ""}
-      <button type="button" class="btn btn-ghost" data-add-abs>${icon.plus}${t("Ekle")}</button>
-    </div>
-    ${list.length ? `<ul class="kv abs-list gap-t">${list.map((x) => `<li><b>${fmtShort(x.date)}${x.start ? ` · ${esc(x.start)}` : ""}</b>
-      <button type="button" class="link" data-remove-abs="${esc(x.id)}">${t("Kaldır")}</button></li>`).join("")}</ul>` : `<p class="fine gap-t">${t("Kayıtlı devamsızlık yok.")}</p>`}`;
+    <h3 class="mini-title gap-t">${t("Hangi haftalarda gelmedin?")}</h3>
+    <div class="wk-abs-grid${slots.length > 1 ? " two" : ""}">${grid}</div>
+    <p class="fine">${a.exams.size ? t("Sınav haftaları yoklama alınmadığı için sayılmaz: {n} ders haftası üzerinden hesaplanır.", { n: a.classWeeks }) : t("{n} ders haftası üzerinden hesaplanır.", { n: a.classWeeks })}</p>
+    ${dated.length ? `<h3 class="mini-title gap-t">${t("Bugün ekranından eklenenler")}</h3><ul class="kv abs-list">${dated.map((x) => `<li><b>${fmtShort(x.date)}${x.start ? ` · ${esc(x.start)}` : ""}</b>
+      <button type="button" class="link" data-remove-abs="${esc(x.id)}">${t("Kaldır")}</button></li>`).join("")}</ul>` : ""}`;
 }
 
 export function openAbsences(courseId) {
@@ -403,12 +396,10 @@ export function openAbsences(courseId) {
         store.removeAbsence(courseId, rm.dataset.removeAbs);
         refresh();
       }
-      if (e.target.closest("[data-add-abs]")) {
-        const date = root.querySelector("[data-abs-date]").value;
-        const start = root.querySelector("[data-abs-start]")?.value || "";
-        if (!date) return;
-        if (!store.addAbsence(courseId, date, start)) return toast(t("Bu ders için o gün zaten kayıtlı"));
-        toast(t("Devamsızlık kaydedildi"));
+      const wk = e.target.closest("[data-abs-week]");
+      if (wk) {
+        haptic();
+        store.toggleWeekAbsence(courseId, Number(wk.dataset.absWeek), wk.dataset.absStart || "");
         refresh();
       }
     });

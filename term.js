@@ -79,7 +79,7 @@ function targetCard(state, p) {
       ${text ? `<p class="target-res">${text.replace(t("ortalama gerekiyor"), t("YNO gerekiyor"))}</p>` : `<p class="calc-note">${t("Hesap için derslerine kredi gir.")}</p>`}
       <p class="tgt-stats">${t("Şu an {g} · {cr} kredi", { g: `<b>${fmtGpa(base.gno)}</b>`, cr: base.credits.toLocaleString(locale()) })}${st ? ` · <em class="standing ${st.level}">${st.label}</em>` : ""}
         ${p.term.graded ? `<br>${t("Seçtiğin harflerle: YNO {y} → GNO {g}", { y: `<b>${fmtGpa(p.term.avg)}</b>`, g: `<b>${fmtGpa(p.after ?? base.gno)}</b>` })}` : ""}</p>
-      <p class="gno-foot">${hints.length ? `${hints.join(", ")} · ` : ""}<a class="link" href="#/ortalama">${hints.length ? t("Tamamla") : t("Ders harfleri ve kredi")}</a> · <button type="button" class="link" data-action="edit-base">${t("GNO'nu düzenle")}</button></p>
+      <p class="gno-foot">${hints.length ? `${hints.join(", ")} · ` : ""}<a class="link" href="#/ortalama">${hints.length ? t("Ders harflerini gir") : t("Ders harfleri ve kredi")}</a> · <button type="button" class="link" data-action="edit-base">${t("GNO'nu düzenle")}</button></p>
     </div></section>`;
 }
 

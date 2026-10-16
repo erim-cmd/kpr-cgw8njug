@@ -21,9 +21,6 @@ export default {
   "{ders} AKTS": "{ders} ECTS",
   "{ders} harf notu: {l}": "{ders} letter grade: {l}",
   "seçilmedi": "not selected",
-  "Tekrar alıyorsan önceki notun": "If you're retaking it, your previous grade",
-  "{ders} önceki not": "{ders} previous grade",
-  "İlk kez alıyorum": "First time taking it",
   "Dönem ortalaması (YNO): {avg} · {cr} kredi": "Term GPA: {avg} · {cr} credits",
   "Önce derslere harf notu seç.": "Pick a letter grade for your courses first.",
   "Genel not ortalaması (GNO): {g}": "Cumulative GPA: {g}",
@@ -46,7 +43,6 @@ export default {
     one: "{n} course without credits isn't counted. GPA uses the CREDITS column, not ECTS.",
     other: "{n} courses without credits aren't counted. GPA uses the CREDITS column, not ECTS.",
   },
-  "Bu dönem tekrar aldığım ders var": "I'm retaking a course this term",
   "Hesapla": "Calculate",
   "Bu hesap nasıl yapılıyor?": "How is this calculated?",
   "Hesap BAU Eğitim-Öğretim ve Sınav Yönetmeliği'ne göre (Md. 26, 28): ders puanı = ulusal kredi × katsayı, tekrar edilen derste son not geçerli, sonuç iki haneye yuvarlanır. NA ve F ortalamaya 0,00 girer; S, U, EX, W ortalamaya girmez. BAU bağıl değerlendirme kullandığı için harfi sen seçersin. Sonucu UMIS'teki ile karşılaştır.":
@@ -63,7 +59,6 @@ export default {
   "{l}: katsayısı doğrulanmadı, hesaba katılmaz": "{l}: coefficient not verified, not counted",
   "ortalamaya girmez": "doesn't count toward GPA",
   "Harfi temizle": "Clear grade",
-  "{ders} · Önceki notun (tekrar alıyorsan)": "{ders} · Previous grade (if retaking)",
 
   // term.js — Dönem
   "Sınır aşıldı": "Over the limit",
@@ -91,7 +86,6 @@ export default {
   "Hesap için derslerine kredi gir.": "Enter credits for your courses to calculate.",
   "Şu an {g} · {cr} kredi": "Now {g} · {cr} credits",
   "Seçtiğin harflerle: YNO {y} → GNO {g}": "With your chosen grades: term GPA {y} → GPA {g}",
-  "Tamamla": "Complete",
   "GNO'nu düzenle": "Edit your GPA",
   "devam şartı {p}": "attendance requirement {p}",
   "elle girilen hak": "allowance entered manually",

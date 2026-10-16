@@ -219,7 +219,7 @@ export function view() {
   return `
     <header class="page-head">
       <h1 class="page-title">${t("Seçmeli Keşfi")}</h1>
-      <p class="page-sub">${t("Ekle/Sil (Add/Drop) haftasında seçmelilerine karar vermen için")}</p>
+      <p class="page-sub">${t("Ekle/Sil haftasında seçmelilerine karar vermen için")}</p>
       ${infoNote(t("Bu ekran ne işe yarar?"), t("Ekle/Sil haftasında hangi seçmeliyi tutacağına karar vermene yardım eder: düşündüğün derslerin syllabus'larını yükleyip iş yükünü yan yana karşılaştırırsın, ilgi alanına göre öneri görürsün. Syllabus yüklemek isteğe bağlıdır; dosya cihazında okunur ve saklanmaz. Bu bir öneridir, kayıt değildir; kayıt okulunun kendi sisteminde yapılır."))}
     </header>
 
@@ -317,7 +317,8 @@ export const changes = {
           const saved = store.saveElective(e);
           const { needsHelp, aiAllowed, aiStatus } = await import("./importer.js");
           const reasons = needsHelp(parsed);
-          if (saved && reasons.length && aiAllowed() && (await aiStatus()) === "ready") {
+          const { AI_READING } = await import("./importer.js");
+          if (AI_READING && saved && reasons.length && aiAllowed() && (await aiStatus()) === "ready") {
             toast(t("{name} adaylara eklendi; okuma eksik olabilir", { name: e.code || e.name }), {
               label: t("Yapay zekâ ile oku"),
               onClick: () => readElectiveWithAI(saved, text, reasons, render),

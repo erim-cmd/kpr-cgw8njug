@@ -40,7 +40,6 @@ export function targetText(p, target) {
   return t("GNO'n {g} olsun istiyorsan bu dönem en az {need} ortalama gerekiyor (yaklaşık {l} ortalaması).", { g, need: `<b class="need">${fmtGpa(need)}</b>`, l: nearestLetter(need) });
 }
 
-let showRetake = false; // "tekrar aldığım ders var" açılınca önceki not seçimi görünür
 let showResult = false; // UMIS'teki gibi: HESAPLA'ya basınca sonuç kutusu açılır
 
 // Kredi/AKTS: tam sayı ondalıksız ("8 / 18"), yarım kredi "7,5"
@@ -58,7 +57,6 @@ function currentBlock(state, p) {
       </div></div>`;
   }
   const base = p.source === "base";
-  const retake = base && (showRetake || courses.some((c) => c.prevGrade));
   const unverified = courses.filter((c) => c.letter in UNVERIFIED);
   const totalCr = courses.reduce((t, c) => t + (c.credit || 0), 0);
   const totalEcts = courses.reduce((t, c) => t + (c.ects || 0), 0);
@@ -68,9 +66,7 @@ function currentBlock(state, p) {
       <td class="u-num"><input type="number" min="0" max="30" step="0.5" inputmode="decimal" value="${c.credit ?? ""}" placeholder="—" data-change="credit" data-id="${esc(c.id)}" aria-label="${t("{ders} kredi", { ders: esc(c.name) })}"></td>
       <td class="u-num"><input type="number" min="0" max="60" step="0.5" inputmode="decimal" value="${c.ects ?? ""}" placeholder="—" data-change="ects" data-id="${esc(c.id)}" aria-label="${t("{ders} AKTS", { ders: esc(c.name) })}"></td>
       <td class="u-grade"><button type="button" class="u-pick" data-action="pick-letter" data-id="${esc(c.id)}" aria-label="${t("{ders} harf notu: {l}", { ders: esc(c.name), l: esc(c.letter || t("seçilmedi")) })}">${esc(c.letter || "—")}</button></td>
-    </tr>
-    ${retake ? `<tr class="u-sub"><td colspan="5"><label>${t("Tekrar alıyorsan önceki notun")}
-      <button type="button" class="u-pick" data-action="pick-prev" data-id="${esc(c.id)}" aria-label="${t("{ders} önceki not", { ders: esc(c.name) })}">${esc(c.prevGrade || t("İlk kez alıyorum"))}</button></label></td></tr>` : ""}`).join("");
+    </tr>`).join("");
 
   const result = showResult
     ? `<div class="calc-result u-result" aria-live="polite">
@@ -93,7 +89,6 @@ function currentBlock(state, p) {
     </div>
     ${unverified.length ? `<p class="warn-text fine gap-t">${t("{l} notunun katsayısı yönetmelikte yok; doğrulanana kadar hesaba katılmıyor.", { l: unverified.map((c) => esc(c.letter)).join(", ") })}</p>` : ""}
     ${p.missingCredit ? `<p class="fine gap-t">${t("Kredisi girilmeyen {n} ders hesaba katılmıyor. GNO'da KREDİ sütunu kullanılır, AKTS değil.", { n: p.missingCredit })}</p>` : ""}
-    ${base && !retake ? `<button class="link gap-t" type="button" data-action="show-retake">${t("Bu dönem tekrar aldığım ders var")}</button>` : ""}
     <div><button class="btn btn-primary u-calc" type="button" data-action="calc">${t("Hesapla")}</button></div>
     ${result}
   </div>`;
@@ -171,22 +166,7 @@ export const actions = {
       onSave: (l) => store.saveCourse({ ...course(c.id), letter: l }),
     });
   },
-  "pick-prev"(el) {
-    const c = course(el.dataset.id);
-    if (!c) return;
-    openLetterSheet({
-      context: t("{ders} · Önceki notun (tekrar alıyorsan)", { ders: c.code || c.name }),
-      letters: Object.keys(COEF),
-      value: c.prevGrade,
-      clearLabel: t("İlk kez alıyorum"),
-      onSave: (l) => store.saveCourse({ ...course(c.id), prevGrade: l }),
-    });
-  },
   "edit-base": () => openBaseForm(),
-  "show-retake"(_el, { render }) {
-    showRetake = true;
-    render();
-  },
   calc(_el, { render }) {
     showResult = true;
     render();

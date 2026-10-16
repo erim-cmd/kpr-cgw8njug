@@ -128,9 +128,13 @@ function normPolicy(p) {
   };
 }
 
+// Devamsızlık kaydı: tarihli ("Gitmedim", { date, start }) ya da öğrencinin işaretlediği hafta ({ week, start })
 function normAbsence(a) {
-  if (!a || !DATE.test(a.date)) return null;
-  return { id: str(a.id, 64) || uid(), date: a.date, start: TIME.test(a.start) ? a.start : "" };
+  if (!a) return null;
+  const start = TIME.test(a.start) ? a.start : "";
+  if (DATE.test(a.date)) return { id: str(a.id, 64) || uid(), date: a.date, start };
+  if (Number.isInteger(a.week) && a.week >= 1 && a.week <= 30) return { id: str(a.id, 64) || uid(), week: a.week, start };
+  return null;
 }
 
 // Haftalık plan (syllabus'tan): en fazla 20 hafta, konu en fazla 200 karakter
@@ -411,6 +415,14 @@ export const store = {
     const c = state.courses.find((x) => x.id === courseId);
     if (!c || c.absences.some((a) => a.date === date && a.start === start)) return null;
     return this.saveCourse({ ...c, absences: [...c.absences, { date, start }] });
+  },
+
+  /** Hafta işareti: o haftanın bir oturumu (start) eklenir/kaldırılır. */
+  toggleWeekAbsence(courseId, week, start = "") {
+    const c = state.courses.find((x) => x.id === courseId);
+    if (!c) return null;
+    const has = c.absences.find((a) => a.week === week && a.start === start);
+    return this.saveCourse({ ...c, absences: has ? c.absences.filter((a) => a !== has) : [...c.absences, { week, start }] });
   },
 
   removeAbsence(courseId, absenceId) {

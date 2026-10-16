@@ -17,7 +17,7 @@ import { attendance, attendanceText } from "./attendance.js";
 import { targetResult, currentWeekOf } from "./ders-calc.js";
 import { groupOf } from "./weights.js";
 import { daysUntil, fmtShort, byDue, relLabel } from "./dates.js";
-import { t, pct, locale, localize, readerText } from "./i18n.js";
+import { t, pct, locale, localize, readerText, getLang } from "./i18n.js";
 
 // Türkçe sabit (testler karşılaştırır); cevapta notFound() kullanılır, o dile göre çevrilir
 export const NOT_FOUND = "Bunu derslerinin bilgilerinde bulamadım."; // i18n-ok
@@ -173,10 +173,23 @@ function weekAnswer(state, chosen) {
   return { text: parts.join("\n\n"), source: topics.length ? t("görevlerin + syllabus") : t("görevlerin") };
 }
 
-function outcomesAnswer(c) {
+/** Sorunun dili: Türkçe harf ya da sık Türkçe kelime → "tr"; sık İngilizce kelime → "en"; yoksa null (uygulama dili). */
+export function questionLang(q) {
+  const s = String(q || "");
+  if (/[çğışöüÇĞİŞÖÜ]/.test(s) || /\b(ne|nedir|neler|nasıl|kaç|hangi|mı|mi|mu|mü|var|dersin|dersi|ders)\b/i.test(s)) return "tr"; // i18n-ok
+  if (/\b(what|how|when|which|is|are|do|does|can|will|the|course|class)\b/i.test(s)) return "en";
+  return null;
+}
+/** Metin İngilizce mi (kazanımlar çoğu BAU syllabus'unda İngilizce)? */
+const looksEnglish = (txt) => !/[çğışöüÇĞİŞÖÜ]/.test(txt) && /\b(the|and|of|to|will|able|understand|apply|students?)\b/i.test(txt);
+
+function outcomesAnswer(c, q = "") {
+  const lang = questionLang(q) || getLang();
   return {
     text: `${t("{ders} dersini bitirince:", { ders: name(c) })}\n${c.outcomes.map((x, i) => `${i + 1}. ${x}`).join("\n")}`,
     source: src(c, t("syllabus · öğrenme çıktıları")),
+    // Türkçe soruya İngilizce kazanım: arayüz (izin varsa) yapay zekâyla Türkçe açıklatır
+    foreign: lang === "tr" && looksEnglish(c.outcomes.join(" ")),
   };
 }
 
@@ -222,10 +235,10 @@ export function answer(question, state, { courseId = null } = {}) {
       const withOut = state.courses.filter((c) => c.outcomes?.length);
       const p = pick(withOut, null);
       if (p.ask) return p.ask;
-      if (p.course) return outcomesAnswer(p.course);
+      if (p.course) return outcomesAnswer(p.course, q);
       return notFound();
     }
-    return course.outcomes?.length ? outcomesAnswer(course) : { ...notFound(), text: t("{ders} syllabus'unda kazanımlar bulunamadı.", { ders: name(course) }) };
+    return course.outcomes?.length ? outcomesAnswer(course, q) : { ...notFound(), text: t("{ders} syllabus'unda kazanımlar bulunamadı.", { ders: name(course) }) };
   }
   // 1) "Finalden kaç almalıyım" → hedef harf hesabı
   if (NEED_RE.test(f)) {

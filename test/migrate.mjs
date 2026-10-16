@@ -33,9 +33,13 @@ const v2 = toV2(old);
 const after = projection(v2);
 ok(v2.version === 2, `version ${v2.version} ≠ 2`);
 ok(v2.gpaBase && v2.gpaBase.credits === before.prev.credits && near(v2.gpaBase.gno, before.prev.avg), `gpaBase ${JSON.stringify(v2.gpaBase)} ≠ ${before.prev.credits}/${before.prev.avg}`);
-ok(near(after.after, before.after), `dönem sonu GNO ${after.after} ≠ ${before.after}`);
 ok(near(after.term.avg, before.term.avg), `YNO ${after.term.avg} ≠ ${before.term.avg}`);
-ok(near(after.needed(3), before.needed(3)), `hedef 3.00 için ${after.needed(3)} ≠ ${before.needed(3)}`);
+// Dönem sonu GNO ve hedef: tekrar alınan ders olmayan profilde göç öncesi = sonrası. (v2.32'den beri "önceki not"
+// düşülmüyor; UMIS HESAPLA gibi şu anki GNO + kredi üzerine eklenir → tekrarlı profilde fark beklenir, test/gno-retake.mjs.)
+const plainOld = normalize({ ...JSON.parse(JSON.stringify(old)), transcript: old.transcript.map((r) => (r.code === "MAT 101" ? { ...r, code: "MAT 100" } : r)) });
+const b2 = projection(plainOld), a2 = projection(toV2(plainOld));
+ok(near(a2.after, b2.after), `dönem sonu GNO ${a2.after} ≠ ${b2.after}`);
+ok(near(a2.needed(3), b2.needed(3)), `hedef 3.00 için ${a2.needed(3)} ≠ ${b2.needed(3)}`);
 ok(v2.transcript.length === 0 && v2.archive.transcript.length === 4, `transkript arşivde değil: ${v2.transcript.length}/${v2.archive.transcript.length}`);
 ok(v2.courses.find((c) => c.id === "c1").prevGrade === "D", "tekrar alınan dersin önceki notu yazılmadı");
 ok(v2.tasks.length === 1 && v2.courses.length === 2 && v2.profile.name === "Eski", "göçte başka veri kayboldu");

@@ -104,3 +104,9 @@ jobs:
 
       - name: Yapay zekâ — Asistan, Seçmeli, CORS (sahte cevap)
         run: node test/ai-ask.mjs
+
+      - name: Devam şartı — hafta seçimi, sınav haftaları sayılmaz
+        run: node test/attendance.mjs
+
+      - name: GNO — önceki not düşülmez (UMIS HESAPLA)
+        run: node test/gno-retake.mjs
