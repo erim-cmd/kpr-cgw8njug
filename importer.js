@@ -29,6 +29,7 @@ const numOrNull = (v) => (v === "" || v === null || v === undefined ? null : Num
 /* Yapay zekâ ile okuma (isteğe bağlı)                                 */
 /* ------------------------------------------------------------------ */
 
+export const AI_READING = false; // syllabus okumada yapay zekâ önerisi (kapalı)
 const API = "api/syllabus"; // web'de göreli, iOS uygulamasında tam adres (api.js apiUrl)
 const AI_TYPES = new Set(["application/pdf", "image/jpeg", "image/png"]); // sunucunun kabul ettikleri
 const AI_MAX_BYTES = 4 * 1024 * 1024;
@@ -439,7 +440,9 @@ function openReview(r, { reader = "local", aiError = "", file = null, text = "",
     (r.policies || []).length && t("{n} kural", { n: r.policies.length }),
   ].filter(Boolean).join(", ");
   // Önce cihaz, tutmazsa yapay zekâ: öneri yalnız ayar açık, sunucu hazır ve okuma eksikse görünür (aşağıda)
-  const reasons = reader === "local" && file && text && !tried ? needsHelp(r) : [];
+  // 16 Eki 2026 (Erim): "Yapay zekâ ile tekrar oku" önerisi kaldırıldı; syllabus yalnız cihazda okunur.
+  // Sunucu ve okuma kodu duruyor (AI_READING ile kapalı); yeniden açmak için bu bayrak.
+  const reasons = AI_READING && reader === "local" && file && text && !tried ? needsHelp(r) : [];
   // İki okuma not dağılımında ayrışıyorsa öğrenci seçmeden kayıt olmaz (sessiz yanlış not olmasın)
   const choice = reader === "ai" && local && weightsOf(local).length && weightsOf(r).length && !sameWeights(weightsOf(local), weightsOf(r));
   const wtext = (x) => weightsOf(x).map((w) => pct(decimal(w))).join(" / ");

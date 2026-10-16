@@ -139,8 +139,6 @@ export default {
   "Yapay zekâ yanılabilir; önemli bir kararda syllabus'a bak.": "The AI can be wrong; check the syllabus before an important decision.",
   "Cevaplar önce senin derslerinden (syllabus, görevler, notlar) gelir. Bulamazsa ve sen onaylarsan yapay zekâya sorulur; o cevap etiketli gösterilir.": "Answers come from your own courses first (syllabus, tasks, grades). If nothing is found and you agree, the AI is asked; its answer is labelled.",
   "derslerin": "your courses",
-  "Bu dersten kazanacakların": "What you will gain from this course",
-  "{n} madde": { one: "{n} item", other: "{n} items" },
   "{ders} dersini bitirince:": "After finishing {ders}:",
   "syllabus · öğrenme çıktıları": "syllabus · learning outcomes",
   "{ders} syllabus'unda kazanımlar bulunamadı.": "No learning outcomes were found in the {ders} syllabus.",

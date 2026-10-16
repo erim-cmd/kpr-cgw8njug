@@ -160,13 +160,8 @@ export function projection({ transcript, courses, gpaBase }) {
     prev = { avg: round2(gpaBase.gno), credits: gpaBase.credits };
     restP = gpaBase.gno * gpaBase.credits;
     restC = gpaBase.credits;
-    for (const c of current) {
-      if (!counts(c.prevGrade)) continue;
-      restP -= c.credit * COEF[c.prevGrade];
-      restC -= c.credit;
-    }
-    restP = Math.max(0, restP);
-    restC = Math.max(0, restC);
+    // "Önceki not" düşülmez (16 Eki 2026, Erim): UMIS'teki HESAPLA gibi şu anki GNO + kredi üzerine bu dönem eklenir.
+    // Eski kayıtlarda kalan prevGrade hesabı değiştirmez (test/gno-retake.mjs).
   }
 
   const term = average(graded.map((c) => ({ credit: c.credit, grade: c.letter })));

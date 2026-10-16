@@ -20,7 +20,7 @@ export function sessionsOn(courses, day) {
  * absentDate: verilirse BİTMİŞ derste "Gitmedim" düğmesi çıkar (devamsızlık; varsayılan: derse gittin).
  * Düğme ders bitiminden 24 saat sonrasına kadar durur; dünkü dersler için çağıran now=1440 verir.
  */
-export function sessionItem(s, now = null, absentDate = null) {
+export function sessionItem(s, now = null, absentDate = null, topic = "") {
   let state = "";
   if (now !== null) {
     if (now >= toMin(s.end)) state = "past";
@@ -40,6 +40,7 @@ export function sessionItem(s, now = null, absentDate = null) {
       <span>
         <span class="session-name">${esc(s.course.name)}${state === "now" ? `<span class="badge">${t("Şu an")}</span>` : soon}</span>
         ${meta ? `<span class="session-meta">${meta}</span>` : ""}
+        ${topic ? `<span class="session-topic">${t("Bu hafta: {konu}", { konu: esc(topic) })}</span>` : ""}
       </span>
     </button>${absBtn}
   </li>`;

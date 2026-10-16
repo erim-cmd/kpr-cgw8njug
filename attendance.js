@@ -7,17 +7,32 @@
  *
  * Birim "ders oturumu"dur (programdaki bir satır). Hak iki yoldan gelir:
  *   - Elle girilen hak (absLimit): "en fazla 4 derse gelmeyebilirsin"
- *   - Devam zorunluluğu (attendPct): toplam oturum × (100 − %) ÷ 100, aşağı yuvarlanır
+ *   - Devam zorunluluğu (attendPct): yoklama alınan oturum × (100 − %) ÷ 100, aşağı yuvarlanır
+ * Sınav haftaları (haftalık planda konusu vize/final/sınav haftası olan haftalar) yoklama alınmadığı için
+ * sayılmaz: 12 haftalık derste 6. hafta vize, 12. hafta final ise 10 ders haftası üzerinden hesaplanır.
+ * Kayıt öğrencinin işaretlediği hafta ({ week, start }) ya da Bugün'deki "Gitmedim" ({ date, start }).
  */
 
 import { t } from "./i18n.js";
+
+// Yalnız sınavın kendisi: "Midterm review", "Final hazırlık" sınav haftası değildir
+const EXAM_WEEK = /(^|\b)(final|vize|ara ?s[ıi]nav|midterm|mid-term|s[ıi]nav haftas[ıi]|exam week|final exam|midterm exam|yar[ıi]y[ıi]l sonu|b[üu]t[üu]nleme)/i;
+const NOT_EXAM = /review|haz[ıi]rl[ıi]k|preparation|tekrar|revision|recap/i;
+
+/** Planda sınav haftası olan hafta numaraları (1…weeks). */
+export function examWeeks(course, weeks) {
+  return new Set((course.weeks || []).filter((w) => w.n >= 1 && w.n <= weeks && EXAM_WEEK.test(w.topic || "") && !NOT_EXAM.test(w.topic || "")).map((w) => w.n));
+}
 
 export function attendance(course, weeks) {
   // Programı olmayan ders (çevrimiçi, saati yazmayan): haftada bir oturum say; yoksa devam oranı
   // girilmiş olsa bile hak hesaplanamaz ve kart yanlışlıkla "Devam şartı girilmedi" der.
   const perWeek = course.sessions.length || 1;
-  const total = perWeek * weeks;
-  const used = course.absences.length;
+  const exams = examWeeks(course, weeks);
+  const classWeeks = Math.max(0, weeks - exams.size);
+  const total = perWeek * classWeeks;
+  // Sınav haftasına işaretlenmiş kayıt sayılmaz (o hafta yoklama yok)
+  const used = course.absences.filter((a) => !(a.week && exams.has(a.week))).length;
   let limit = null;
   let basis = null;
   if (course.absLimit !== null && course.absLimit !== undefined) {
@@ -30,7 +45,7 @@ export function attendance(course, weeks) {
   const left = limit === null ? null : limit - used;
   let level = "none";
   if (left !== null) level = left < 0 ? "over" : left === 0 ? "last" : left === 1 ? "warn" : "ok";
-  return { used, limit, left, total, perWeek, basis, level };
+  return { used, limit, left, total, perWeek, basis, level, classWeeks, exams };
 }
 
 export function attendanceText(a) {

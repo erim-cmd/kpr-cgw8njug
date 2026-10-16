@@ -8,6 +8,7 @@ import { buildAlerts } from "./alerts.js";
 import { permissionState } from "./notify.js";
 import { weekView, resetDay, setDay, actions as weekActions } from "./schedule.js";
 import { t } from "./i18n.js";
+import { currentWeekOf } from "./ders-calc.js";
 import { campusSection, refreshWeather } from "./weather.js";
 
 /** Kampüste: önbellekteki hava durumu hemen; bayatsa arka planda yenilenir, gelince ekran yeniden çizilir. */
@@ -232,7 +233,10 @@ export function view() {
   if (!sessions.length) {
     todayBlock = nextClassNote(courses);
   } else {
-    todayBlock = `<ul class="list">${sessions.map((s) => sessionItem(s, now, todayISO())).join("")}</ul>`;
+    // Dersin altında o haftanın konusu (syllabus'taki haftalık plandan)
+    const st = store.get();
+    const topicOf = (c) => { const n = currentWeekOf(c, st); return (n && c.weeks.find((w) => w.n === n)?.topic) || ""; };
+    todayBlock = `<ul class="list">${sessions.map((s) => sessionItem(s, now, todayISO(), topicOf(s.course))).join("")}</ul>`;
   }
 
   return `
