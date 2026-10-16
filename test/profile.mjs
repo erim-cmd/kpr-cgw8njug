@@ -1,7 +1,7 @@
 // Profil ve ayarlar (settings.js) + Ara (search.js):
 //  - eski Ayarlar ekranındaki her işlev yeni yapıda bir yerde (hiçbiri kaybolmadı)
 //  - Profil kök sayfası: avatar (baş harfler), ad, üniversite, sınıf, Profili düzenle, 4 ayar satırı
-//  - her alt sayfa TR ve EN çiziliyor; hesap/LMS/takvim bağlantısı yok
+//  - her alt sayfa TR ve EN çiziliyor; LMS/takvim bağlantısı yok; hesap isteğe bağlı ve sunucu hazır değilse görünmez (v2.33)
 //  - profil alanları doğrulanıyor (store.js normalize / setProfile)
 //  - arama: Türkçe harf duyarsız, dersler / sınavlar / görevler
 const mem = {};
@@ -89,9 +89,11 @@ store.setSettings({ pauseOn: true, pauseStart: "2026-11-10", pauseEnd: "2026-11-
 ok(/name="pauseOn" checked/.test(pageHtml("notify", store.get())) && /value="2026-11-15"/.test(pageHtml("notify", store.get())), "kaydedilen duraklatma sayfada görünür");
 store.setSettings({ pauseOn: false, pauseStart: "", pauseEnd: "" });
 
-// 3) Hesapsız: hesap / LMS / Google Takvim bağlantısı yok
-const all = Object.keys(PAGES).map((p) => pageHtml(p, st)).join(" ");
-ok(!/hesap(ı| bağla|ını bağla)|oturum aç|giriş yap|LMS|Google Takvim|Moodle|Canvas|sign in|log in/i.test(all), "hesap/LMS/takvim bağlantısı yok");
+// 3) LMS / Google Takvim bağlantısı yok; hesap isteğe bağlı: sunucu hazır değilken kök sayfada hesap önerisi yok
+const all = Object.keys(PAGES).filter((p) => p !== "account").map((p) => pageHtml(p, st)).join(" ");
+ok(!/LMS|Google Takvim|Moodle|Canvas/i.test(all), "LMS/takvim bağlantısı yok");
+ok(!/giriş yap|kayıt ol|sign in|log in/i.test(pageHtml("root", st)) && /hesapsız çalışır/.test(pageHtml("root", st)), "sunucu hazır değilken hesap önerisi görünmez");
+ok(/name="email"/.test(pageHtml("account", st)) && /name="password"/.test(pageHtml("account", st)), "hesap sayfası: giriş formu");
 
 // 4) İngilizce: her sayfa çiziliyor, Türkçe başlık kalmıyor
 setLang("en");

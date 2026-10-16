@@ -21,10 +21,11 @@ import { installMode, isStandalone, isNativeApp, promptInstall } from "./install
 import { permissionState, enableNotifications, disableNotifications, testNotification, sync } from "./notify.js";
 import { buildICS, deliverICS, countExportable } from "./ics.js";
 import { THEMES, applyTheme } from "./theme.js";
-import { LANGS, setLang, t, localize } from "./i18n.js";
+import { LANGS, setLang, t, localize, locale } from "./i18n.js";
+import { account, accountReady, onAccountChange, signIn, signOut, syncNow, deleteAccount } from "./sync.js";
 import { CITIES } from "./weather.js";
 
-export const APP_VERSION = "2.32.0";
+export const APP_VERSION = "2.33.0";
 const BRAND = "Köprü"; // i18n-ok — marka adı çevrilmez
 
 // Sınıf etiketleri (store.js YEARS anahtarları)
@@ -102,6 +103,7 @@ export const PAGES = {
   prefs: { title: () => t("Tercihler") },
   notify: { title: () => t("Bildirimler") },
   data: { title: () => t("Veri ve gizlilik") },
+  account: { title: () => (account() ? t("Hesap") : accMode === "register" ? t("Kayıt ol") : t("Giriş yap")) },
   about: { title: () => t("Hakkında") },
 };
 
@@ -122,7 +124,112 @@ function rootPage(state) {
       ${link("data", t("Veri ve gizlilik"), t("Yedek, verileri silme, Gizlilik ve KVKK"))}
       ${link("about", t("Hakkında"), t("Sürüm {v}", { v: APP_VERSION }))}
     </div>
-    <p class="fine pf-note">${t("Köprü hesapsız çalışır; profil ve tüm verilerin yalnız bu cihazda.")}</p>`;
+    ${accountBlock()}`;
+}
+
+/* ------------------------------------------------------------------ */
+/* Hesap (isteğe bağlı; sunucu hazır değilse hiç görünmez)              */
+/* ------------------------------------------------------------------ */
+
+let accReady = null; // null | "ready" | "off" | "none"
+let accMode = "login"; // login | register
+let accError = "";
+
+const ACC_ERRORS = () => ({
+  bad_email: t("Geçerli bir e-posta yaz."),
+  weak_password: t("Şifre en az 8 karakter olmalı."),
+  consent: t("Devam etmek için kutuyu işaretle."),
+  exists: t("Bu e-postayla hesap var; giriş yap."),
+  wrong: t("E-posta ya da şifre yanlış."),
+  limit: t("Bugün çok deneme yapıldı. Yarın tekrar dene."),
+  nonet: t("İnternet bağlantısı yok."),
+  network: t("Sunucuya ulaşılamadı. İnternetini kontrol et."),
+});
+const accErrorText = (code) => ACC_ERRORS()[code] || t("Bir şeyler ters gitti. Tekrar dene.");
+
+const fmtWhen = (ms) => new Date(ms).toLocaleString(locale(), { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+
+function syncLine(a) {
+  if (a.status === "syncing") return t("Eşitleniyor…");
+  if (a.status === "nonet") return t("Şu an internetsiz; bağlanınca eşitlenir.");
+  if (a.status === "error") return t("Eşitlenemedi; birazdan tekrar denenecek.");
+  return a.at ? t("Son eşitleme: {t}", { t: fmtWhen(a.at) }) : t("Henüz eşitlenmedi.");
+}
+
+function accountBlock() {
+  const a = account();
+  if (a) {
+    return `<h3 class="mini-title pf-sec">${t("Hesap")}</h3>
+      <div class="group"><button type="button" class="group-row pf-link" data-go="account"><div><strong>${esc(a.email)}</strong><p>${syncLine(a)}</p></div>${icon.chevron}</button></div>
+      <p class="fine pf-note">${t("Verilerin hesabınla eşitleniyor; telefonda ve bilgisayarda aynı.")}</p>`;
+  }
+  if (accReady !== "ready") return `<p class="fine pf-note">${t("Köprü hesapsız çalışır; profil ve tüm verilerin yalnız bu cihazda.")}</p>`;
+  return `<h3 class="mini-title pf-sec">${t("Hesap")}</h3>
+    <div class="group"><div class="group-row"><div><strong>${t("Telefonda ve bilgisayarda aynı veriler")}</strong><p>${t("İsteğe bağlı. Hesap açmazsan her şey bu cihazda kalır.")}</p></div></div>
+      <div class="group-row acc-actions"><button type="button" class="btn btn-ghost" data-act="acc-open" data-mode="login">${t("Giriş yap")}</button>
+        <button type="button" class="btn btn-primary" data-act="acc-open" data-mode="register">${t("Kayıt ol")}</button></div></div>`;
+}
+
+function accountPage() {
+  const a = account();
+  if (a) {
+    return `<div class="group">
+        <div class="group-row"><div><strong>${esc(a.email)}</strong><p>${syncLine(a)}</p></div>
+          <button class="btn btn-ghost" type="button" data-act="acc-sync" ${a.status === "syncing" ? "disabled" : ""}>${t("Şimdi eşitle")}</button></div>
+        <div class="group-row"><div><strong>${t("Çıkış yap")}</strong><p>${t("Verilerin bu cihazda kalır; eşitleme durur.")}</p></div>
+          <button class="btn btn-ghost" type="button" data-act="acc-logout">${t("Çıkış")}</button></div>
+      </div>
+      <section><h3 class="mini-title">${t("Hesabı sil")}</h3>
+        <p class="fine">${t("Hesabın ve buluttaki verilerin kalıcı olarak silinir. Bu cihazdaki veriler kalır.")}</p>
+        <label class="field"><span>${t("Şifren")}</span><input name="delpw" type="password" autocomplete="current-password" maxlength="200"></label>
+        <p class="warn-text fine" role="alert" data-acc-error ${accError ? "" : "hidden"}>${esc(accError)}</p>
+        <button class="btn btn-danger btn-block" type="button" data-act="acc-delete">${t("Hesabı sil")}</button>
+      </section>`;
+  }
+  const reg = accMode === "register";
+  return `<div class="seg" role="group" aria-label="${t("Hesap")}">
+      <button type="button" data-act="acc-mode" data-mode="login" aria-pressed="${!reg}">${t("Giriş yap")}</button>
+      <button type="button" data-act="acc-mode" data-mode="register" aria-pressed="${reg}">${t("Kayıt ol")}</button></div>
+    <label class="field"><span>${t("E-posta")}</span><input name="email" type="email" inputmode="email" autocomplete="email" maxlength="254" required></label>
+    <label class="field"><span>${t("Şifre")}${reg ? ` <span class="hint">${t("(en az 8 karakter)")}</span>` : ""}</span>
+      <input name="password" type="password" autocomplete="${reg ? "new-password" : "current-password"}" minlength="8" maxlength="200" required></label>
+    ${reg ? `<label class="consent"><input type="checkbox" name="consent"><span>${t("Derslerim, görevlerim, notlarım, devamsızlığım ve profilim telefonda ve bilgisayarda aynı olsun diye Köprü sunucusunda (Cloudflare, yurt dışı) saklansın.")} <a href="gizlilik.html" target="_blank" rel="noopener">${t("Gizlilik")}</a></span></label>` : ""}
+    <p class="warn-text fine" role="alert" data-acc-error ${accError ? "" : "hidden"}>${esc(accError)}</p>
+    <div class="gap-t">${infoNote(t("Hesap ne işe yarar?"), t("Aynı e-posta ve şifreyle telefonda ve bilgisayarda giriş yaparsın; derslerin, görevlerin ve notların her yerde aynı olur, Asistan da bu bilgilerden cevaplar. Giriş yapınca bu cihazdaki veriler hesabındakilerle birleşir, hiçbiri silinmez. Şifreni unutursan şimdilik sıfırlanamıyor; ara ara yedek al."))}</div>`;
+}
+
+async function submitAccount(form, { redraw, go }) {
+  const btn = form.querySelector(".sheet-foot button");
+  if (btn?.disabled) return;
+  const f = form.elements;
+  const email = f.email.value.trim();
+  const password = f.password.value;
+  const consent = accMode === "register" ? f.consent.checked : undefined;
+  if (!email || !f.email.checkValidity()) return showAccError("bad_email", redraw);
+  if (password.length < 8) return showAccError(accMode === "register" ? "weak_password" : "wrong", redraw);
+  if (accMode === "register" && !consent) return showAccError("consent", redraw);
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = t("Bekle…");
+  }
+  const code = await signIn(accMode, { email, password, consent });
+  if (code) {
+    if (btn) btn.disabled = false;
+    if (btn) btn.textContent = accMode === "register" ? t("Kayıt ol") : t("Giriş yap");
+    return showAccError(code, redraw);
+  }
+  accError = "";
+  toast(accMode === "register" ? t("Hesabın açıldı; verilerin eşitlendi") : t("Giriş yapıldı; verilerin eşitlendi"));
+  go("root");
+}
+
+/** Hata metni yerinde güncellenir (yeniden çizim yazılanları silmesin). */
+function showAccError(code, redraw) {
+  accError = accErrorText(code);
+  const el = document.querySelector(".pf [data-acc-error]");
+  if (!el) return redraw();
+  el.textContent = accError;
+  el.hidden = false;
 }
 
 function editPage(state) {
@@ -202,7 +309,7 @@ function aboutPage() {
     <div class="group"><a class="group-row pf-link" href="./" target="_blank" rel="noopener"><div><strong>${t("Tanıtım sayfası")}</strong><p>${t("Köprü hakkında")}</p></div>${icon.chevron}</a></div>`;
 }
 
-const BODY = { root: rootPage, edit: editPage, prefs: prefsPage, notify: notifyPage, data: dataPage, about: aboutPage };
+const BODY = { root: rootPage, edit: editPage, prefs: prefsPage, notify: notifyPage, data: dataPage, about: aboutPage, account: accountPage };
 // Kaydet düğmesi olan sayfalar (form)
 const SAVE = { edit: "save-profile", notify: "save-notify" };
 
@@ -214,7 +321,9 @@ export function pageHtml(page, state = store.get()) {
       <h2>${PAGES[p].title()}</h2>
       <button type="button" class="icon-btn sm" data-close aria-label="${t("Kapat")}">${icon.close}</button>
     </header>`;
-  const foot = SAVE[p] ? `<footer class="sheet-foot"><button type="submit" class="btn btn-primary">${t("Kaydet")}</button></footer>` : "";
+  const accForm = p === "account" && !account();
+  const label = accForm ? (accMode === "register" ? t("Kayıt ol") : t("Giriş yap")) : t("Kaydet");
+  const foot = SAVE[p] || accForm ? `<footer class="sheet-foot"><button type="submit" class="btn btn-primary">${label}</button></footer>` : "";
   return `<form class="sheet-form pf" data-page="${p}" novalidate>${head}<div class="sheet-body pf-body">${BODY[p](state)}</div>${foot}</form>`;
 }
 
@@ -233,6 +342,7 @@ export function openProfile(page = "root") {
   const go = (p) => {
     current = PAGES[p] ? p : "root";
     resetArmed = false;
+    accError = "";
     d.innerHTML = pageHtml(current);
     d.querySelector(".pf-body").scrollTop = 0;
   };
@@ -241,6 +351,18 @@ export function openProfile(page = "root") {
     d.innerHTML = pageHtml(current);
     d.querySelector(".pf-body").scrollTop = y;
   };
+
+  // Hesap: sunucu hazır mı (bir kez sorulur) ve eşitleme durumu değişince güncelle
+  if (accReady === null) {
+    accountReady().then((st) => {
+      accReady = st;
+      if (d.open && (current === "root" || current === "account")) redraw();
+    });
+  }
+  const off = onAccountChange(() => {
+    if (d.open && (current === "root" || current === "account") && !d.querySelector(".pf input:focus")) redraw();
+  });
+  d.addEventListener("close", off, { once: true });
 
   d.onclick = async (e) => {
     if (e.target === d || e.target.closest("[data-close]")) return d.close();
@@ -259,6 +381,7 @@ export function openProfile(page = "root") {
     const form = e.target;
     if (form.dataset.page === "edit") saveProfile(form, go);
     else if (form.dataset.page === "notify") saveNotify(form, go);
+    else if (form.dataset.page === "account") submitAccount(form, { redraw, go });
   };
   return d;
 }
@@ -299,6 +422,36 @@ function saveNotify(form, go) {
 }
 
 const ACT = {
+  "acc-open"(el, { go }) {
+    accMode = el.dataset.mode === "register" ? "register" : "login";
+    go("account");
+    requestAnimationFrame(() => document.querySelector('.pf input[name="email"]')?.focus());
+  },
+  "acc-mode"(el, { redraw }) {
+    const email = document.querySelector('.pf input[name="email"]')?.value || "";
+    accMode = el.dataset.mode === "register" ? "register" : "login";
+    accError = "";
+    redraw();
+    const input = document.querySelector('.pf input[name="email"]');
+    if (input) input.value = email;
+  },
+  "acc-sync"() {
+    syncNow();
+  },
+  async "acc-logout"(_el, { go }) {
+    await signOut();
+    toast(t("Çıkış yapıldı; verilerin bu cihazda"));
+    go("root");
+  },
+  async "acc-delete"(el, { redraw, go }) {
+    const pw = document.querySelector('.pf input[name="delpw"]')?.value || "";
+    if (!pw) return showAccError("wrong", redraw);
+    el.disabled = true;
+    const code = await deleteAccount(pw);
+    if (code) return showAccError(code, redraw);
+    toast(t("Hesabın silindi"));
+    go("root");
+  },
   "set-theme"(el, { redraw }) {
     const theme = el.dataset.theme;
     if (!Object.hasOwn(THEMES, theme)) return;

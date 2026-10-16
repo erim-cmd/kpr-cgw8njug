@@ -40,6 +40,13 @@ Site şu an GitHub Pages'te duruyor; orada sunucu çalışmadığı için syllab
 3. Kaydet → "Tabloda gör" → Ortalama sekmesinde UMIS tablosunda ders görünmeli.
 4. Hata alırsan: Pages projesi → Functions → **Real-time logs** (içerik loglanmaz, sadece hata kodu).
 
+## 4b. Hesap veritabanı (D1) **[SEN]**
+Hesap ve bulut eşitleme (v2.33) için. Bağlanana kadar uygulamada hesap seçeneği görünmez.
+1. Cloudflare → **Storage & Databases → D1 → Create database**, ad: `kpr-db`.
+2. **Workers & Pages → kpr-onizleme → Settings → Bindings → Add → D1 database**: değişken adı `KPR_DB`, veritabanı `kpr-db` → Save.
+3. Bir sonraki yayında (ya da Deployments → Retry) etkin olur. Tablolar ilk istekte kendiliğinden kurulur.
+4. Kontrol: `/api/account` adresi `{"ready":true}` döner; Profil'de "Hesap" bölümü çıkar.
+
 ## 5. Sonra
 - Canlıya açarken `app.html` ve `index.html`'deki `<meta name="robots" content="noindex, nofollow">` satırını sil.
 - GitHub Pages'i kapat (Settings → Pages → None) ki iki ayrı adres olmasın.

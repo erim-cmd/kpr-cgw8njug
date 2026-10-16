@@ -14,7 +14,7 @@ AGENTS.md eklenirse: biri güncellenince diğeri de güncellenir.
 
 ## Sırlar
 - `ANTHROPIC_API_KEY` yalnızca ortam değişkeninde (yerelde `.dev.vars`, git dışında; anahtar alanı boş, kullanıcı kendi girer). Anahtarı sorma, sohbete/dosyaya/loga yazma.
-- Öğrenci verisi cihazda kalır; hesap sistemi yok, sunucuya syllabus dışında veri gitmez.
+- Hesap isteğe bağlı (v2.33, Erim 16 Eki 2026): hesapsız veri cihazda kalır. Hesapla tüm veri D1'e (KPR_DB) açık rızayla eşitlenir; şifre PBKDF2, oturum anahtarının yalnız özeti saklanır. E-posta/şifre/veri loglanmaz. Hesap mantığı değişirken önce `test/account.mjs`'e test.
 
 ## Süreç
 - Uygulama dosyası değişince `sw.js` `VERSION` ve `settings.js` `APP_VERSION` birlikte artar.

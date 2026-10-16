@@ -1219,3 +1219,6 @@ dialog.sheet.full .sheet-body { flex: 1; padding-bottom: calc(24px + var(--safe-
 
 /* Bugün: dersin altında bu haftanın konusu */
 .session-topic { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 3px; font-size: var(--fs-xs); color: var(--text-muted); }
+
+/* Hesap (Profil) */
+.acc-actions { justify-content: flex-end; }
