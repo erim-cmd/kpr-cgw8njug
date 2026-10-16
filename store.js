@@ -272,6 +272,7 @@ function normElective(e) {
     absUnit: ["saat", "hafta"].includes(e.absUnit) ? e.absUnit : "", // i18n-ok
     finalMin: num(e.finalMin, 0, 100),
     exams: Number.isInteger(e.exams) && e.exams >= 0 && e.exams <= 60 ? e.exams : 0,
+    examDates: arr(e.examDates).map((x) => ({ date: /^\d{4}-\d{2}-\d{2}$/.test(x?.date) ? x.date : "", title: str(x?.title, 60) })).filter((x) => x.date).slice(0, 12),
     deadlines: Number.isInteger(e.deadlines) && e.deadlines >= 0 && e.deadlines <= 60 ? e.deadlines : 0,
     rules: arr(e.rules).map((r) => str(r, 160)).filter(Boolean).slice(0, 4),
   };

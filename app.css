@@ -1177,3 +1177,18 @@ dialog.sheet.full .sheet-body { flex: 1; padding-bottom: calc(24px + var(--safe-
 /* Şube seçimi (kontrol ekranı): her seçenek ≥ 44px dokunma alanı */
 .sec-pick { margin-bottom: 12px; }
 .sec-pick .consent { min-height: 44px; align-items: center; }
+
+/* Asistan: yapay zekâ cevabı ve önerisi (asistan.js) */
+.msg.a.ai { border-color: color-mix(in srgb, var(--violet) 45%, var(--border)); }
+.ai-tag { display: inline-block; margin-bottom: 4px; padding: 1px 8px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--violet) 16%, transparent); color: var(--violet); font-size: var(--fs-2xs); font-weight: 600; }
+.msg-ai-offer { display: grid; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.msg-ai-offer .btn { justify-self: start; min-height: 44px; }
+.msg-ai-wait { margin: 10px 0 0; color: var(--text-muted); font-size: var(--fs-xs); }
+
+/* Seçmeli Keşfi: öneri gerekçesi + listeden alıntı, sınav çakışması */
+.el-row.has-why { flex-wrap: wrap; }
+.el-why { flex-basis: 100%; margin: 4px 0 0; color: var(--text-muted); font-size: var(--fs-xs); line-height: 1.45; }
+.el-why q { display: block; margin-top: 4px; padding-left: 10px; border-left: 2px solid var(--border); font-style: italic; }
+.el-why q::before, .el-why q::after { content: ""; }
+.el-why small { display: block; margin-top: 4px; color: var(--text-dim); }
+.cand-clash { margin: 6px 0 0; color: var(--danger-text); font-size: var(--fs-xs); font-weight: 600; }

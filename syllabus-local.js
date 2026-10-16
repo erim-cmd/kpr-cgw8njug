@@ -2187,6 +2187,7 @@ export function electiveFrom(r) {
     absUnit: r.attendance.unit || "", // "saat" | "hafta" | "" (ders)
     finalMin: r.final_min,
     exams: r.items.filter((x) => x.type === "sinav").length,
+    examDates: r.items.filter((x) => x.type === "sinav" && /^\d{4}-\d{2}-\d{2}$/.test(x.date || "")).map((x) => ({ date: x.date, title: x.title })).slice(0, 12),
     deadlines: r.items.filter((x) => x.type !== "sinav").length,
     rules: r.policies.filter((p) => p.severity === "kritik").map((p) => p.rule),
   };

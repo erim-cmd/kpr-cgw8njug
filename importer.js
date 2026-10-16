@@ -19,6 +19,7 @@ import { extractText, DocError } from "./doc-text.js";
 import { parseSyllabus } from "./syllabus-local.js";
 import { t, localize, pct, decimal, readerText } from "./i18n.js";
 import { DAYS_SHORT } from "./dates.js";
+import { apiUrl, noServer } from "./api.js";
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -28,7 +29,7 @@ const numOrNull = (v) => (v === "" || v === null || v === undefined ? null : Num
 /* Yapay zekâ ile okuma (isteğe bağlı)                                 */
 /* ------------------------------------------------------------------ */
 
-const API = "api/syllabus"; // göreli: sitenin bulunduğu klasöre göre
+const API = "api/syllabus"; // web'de göreli, iOS uygulamasında tam adres (api.js apiUrl)
 const AI_TYPES = new Set(["application/pdf", "image/jpeg", "image/png"]); // sunucunun kabul ettikleri
 const AI_MAX_BYTES = 4 * 1024 * 1024;
 const AI_MAX_TEXT = 300_000; // sunucudaki MAX_TEXT ile aynı
@@ -51,12 +52,12 @@ export async function aiStatus() {
   if (apiState) return apiState;
   // GitHub Pages yalnızca statik dosya sunar: sunucu yok. Yoklama orada 405 döner ve
   // tarayıcı konsoluna kırmızı hata yazar; hiç sormadan "none" say.
-  if (/\.github\.io$/i.test(location.hostname)) return (apiState = "none");
+  if (noServer()) return (apiState = "none");
   if (!navigator.onLine) return "none";
   try {
     // GET /api/syllabus her zaman 200 + { ready } döner (Claude çağrılmaz, sayaç artmaz).
     // JSON gelmezse (statik barındırma) sunucu yok demektir.
-    const res = await fetch(API, { cache: "no-store" });
+    const res = await fetch(apiUrl(API), { cache: "no-store" });
     const body = (res.headers.get("content-type") || "").includes("json") ? await res.json().catch(() => null) : null;
     apiState = !body || typeof body.ready !== "boolean" ? "none" : body.ready ? "ready" : "off";
   } catch {
@@ -97,7 +98,7 @@ export async function readWithAI(input) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 80_000);
   try {
-    const res = await fetch(API, {
+    const res = await fetch(apiUrl(API), {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(payload),

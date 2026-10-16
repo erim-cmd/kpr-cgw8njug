@@ -101,3 +101,6 @@ jobs:
 
       - name: İngilizce okuyucu metinleri
         run: node test/reader-en.mjs
+
+      - name: Yapay zekâ — Asistan, Seçmeli, CORS (sahte cevap)
+        run: node test/ai-ask.mjs
