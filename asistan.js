@@ -59,7 +59,7 @@ async function askAI(i) {
   });
   busy = false;
   m.aiPending = false;
-  if (r.body?.answer) m.ai = { answer: r.body.answer, source: r.body.source || "", found: r.body.found !== false, label: built.label };
+  if (r.body?.answer) m.ai = { answer: r.body.answer, source: r.body.source || "", found: r.body.found !== false, label: built.label, noText: built.noText, courseId: built.courseId };
   else m.aiError = r.error || t("Yapay zekâ cevap veremedi.");
   rerender();
 }
@@ -98,6 +98,8 @@ function bubble(m, i) {
       <span class="ai-tag">${t("Yapay zekâ")}</span>
       <p>${esc(m.ai.answer)}</p>
       ${m.ai.source ? `<small class="msg-src">${t("Kaynak: {src}", { src: esc(`${m.ai.label} · ${m.ai.source}`) })}</small>` : ""}
+      ${m.ai.noText ? `<div class="msg-ai-offer"><p class="msg-src">${t("Bu dersin syllabus metni kayıtlı değil; yapay zekâ yalnız özeti gördü. Syllabus'u bir kez daha yüklersen metinden de cevaplar (notların değişmez).")}</p>
+        <button type="button" class="btn btn-ghost btn-sm" data-action="ask-reimport" data-id="${esc(m.ai.courseId || "")}">${icon.upload}${t("Syllabus'u yükle")}</button></div>` : ""}
       <small class="msg-src">${t("Yapay zekâ yanılabilir; önemli bir kararda syllabus'a bak.")}</small>
     </li>` : ""}`;
 }
@@ -168,6 +170,10 @@ export const actions = {
     }
     consent = true;
     askAI(Number(el.dataset.i));
+  },
+  "ask-reimport"(el) {
+    const id = el.dataset.id;
+    import("./importer.js").then((m) => m.openImport(id ? { into: id } : {}));
   },
   "clear-chat"(_el, { render }) {
     chat.length = 0;

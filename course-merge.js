@@ -41,7 +41,10 @@ export function mergeIntoCourse(course, parsed) {
   fill("finalMin", parsed.final_min ?? null, t("final barajı"));
   fill("scale", parsed.scale || [], t("harf tablosu"));
   // Syllabus metni: Asistan'ın yapay zekâ bağlamı için (eklenenler listesinde gösterilmez)
-  if (empty(out.text) && typeof parsed.sourceText === "string" && parsed.sourceText.trim()) out.text = parsed.sourceText;
+  if (empty(out.text) && typeof parsed.sourceText === "string" && parsed.sourceText.trim()) {
+    out.text = parsed.sourceText;
+    added.push(t("Asistan için syllabus metni"));
+  }
   // Devam şartı: ikisinden biri girilmişse dokunma
   const att = parsed.attendance || {};
   if (empty(out.attendPct) && empty(out.absLimit)) {
