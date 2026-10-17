@@ -891,6 +891,7 @@ button.tl-row { width: 100%; padding: 10px 14px; border-radius: var(--r-md); bac
 .scale-cell b { font: 700 var(--fs-md) var(--font-display); font-variant-numeric: tabular-nums; }
 .u-pick { min-width: 56px; padding: 7px 10px; border-radius: var(--r-sm); background: var(--bg); border: 1px solid var(--border); color: var(--text); font: 700 var(--fs-md) var(--font-display); cursor: pointer; }
 .u-pick:hover { border-color: var(--cyan); }
+.u-prev { display: block; margin-top: 2px; font-size: var(--fs-xs); color: var(--text-muted); white-space: nowrap; }
 .tgt-pick { font-size: var(--fs-lg); color: var(--cyan); }
 .att-opt { width: 100%; display: flex; flex-direction: column; gap: 2px; text-align: left; cursor: pointer; padding: 14px 16px; border-radius: var(--r-md); background: var(--bg); border: 1px solid var(--border); color: var(--text); font: inherit; }
 .att-opt:hover { border-color: var(--cyan); }

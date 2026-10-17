@@ -317,4 +317,12 @@ export default {
   "Bugün ekranından eklenenler": "Added from Today",
   "Son değişiklik cihaza kaydedilemedi, yer dolu. Yedeğini indir.": "Your last change couldn't be saved on this device, storage is full. Download a backup.",
   "Önceki veri geri geldi": "Your previous data is back",
+  "tekrar · eski {l}": "retake · was {l}",
+  "Tekrar aldığın {n} dersin eski notu yerine yeni notu sayıldı (son not geçerli).": "For {n} retaken course(s), the new grade replaces the old one (latest grade counts).",
+  "Tekrar · eski notun {l} (değiştir)": "Retake · old grade {l} (change)",
+  "Bu dersi tekrar alıyorum": "I'm retaking this course",
+  "{ders} · Önceki notun (UMIS transkriptinde)": "{ders} · Previous grade (on your UMIS transcript)",
+  "GNO'da eski not çıkar, bu dönemki harfin sayılır.": "The old grade leaves your GPA; this term's letter counts.",
+  "Tekrar almıyorum": "Not a retake",
+  "GNO tahmini: {g}": "Estimated GPA: {g}",
 };

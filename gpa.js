@@ -160,14 +160,25 @@ export function projection({ transcript, courses, gpaBase }) {
     prev = { avg: round2(gpaBase.gno), credits: gpaBase.credits };
     restP = gpaBase.gno * gpaBase.credits;
     restC = gpaBase.credits;
-    // "Önceki not" düşülmez (16 Eki 2026, Erim): UMIS'teki HESAPLA gibi şu anki GNO + kredi üzerine bu dönem eklenir.
-    // Eski kayıtlarda kalan prevGrade hesabı değiştirmez (test/gno-retake.mjs).
   }
 
+  // Tekrar alınan ders (Md. 28/2: önceki not ne olursa olsun son not geçerli). UMIS'teki GNO + kredi eski notu
+  // içerir; öğrenci "Bu dersi tekrar alıyorum" deyip eski harfini girdiyse eski puan ve kredi tabandan çıkar.
+  // Yalnız taban (gpaBase) yolunda: transkript yolunda eşleşme koddan yapılır (curKeys). test/gno-retake.mjs
+  const prevOf = (c) => (source === "base" && counts(c.prevGrade) ? { p: c.credit * COEF[c.prevGrade], c: c.credit } : null);
+  const drop = (list) => list.map(prevOf).filter(Boolean).reduce((s, x) => ({ p: s.p + x.p, c: s.c + x.c }), { p: 0, c: 0 });
+  // GNO tahmini: yeni harfi seçilmiş (ve ortalamaya giren) tekrarlarda eski not çıkar; seçilmediyse eski not yerinde kalır
+  const replaced = drop(graded);
+  const nowP = Math.max(0, restP - replaced.p);
+  const nowC = Math.max(0, restC - replaced.c);
   const term = average(graded.map((c) => ({ credit: c.credit, grade: c.letter })));
-  const totalC = restC + term.credits;
-  const after = totalC ? round2((restP + term.points) / totalC) : null;
+  const totalC = nowC + term.credits;
+  const after = totalC ? round2((nowP + term.points) / totalC) : null;
   const curCredits = current.reduce((s, c) => s + c.credit, 0);
+  // Hedef hesabı: dönem sonunda her tekrarın yeni notu eskisinin yerine geçer
+  const all = drop(current);
+  const goalP = Math.max(0, restP - all.p);
+  const goalC = Math.max(0, restC - all.c);
 
   return {
     source,
@@ -175,12 +186,14 @@ export function projection({ transcript, courses, gpaBase }) {
     prev,
     term: { ...term, graded: graded.length, total: current.length },
     after,
+    /** GNO tahmininde eski notu yenisiyle değiştirilen ders sayısı. */
+    retakes: graded.filter(prevOf).length,
     complete: graded.length === current.length && current.length > 0,
     missingCredit: courses.filter((c) => c.credit === null || c.credit === undefined).length,
     /** Hedef GNO için bu dönem gereken ortalama (4.00 üzerinden). */
     needed(target) {
       if (!curCredits) return null;
-      return (target * (restC + curCredits) - restP) / curCredits;
+      return (target * (goalC + curCredits) - goalP) / curCredits;
     },
   };
 }

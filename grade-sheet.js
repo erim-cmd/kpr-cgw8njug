@@ -3,7 +3,7 @@
  * Uygulamadaki her not/puan/GNO girişi bunu kullanır; harf seçimi aynı pencerede ızgara olarak.
  *
  *   openNumberSheet({ context, value, min, max, decimals, unit, quick, impact, clearLabel, onSave })
- *   openLetterSheet({ context, letters, value, impact, clearLabel, onSave })
+ *   openLetterSheet({ context, letters, value, impact, clearLabel, extra: { label, onClick }, onSave })
  *
  * Telefon klavyesi açılmaz (giriş alanı yok, tuşlar düğme). Arkası karartılır; aşağı çekince,
  * arka plana dokununca ya da Esc ile kapanır. <dialog>.showModal() odağı pencerede tutar.
@@ -168,15 +168,20 @@ export function openNumberSheet({ context, value = null, min = 0, max = 100, dec
 }
 
 /** Harf seçimi: tek dokunuşla kaydeder. letters: ["A", "A-", …]. */
-export function openLetterSheet({ context, letters, value = "", impact = null, clearLabel = "", onSave }) {
+export function openLetterSheet({ context, letters, value = "", impact = null, clearLabel = "", extra = null, onSave }) {
   return open(
     `<p class="gs-ctx">${esc(context)}</p>
     <p class="gs-impact" data-impact aria-live="polite" hidden></p>
     <div class="gs-letters" role="group" aria-label="${t("Harf seç")}">
       ${letters.map((l, i) => `<button type="button" data-letter="${esc(l)}" aria-pressed="${l === value}" ${l === value || (!value && i === 0) ? "data-autofocus" : ""}>${esc(l)}</button>`).join("")}
     </div>
-    ${clearLabel && value ? `<button type="button" class="link gs-clear" data-clear>${esc(clearLabel)}</button>` : ""}`,
+    ${clearLabel && value ? `<button type="button" class="link gs-clear" data-clear>${esc(clearLabel)}</button>` : ""}
+    ${extra ? `<button type="button" class="link gs-clear" data-extra>${esc(extra.label)}</button>` : ""}`,
     (d) => {
+      d.querySelector("[data-extra]")?.addEventListener("click", () => {
+        d.close();
+        extra.onClick();
+      });
       const box = d.querySelector("[data-impact]");
       const hint = (l) => {
         const text = impact ? impact(l) : "";
