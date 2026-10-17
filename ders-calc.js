@@ -20,9 +20,12 @@ export function calcGrades(grading, target) {
   const total = base.reduce((s, g) => s + g.weight, 0);
   const done = base.filter((g) => g.score !== null);
   const doneWeight = done.reduce((s, g) => s + g.weight, 0);
+  // Toplam 100 değilse (öğrenci kontrol ekranında "Belgede de böyle" dedi) ağırlıklar 100'lük ölçeğe oranlanır;
+  // yoksa %30 + %40'tan 100 alan öğrenci 70 puan → "D" görürdü. total ham kalır (ekrandaki uyarı onu kullanır).
+  const k = total > 0 ? 100 / total : 1;
   const bonusEarned = grading.filter((g) => g.bonus && g.score !== null).reduce((s, g) => s + (g.score * g.weight) / 100, 0);
-  const earned = done.reduce((s, g) => s + (g.score * g.weight) / 100, 0) + bonusEarned;
-  const remaining = total - doneWeight;
+  const earned = done.reduce((s, g) => s + (g.score * g.weight * k) / 100, 0) + bonusEarned;
+  const remaining = (total - doneWeight) * k;
   return {
     total,
     doneWeight,

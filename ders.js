@@ -355,7 +355,7 @@ export function openCourseDetail(courseId) {
 
 function absenceBody(c) {
   const weeks = store.get().settings.termWeeks;
-  const a = attendance(c, weeks);
+  const a = attendance(c, weeks, store.get().settings.termStart);
   const pct = a.limit ? Math.min(100, (a.used / a.limit) * 100) : a.used ? 100 : 0;
   // Oturumlar (haftada birden çoksa her biri ayrı işaretlenir)
   const starts = [...new Set(c.sessions.map((x) => x.start))].sort();

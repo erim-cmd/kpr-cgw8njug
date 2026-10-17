@@ -32,7 +32,7 @@ const SEVERITY = { over: 4, last: 3, warn: 2, ok: 1, none: 0 };
 /** Devamsızlıkta en riskli ders (devam şartı girilmiş dersler arasından). */
 export function riskiest(courses, weeks) {
   return courses
-    .map((c) => ({ c, a: attendance(c, weeks) }))
+    .map((c) => ({ c, a: attendance(c, weeks, store.get().settings.termStart) }))
     .filter((x) => x.a.limit !== null)
     .sort((x, y) => SEVERITY[y.a.level] - SEVERITY[x.a.level] || x.a.left - y.a.left)[0] ?? null;
 }
@@ -89,7 +89,7 @@ function targetCard(state, p) {
 
 /** Ders başına tek satır: ad, kalan hak, çubuk. Dokununca kayıtlar (geçmiş gün ekle/sil) açılır. */
 function absenceRow(c, weeks) {
-  const a = attendance(c, weeks);
+  const a = attendance(c, weeks, store.get().settings.termStart);
   const fill = a.limit ? Math.min(100, (a.used / a.limit) * 100) : 0;
   const basis = a.basis === "oran" ? t("devam şartı {p}", { p: pctOf(c.attendPct) }) : a.basis === "elle" ? t("elle girilen hak") : "";
   return `<li><button type="button" class="att-row" data-action="absences" data-id="${esc(c.id)}" style="--c:${c.color}">
@@ -104,8 +104,8 @@ function absenceRow(c, weeks) {
 function devamBlock(state, weeks) {
   const risk = riskiest(state.courses, weeks);
   // Şartı girilmiş dersler satır olarak; girilmemişler yalnız alttaki tek kutuda (aynı ders iki yerde görünmez)
-  const set = state.courses.filter((c) => attendance(c, weeks).limit !== null);
-  const unset = state.courses.filter((c) => attendance(c, weeks).limit === null);
+  const set = state.courses.filter((c) => attendance(c, weeks, state.settings.termStart).limit !== null);
+  const unset = state.courses.filter((c) => attendance(c, weeks, state.settings.termStart).limit === null);
   return `<section class="section" id="devamsizlik">
       <div class="section-head"><h2>${t("Devamsızlık")}</h2>${risk && risk.a.level !== "ok" ? `<span class="u-term warn-text">${esc(risk.c.code || risk.c.name)}: ${riskShort(risk.a)}</span>` : ""}</div>
       ${set.length ? `<ul class="list att-list">${set.map((c) => absenceRow(c, weeks)).join("")}</ul>` : ""}

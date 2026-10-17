@@ -15,7 +15,7 @@ import * as onboarding from "./onboarding.js";
 import * as today from "./today.js";
 import * as tasks from "./tasks.js";
 import * as courses from "./courses.js";
-import { openProfile } from "./settings.js";
+import { openProfile, downloadBackup } from "./settings.js";
 import { openSearch } from "./search.js";
 import * as term from "./term.js";
 import * as asistan from "./asistan.js";
@@ -218,7 +218,7 @@ const globalActions = {
       haptic();
       store.addAbsence(c.id, date, el.dataset.start);
       // Sınıra yaklaşıldıysa uygulama içinde hemen uyar
-      const a = attendance(find(store.get().courses, c.id), store.get().settings.termWeeks);
+      const a = attendance(find(store.get().courses, c.id), store.get().settings.termWeeks, store.get().settings.termStart);
       const name = c.code || c.name;
       const msg =
         a.level === "over" ? t("{ders}: devamsızlık sınırı aşıldı", { ders: name })
@@ -294,6 +294,14 @@ document.getElementById("sheet").addEventListener("close", () => {
 });
 // Yedekten yükleme / sıfırlama da tema tercihini değiştirebilir
 store.subscribe(() => applyTheme(store.get().settings.theme));
+
+// Cihaza yazılamadı (depo dolu): ekranda kayıtlı görünen veri yenileyince kaybolmasın diye kalıcı uyarı
+let saveWarnAt = 0;
+store.onSaveError(() => {
+  if (Date.now() - saveWarnAt < 60_000) return;
+  saveWarnAt = Date.now();
+  toast(t("Son değişiklik cihaza kaydedilemedi, yer dolu. Yedeğini indir."), { label: t("Yedek al"), sticky: true, onClick: downloadBackup });
+});
 
 // Veri değişince arka plan hatırlatma listesini güncelle (art arda değişiklikleri birleştir)
 let syncTimer;

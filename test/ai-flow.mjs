@@ -48,7 +48,7 @@ globalThis.fetch = async (url, opts) => {
 };
 const req = (payload, ip = "1.2.3.4") => ({ json: async () => payload, headers: { get: (k) => (k === "cf-connecting-ip" ? ip : null) } });
 const text = "CENG 213 Data Structures. Midterm Nov 20 (40%). Final (60%). Attendance 70% required. ".repeat(3);
-const env = { ANTHROPIC_API_KEY: "test", KPR_LIMITS: kv() };
+const env = { ANTHROPIC_API_KEY: "test", KPR_AI_READING: "on", KPR_LIMITS: kv() };
 
 let res = await api.onRequestPost({ request: req({ text }), env });
 let out = await res.json();
@@ -72,7 +72,7 @@ ok(out.result.course.instructor === "", "önbellekten dönen sonuçta hoca adı 
 ok(dayKeys().length === 1 && dayCount() === 1, "önbellek isabeti günlük hakkı harcamamalı");
 
 // Aylık sınır: dolunca Claude'a gitmeden 503
-const env2 = { ANTHROPIC_API_KEY: "test", KPR_LIMITS: kv(), KPR_MONTHLY_BUDGET_USD: "1" };
+const env2 = { ANTHROPIC_API_KEY: "test", KPR_AI_READING: "on", KPR_LIMITS: kv(), KPR_MONTHLY_BUDGET_USD: "1" };
 await env2.KPR_LIMITS.put(`b:${new Date().toISOString().slice(0, 7)}`, String(1_000_000));
 res = await api.onRequestPost({ request: req({ text: text + " başka" }), env: env2 });
 ok(res.status === 503 && calls === 1, `aylık sınır dolunca 503 ve çağrı yok: ${res.status}`);
@@ -80,11 +80,21 @@ ok((await api.overBudget({ KPR_LIMITS: kv() })) === false, "boş sayaç sınır�
 ok((await api.overBudget({})) === false, "KV yoksa sınır yok (yerel geliştirme)");
 
 // Girdi denetimleri
-res = await api.onRequestPost({ request: req({ text: "kısa" }), env: { ANTHROPIC_API_KEY: "test" } });
+res = await api.onRequestPost({ request: req({ text: "kısa" }), env: { ANTHROPIC_API_KEY: "test", KPR_AI_READING: "on" } });
 ok(res.status === 400, "çok kısa metin 400");
-res = await api.onRequestPost({ request: req({ text: "x".repeat(300_001) }), env: { ANTHROPIC_API_KEY: "test" } });
+res = await api.onRequestPost({ request: req({ text: "x".repeat(300_001) }), env: { ANTHROPIC_API_KEY: "test", KPR_AI_READING: "on" } });
 ok(res.status === 413, "çok uzun metin 413");
 ok(api.shareable(modelOut).course.email === "" && api.shareable(modelOut).course.code === "CENG 213", "shareable yalnız iletişim bilgisini siler");
+
+// Arayüzde kapalıyken (importer.js AI_READING = false) sunucu ucu da kapalı: anahtar tanımlı olsa bile
+// dışarıdan çağrılıp aylık bütçe harcatılamaz (denetim, 17 Eki)
+{
+  const before = calls;
+  const off = { ANTHROPIC_API_KEY: "test", KPR_LIMITS: kv() };
+  const r = await api.onRequestPost({ request: req({ text }), env: off });
+  ok(r.status === 404 && calls === before, `KPR_AI_READING yokken okuma ucu kapalı: ${r.status}`);
+  ok((await (await api.onRequestGet({ env: off })).json()).ready === false, "kapalıyken ready false");
+}
 
 console.log(`\nönce cihaz, tutmazsa yapay zekâ\n\n${pass} doğru, ${fail} hata`);
 process.exit(fail ? 1 : 0);

@@ -119,7 +119,7 @@ function normPolicy(p) {
   if (!rule) return null;
   return {
     id: str(p.id, 64) || uid(),
-    kind: p.kind in POLICY_KINDS ? p.kind : "diger",
+    kind: Object.hasOwn(POLICY_KINDS, p.kind) ? p.kind : "diger",
     severity: SEVERITIES.includes(p.severity) ? p.severity : "bilgi",
     rule,
     consequence: str(p.consequence, 200),
@@ -198,7 +198,7 @@ function normTask(t, courseIds) {
   return {
     id: str(t.id, 64) || uid(),
     title,
-    type: t.type in TASK_TYPES ? t.type : "diger",
+    type: Object.hasOwn(TASK_TYPES, t.type) ? t.type : "diger",
     courseId: courseIds.has(t.courseId) ? t.courseId : null,
     due: t.due,
     time: TIME.test(t.time) ? t.time : "",
@@ -212,7 +212,7 @@ function normEntry(e) {
   const g = grade(e?.grade);
   const year = Number.isInteger(e?.year) && e.year >= 1990 && e.year <= 2100 ? e.year : null;
   const credit = num(e?.credit, 0, 30);
-  if (!g || year === null || credit === null || !(e.season in SEASONS)) return null;
+  if (!g || year === null || credit === null || !Object.hasOwn(SEASONS, e.season)) return null;
   const code = str(e.code, 20);
   const name = str(e.name, 80);
   if (!code && !name) return null;
@@ -312,26 +312,52 @@ export function normalize(data) {
 }
 
 function load() {
+  let raw = null;
   try {
-    const raw = localStorage.getItem(KEY);
+    raw = localStorage.getItem(KEY);
     if (raw) return normalize(JSON.parse(raw));
   } catch (err) {
     console.warn("[KPR] Veri okunamadı:", err);
+    // Okunamayan kayıt ilk yazışta silinmesin: ham hâli ayrı anahtarda kalır (elle kurtarılabilir)
+    if (raw) {
+      try {
+        localStorage.setItem(`kpr:data:corrupt:${new Date().toISOString()}`, raw);
+      } catch {}
+    }
   }
   return empty();
 }
 
 let state = load();
 const subscribers = new Set();
+const errorListeners = new Set();
+const notify = () => subscribers.forEach((fn) => fn(state));
 
 function commit(next) {
   state = next;
   try {
     localStorage.setItem(KEY, JSON.stringify(state));
   } catch (err) {
+    // Depo dolu (çoğu zaman uzun syllabus metinleri) ya da erişim yok: ekranda kayıtlı görünüp
+    // yenileyince kaybolmasın diye uygulamaya haber verilir (app.js kalıcı uyarı gösterir)
     console.warn("[KPR] Veri kaydedilemedi:", err);
+    errorListeners.forEach((fn) => fn(err));
   }
-  subscribers.forEach((fn) => fn(state));
+  notify();
+}
+
+// Aynı uygulama iki sekmede açıkken: öteki sekmenin yazdığı veri buraya da gelir. Yoksa bu sekme eski
+// durumu kaydedince öteki sekmede eklenen ders silinirdi.
+if (typeof addEventListener === "function") {
+  addEventListener("storage", (e) => {
+    if (e.key !== KEY && e.key !== null) return; // null: localStorage.clear()
+    try {
+      state = e.newValue ? normalize(JSON.parse(e.newValue)) : empty();
+    } catch {
+      return; // yarım/bozuk yazım: mevcut durum korunur
+    }
+    notify();
+  });
 }
 
 const upsert = (list, item) =>
@@ -343,6 +369,12 @@ export const store = {
   subscribe(fn) {
     subscribers.add(fn);
     return () => subscribers.delete(fn);
+  },
+
+  /** Kayıt cihaza yazılamayınca (depo dolu) çağrılır. */
+  onSaveError(fn) {
+    errorListeners.add(fn);
+    return () => errorListeners.delete(fn);
   },
 
   setName(name) {

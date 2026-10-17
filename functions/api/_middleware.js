@@ -5,9 +5,25 @@
  */
 const ALLOWED = new Set(["capacitor://localhost", "ionic://localhost", "http://localhost", "https://localhost"]);
 
+const plain = (status, error) => new Response(JSON.stringify({ error }), { status, headers: { "content-type": "application/json; charset=utf-8" } });
+const selfOrigin = (request) => {
+  try {
+    return new URL(request.url).origin;
+  } catch {
+    return "";
+  }
+};
+
 export async function onRequest({ request, next }) {
   const origin = request.headers.get("origin") || "";
   const allow = ALLOWED.has(origin);
+  // Yapay zekâ çağıran uçlar (POST) yalnız uygulamanın kendisinden: başka bir site ziyaretçilerinin tarayıcısıyla
+  // istek attırıp (CORS cevabı okumayı engeller, isteği değil) aylık bütçeyi harcatamasın.
+  if (request.method === "POST") {
+    if (origin && !allow && origin !== selfOrigin(request)) return plain(403, "Bu istek kabul edilmedi.");
+    // text/plain gövdeli "basit" istekler ön kontrole girmez; uygulama hep JSON yollar
+    if (!(request.headers.get("content-type") || "").toLowerCase().startsWith("application/json")) return plain(415, "İstek biçimi desteklenmiyor.");
+  }
   if (request.method === "OPTIONS") {
     return new Response(null, {
       status: allow ? 204 : 403,

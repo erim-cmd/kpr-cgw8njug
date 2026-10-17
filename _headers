@@ -1,0 +1,7 @@
+# Cloudflare Pages güvenlik başlıkları (GitHub Pages bu dosyayı yok sayar).
+# Tam CSP henüz yok: tarayıcıda her ekran denenmeden eklenirse uygulamayı bozabilir (Backlog).
+/*
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer

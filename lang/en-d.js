@@ -315,4 +315,6 @@ export default {
   "Sınav haftaları yoklama alınmadığı için sayılmaz: {n} ders haftası üzerinden hesaplanır.": "Exam weeks don't count since there's no attendance: calculated over {n} class weeks.",
   "{n} ders haftası üzerinden hesaplanır.": "Calculated over {n} class weeks.",
   "Bugün ekranından eklenenler": "Added from Today",
+  "Son değişiklik cihaza kaydedilemedi, yer dolu. Yedeğini indir.": "Your last change couldn't be saved on this device, storage is full. Download a backup.",
+  "Önceki veri geri geldi": "Your previous data is back",
 };

@@ -61,9 +61,19 @@ async function bump(env, key, limit) {
  * IP başına sayılır. KVKK: ne IP ne kimlik açık yazılır; gün + değerin SHA-256 özeti anahtar olur, 26 saatte silinir.
  * Not: IPv4 uzayı küçük olduğundan IP özeti deneme yoluyla geri çözülebilir; bu tam anonimleştirme değildir.
  */
+/** IPv6'da bir hat genellikle koca bir /64 alır: adres değiştirerek tavanı aşmasın diye /64 ön eki sayılır. */
+export function ipBucket(ip) {
+  if (!ip.includes(":")) return ip;
+  const [h, tail = ""] = ip.toLowerCase().split("::");
+  const head = h ? h.split(":") : [];
+  const rest = tail ? tail.split(":") : [];
+  const full = [...head, ...Array(Math.max(0, 8 - head.length - rest.length)).fill("0"), ...rest];
+  return full.slice(0, 4).map((x) => x.replace(/^0+(?=.)/, "")).join(":") + "::/64";
+}
+
 export async function overLimit(request, env, scope, limit) {
   if (!env.KPR_LIMITS) return false;
-  const ip = request.headers.get("cf-connecting-ip") || "unknown";
+  const ip = ipBucket(request.headers.get("cf-connecting-ip") || "unknown");
   const device = request.headers.get("x-kpr-device") || "";
   const day = new Date().toISOString().slice(0, 10);
   const ipKey = `${scope}:${day}:${(await sha256hex(`${day}:${ip}`)).slice(0, 32)}`;

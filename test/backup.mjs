@@ -70,5 +70,13 @@ for (const bad of ["{bozuk", JSON.stringify({ foo: 1 }), JSON.stringify({ course
 restore(JSON.stringify({ ...JSON.parse(file), courses: [{ ...before.courses[0], name: "x".repeat(5000), credit: 999 }] }));
 ok(store.get().courses[0].name.length <= 120 && store.get().courses[0].credit === null, `aşırı değerler kırpılmalı: ${store.get().courses[0].name.length} / ${store.get().courses[0].credit}`);
 
+// Yedekte prototip adları ("constructor") tür olarak kabul edilmez (denetim, 17 Eki)
+{
+  const { normalize } = await import("../store.js");
+  const n = normalize({ courses: [{ id: "c", name: "D", sessions: [], policies: [{ kind: "constructor", severity: "bilgi", rule: "x" }] }],
+    tasks: [{ id: "t", title: "T", type: "constructor", due: "2026-10-20" }], transcript: [{ year: 2025, season: "toString", code: "A", credit: 3, grade: "A" }] });
+  ok(n.tasks[0].type === "diger" && n.courses[0].policies[0]?.kind !== "constructor" && n.transcript.length === 0, "prototip adları reddedilmeli");
+}
+
 console.log(`\nyedek\n\n${pass} doğru, ${fail} hata`);
 process.exit(fail ? 1 : 0);
