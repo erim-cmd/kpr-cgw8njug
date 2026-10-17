@@ -264,11 +264,17 @@ export function shareable(result) {
  * GET /api/syllabus → { ready } — uygulama yükleme ekranında "yapay zekâ seçeneğini göstereyim mi?"
  * diye sorar. Claude çağrılmaz, günlük sayaç artmaz; her zaman 200 döner (konsolda hata görünmesin).
  */
+// Arayüzde yapay zekâ ile okuma kapalı (importer.js AI_READING = false, 16 Eki 2026). Sunucu ucu da yalnız
+// KPR_AI_READING=on ortam değişkeniyle açılır: anahtar Asistan/Seçmeli için tanımlıyken bu en pahalı uç
+// dışarıdan çağrılıp aylık bütçeyi bitiremesin. Yeniden açarken ikisi birlikte açılır.
+const readingOn = (env) => Boolean(env.ANTHROPIC_API_KEY) && env.KPR_AI_READING === "on";
+
 export async function onRequestGet({ env }) {
-  return json({ ready: Boolean(env.ANTHROPIC_API_KEY) });
+  return json({ ready: readingOn(env) });
 }
 
 export async function onRequestPost({ request, env }) {
+  if (env.ANTHROPIC_API_KEY && !readingOn(env)) return fail(404, "Bu özellik şu an kapalı.");
   if (!env.ANTHROPIC_API_KEY) return fail(503, "Syllabus okuma henüz yapılandırılmadı. Dersi şimdilik elle ekleyebilirsin.");
 
   let payload;

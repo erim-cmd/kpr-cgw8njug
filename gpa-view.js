@@ -11,7 +11,7 @@ import { esc, toast } from "./ui.js";
 import { openNumberSheet, openLetterSheet } from "./grade-sheet.js";
 import { icon } from "./icons.js";
 import { infoNote } from "./components.js";
-import { COEF, UMIS_GRADES, UNVERIFIED, fmtGpa, nearestLetter, currentTerm } from "./gpa.js";
+import { COEF, UMIS_GRADES, UNVERIFIED, fmtGpa, nearestLetter, currentTerm, projection } from "./gpa.js";
 
 // Hedef GNO: hesap projection().needed() ile; kart Dönem'de
 const TARGET_KEY = "kpr:target-gno";
@@ -65,13 +65,14 @@ function currentBlock(state, p) {
       <td class="u-name">${esc(c.name)}</td>
       <td class="u-num"><input type="number" min="0" max="30" step="0.5" inputmode="decimal" value="${c.credit ?? ""}" placeholder="—" data-change="credit" data-id="${esc(c.id)}" aria-label="${t("{ders} kredi", { ders: esc(c.name) })}"></td>
       <td class="u-num"><input type="number" min="0" max="60" step="0.5" inputmode="decimal" value="${c.ects ?? ""}" placeholder="—" data-change="ects" data-id="${esc(c.id)}" aria-label="${t("{ders} AKTS", { ders: esc(c.name) })}"></td>
-      <td class="u-grade"><button type="button" class="u-pick" data-action="pick-letter" data-id="${esc(c.id)}" aria-label="${t("{ders} harf notu: {l}", { ders: esc(c.name), l: esc(c.letter || t("seçilmedi")) })}">${esc(c.letter || "—")}</button></td>
+      <td class="u-grade"><button type="button" class="u-pick" data-action="pick-letter" data-id="${esc(c.id)}" aria-label="${t("{ders} harf notu: {l}", { ders: esc(c.name), l: esc(c.letter || t("seçilmedi")) })}">${esc(c.letter || "—")}</button>${base && c.prevGrade in COEF ? `<small class="u-prev">${t("tekrar · eski {l}", { l: esc(c.prevGrade) })}</small>` : ""}</td>
     </tr>`).join("");
 
   const result = showResult
     ? `<div class="calc-result u-result" aria-live="polite">
         ${p.term.graded ? `<p>${t("Dönem ortalaması (YNO): {avg} · {cr} kredi", { avg: `<b class="need">${fmtGpa(p.term.avg)}</b>`, cr: fmt1(p.term.credits) })}</p>` : `<p>${t("Önce derslere harf notu seç.")}</p>`}
         ${p.after !== null && p.term.graded ? `<p>${t("Genel not ortalaması (GNO): {g}", { g: `<b class="need">${fmtGpa(p.after)}</b>` })}</p>` : ""}
+        ${p.after !== null && p.retakes ? `<p class="fine">${t("Tekrar aldığın {n} dersin eski notu yerine yeni notu sayıldı (son not geçerli).", { n: p.retakes })}</p>` : ""}
         ${p.term.graded && p.term.graded < p.term.total ? `<p class="warn-text">${t("{n} ders hesaba katılmadı: harfi seçilmedi ya da seçilen not ortalamaya girmiyor.", { n: p.term.total - p.term.graded })}</p>` : ""}
         ${p.source === "none" ? `<p class="fine">${t("Dönem'deki Hedef GNO kartına şu anki GNO'nu ve kredini girersen genel ortalama da hesaplanır.")}</p>` : ""}
       </div>`
@@ -150,6 +151,24 @@ export function openBaseForm() {
 /* ------------------------------------------------------------------ */
 
 const course = (id) => store.get().courses.find((c) => c.id === id);
+
+/** Tekrar alınan dersin eski harfi (UMIS transkriptinde). GNO'da eski not çıkar, yenisi girer: test/gno-retake.mjs */
+function pickPrev(id) {
+  const c = course(id);
+  if (!c) return;
+  openLetterSheet({
+    context: t("{ders} · Önceki notun (UMIS transkriptinde)", { ders: c.code || c.name }),
+    letters: Object.keys(COEF),
+    value: c.prevGrade in COEF ? c.prevGrade : "",
+    impact: () => t("GNO'da eski not çıkar, bu dönemki harfin sayılır."),
+    clearLabel: t("Tekrar almıyorum"),
+    onSave: (l) => {
+      store.saveCourse({ ...course(id), prevGrade: l });
+      const p = projection(store.get());
+      if (l && p.after !== null) toast(t("GNO tahmini: {g}", { g: fmtGpa(p.after) }));
+    },
+  });
+}
 const LETTERS_UMIS = UMIS_GRADES;
 
 export const actions = {
@@ -163,6 +182,10 @@ export const actions = {
       value: c.letter,
       impact: (l) => (l in UNVERIFIED ? t("{l}: katsayısı doğrulanmadı, hesaba katılmaz", { l }) : l in COEF ? `${l} = ${fmtGpa(COEF[l])}` : t("ortalamaya girmez")),
       clearLabel: t("Harfi temizle"),
+      // Tekrar: yalnız GNO + kredi girildiyse anlamlı (UMIS'teki GNO eski notu içerir). Varsayılan ilk kez.
+      extra: store.get().gpaBase && !store.get().transcript.length
+        ? { label: c.prevGrade in COEF ? t("Tekrar · eski notun {l} (değiştir)", { l: c.prevGrade }) : t("Bu dersi tekrar alıyorum"), onClick: () => pickPrev(c.id) }
+        : null,
       onSave: (l) => store.saveCourse({ ...course(c.id), letter: l }),
     });
   },

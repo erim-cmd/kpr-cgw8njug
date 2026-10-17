@@ -126,9 +126,19 @@ const mw = await import("../functions/api/_middleware.js");
 const next = async () => new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
 const r1 = await mw.onRequest({ request: { method: "OPTIONS", headers: new Headers({ origin: "capacitor://localhost" }) }, next });
 ok(r1.status === 204 && r1.headers.get("access-control-allow-origin") === "capacitor://localhost", "uygulama kökenine ön istek izni");
-const r2 = await mw.onRequest({ request: { method: "POST", headers: new Headers({ origin: "https://kotu.example" }) }, next });
-ok(!r2.headers.get("access-control-allow-origin"), "başka köken izin almaz");
-const r3 = await mw.onRequest({ request: { method: "POST", headers: new Headers({ origin: "capacitor://localhost" }) }, next });
+const J = { "content-type": "application/json" };
+const SELF = "https://kpr-onizleme.pages.dev/api/ask";
+let reached = 0;
+const nextCount = async () => (reached++, next());
+const r2 = await mw.onRequest({ request: { method: "POST", url: SELF, headers: new Headers({ origin: "https://kotu.example", ...J }) }, next: nextCount });
+ok(r2.status === 403 && !r2.headers.get("access-control-allow-origin") && reached === 0, `başka sitenin isteği işlenmez (bütçe harcatılamaz): ${r2.status}`);
+const r2b = await mw.onRequest({ request: { method: "POST", url: SELF, headers: new Headers({ "content-type": "text/plain" }) }, next: nextCount });
+ok(r2b.status === 415 && reached === 0, `JSON olmayan gövde (no-cors formu) işlenmez: ${r2b.status}`);
+const r2c = await mw.onRequest({ request: { method: "POST", url: SELF, headers: new Headers({ origin: "https://kpr-onizleme.pages.dev", ...J }) }, next: nextCount });
+ok(r2c.status === 200 && reached === 1, "web uygulaması (aynı köken) çalışır");
+const r2d = await mw.onRequest({ request: { method: "GET", url: SELF, headers: new Headers({ origin: "https://kotu.example" }) }, next: nextCount });
+ok(r2d.status === 200, "GET (hazır mı?) engellenmez");
+const r3 = await mw.onRequest({ request: { method: "POST", url: SELF, headers: new Headers({ origin: "capacitor://localhost", ...J }) }, next });
 ok(r3.headers.get("access-control-allow-origin") === "capacitor://localhost", "uygulama cevabı okuyabilir");
 
 /* 5) İstemci adresi */
@@ -151,6 +161,14 @@ for (let i = 0; i < 200 && !capHit; i++) capHit = await shared.overLimit(dreq(`c
 ok(capHit, "kimlik değiştirerek sınırsız kullanım yok: IP üst tavanı (5 × 30)");
 ok(![...env3.KPR_LIMITS.m.keys()].some((k) => k.includes("10.0.0.1") || k.includes("aaaaaaaa")), "IP ve cihaz kimliği açık yazılmaz");
 ok((await shared.overLimit(dreq("kisa"), { KPR_LIMITS: kv() }, "rl", 5)) === false, "geçersiz kimlik: IP'ye göre sayılır");
+// IPv6: aynı /64 ağındaki adresler tek IP sayılır (adres değiştirerek tavan aşılmaz)
+{
+  const env6 = { KPR_LIMITS: kv() };
+  let hit6 = false;
+  for (let i = 0; i < 200 && !hit6; i++) hit6 = await shared.overLimit(dreq(`dddddddd-0000-0000-0000-${String(i).padStart(12, "0")}`, `2a02:4e0:2d00:1f::${i.toString(16)}`), env6, "rl", 5);
+  ok(hit6, "IPv6: aynı /64'te adres değiştirmek tavanı aşmaz");
+  ok((await shared.overLimit(dreq("eeeeeeee-0000-0000-0000-000000000000", "2a02:4e0:2d00:2000::1"), env6, "rl", 5)) === false, "başka /64 ayrı sayılır");
+}
 
 /* 6) Seçmeli: sınav çakışması */
 const { examClashes } = await import("../secmeli.js");

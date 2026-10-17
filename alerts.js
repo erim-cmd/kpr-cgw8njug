@@ -88,7 +88,7 @@ export function buildAlerts(state) {
 
   // 5) Devamsızlık
   for (const c of courses) {
-    const a = attendance(c, settings.termWeeks);
+    const a = attendance(c, settings.termWeeks, settings.termStart);
     if (a.level === "over" || a.level === "last" || a.level === "warn") {
       const ders = courseName(c);
       out.push({
@@ -346,20 +346,22 @@ export function buildReminders(state, from = new Date(), days = 8) {
     const ad = label(task, courses);
     const hasTime = !!task.time;
     const base = { taskId: task.id, hasTime, time: task.time || "", ad, url: "#/gorevler" };
+    // Kimlikte tarih ve saat de var: sınav ertelenince eski "gönderildi" kaydı yenisini engellemesin
+    const rid = `r:${task.id}@${task.due}${task.time ? "T" + task.time.replace(":", "") : ""}`;
     if (isExam(task)) {
       const exam = at(task.due, task.time || "09:00");
       const target = (hasTime ? exam : dayEnd(task.due)).getTime();
       const e = { ...base, kind: "exam", target };
-      push({ ...e, id: `r:${task.id}:7d`, fireAt: at(toISO(addDays(exam, -7)), "09:00") });
-      push({ ...e, id: `r:${task.id}:1d`, fireAt: at(toISO(addDays(exam, -1)), "20:00") });
-      push({ ...e, id: `r:${task.id}:2h`, fireAt: task.time ? addMin(exam, -120) : at(task.due, "08:00") });
+      push({ ...e, id: `${rid}:7d`, fireAt: at(toISO(addDays(exam, -7)), "09:00") });
+      push({ ...e, id: `${rid}:1d`, fireAt: at(toISO(addDays(exam, -1)), "20:00") });
+      push({ ...e, id: `${rid}:2h`, fireAt: task.time ? addMin(exam, -120) : at(task.due, "08:00") });
     } else {
       const due = at(task.due, task.time || "23:59");
       const target = (hasTime ? due : dayEnd(task.due)).getTime();
       const d = { ...base, kind: "due", target, tur: TASK_TYPES[task.type] };
-      push({ ...d, id: `r:${task.id}:3d`, fireAt: quiet(addDays(due, -3), qs, qe) });
-      push({ ...d, id: `r:${task.id}:1d`, fireAt: quiet(addDays(due, -1), qs, qe) });
-      push({ ...d, id: `r:${task.id}:3h`, fireAt: quiet(addMin(due, -180), qs, qe) });
+      push({ ...d, id: `${rid}:3d`, fireAt: quiet(addDays(due, -3), qs, qe) });
+      push({ ...d, id: `${rid}:1d`, fireAt: quiet(addDays(due, -1), qs, qe) });
+      push({ ...d, id: `${rid}:3h`, fireAt: quiet(addMin(due, -180), qs, qe) });
     }
   }
 

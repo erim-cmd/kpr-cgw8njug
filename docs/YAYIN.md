@@ -28,6 +28,7 @@ Site şu an GitHub Pages'te duruyor; orada sunucu çalışmadığı için syllab
 1. Pages projesi → Settings → **Variables and Secrets** → Add:
    - `ANTHROPIC_API_KEY` = 1. adımdaki anahtar → **Encrypt** seç (Production ve Preview).
    - (İsteğe bağlı) `KPR_ASK_MODEL` (Asistan) ve `KPR_ELECTIVE_MODEL` (Seçmeli eşleştirme); ikisinin varsayılanı `claude-haiku-5-5`.
+   - (İsteğe bağlı) `KPR_AI_READING` = `on`: yapay zekâ ile syllabus okuma ucu (`/api/syllabus`). Tanımlı değilse uç kapalı (404); arayüzdeki `importer.js` `AI_READING` ile birlikte açılır.
    - (İsteğe bağlı) `KPR_MODEL` = `claude-sonnet-5-5` (varsayılan zaten bu; daha ucuzu `claude-haiku-5-5`).
 2. Workers & Pages → **KV** → Create namespace: `kpr-limits`.
 3. Pages projesi → Settings → **Bindings** → Add → KV namespace → Variable name: `KPR_LIMITS`, namespace: `kpr-limits`.

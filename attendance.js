@@ -14,25 +14,49 @@
  */
 
 import { t } from "./i18n.js";
+import { parseISO } from "./dates.js";
+import { mondayOf } from "./density.js";
 
-// Yalnız sınavın kendisi: "Midterm review", "Final hazırlık" sınav haftası değildir
-const EXAM_WEEK = /(^|\b)(final|vize|ara ?s[ıi]nav|midterm|mid-term|s[ıi]nav haftas[ıi]|exam week|final exam|midterm exam|yar[ıi]y[ıi]l sonu|b[üu]t[üu]nleme)/i;
-const NOT_EXAM = /review|haz[ıi]rl[ıi]k|preparation|tekrar|revision|recap/i;
+// Yalnız sınavın kendisi: "Midterm review", "Final hazırlık", "Final project presentations" ve konu içinde geçen
+// not dağılımı ("Introduction (midterm 30%, final 40%)") sınav haftası değildir. Tek başına "final/vize/midterm"
+// konunun başındaysa sayılır; "ara sınav", "final exam" gibi açık sınav ifadeleri her yerde.
+const EXAM_PHRASE = /(ara ?s[ıi]nav|mid-?term exam|final exam|final s[ıi]nav|s[ıi]nav haftas[ıi]|exam week|yar[ıi]y[ıi]l sonu s[ıi]nav)/i;
+const EXAM_LEAD = /^[\s\d.:\-–—]*(final|vize|mid-?term|b[üu]t[üu]nleme|yar[ıi]y[ıi]l sonu)(?![a-zçğıöşü])/i;
+const NOT_EXAM = /review|haz[ıi]rl[ıi]k|preparation|tekrar|revision|recap|project|proje|presentation|sunum|poster|report|rapor|paper/i;
+const isExamTopic = (s) => (EXAM_PHRASE.test(s) || EXAM_LEAD.test(s)) && !NOT_EXAM.test(s);
 
 /** Planda sınav haftası olan hafta numaraları (1…weeks). */
 export function examWeeks(course, weeks) {
-  return new Set((course.weeks || []).filter((w) => w.n >= 1 && w.n <= weeks && EXAM_WEEK.test(w.topic || "") && !NOT_EXAM.test(w.topic || "")).map((w) => w.n));
+  return new Set((course.weeks || []).filter((w) => w.n >= 1 && w.n <= weeks && isExamTopic(w.topic || "")).map((w) => w.n));
 }
 
-export function attendance(course, weeks) {
+/** Tarihli kayıt ("Gitmedim") dönemin kaçıncı haftası? Dönem başı bilinmiyorsa null. */
+function weekOfDate(iso, termStart) {
+  if (!termStart || !iso) return null;
+  const n = Math.floor((parseISO(mondayOf(iso)) - parseISO(mondayOf(termStart))) / 86400000 / 7 + 0.5) + 1;
+  return n >= 1 ? n : null;
+}
+
+/** termStart (settings.termStart): tarihli kayıtları haftaya çevirip ızgara işaretiyle tekilleştirmek için. */
+export function attendance(course, weeks, termStart = "") {
   // Programı olmayan ders (çevrimiçi, saati yazmayan): haftada bir oturum say; yoksa devam oranı
   // girilmiş olsa bile hak hesaplanamaz ve kart yanlışlıkla "Devam şartı girilmedi" der.
   const perWeek = course.sessions.length || 1;
   const exams = examWeeks(course, weeks);
   const classWeeks = Math.max(0, weeks - exams.size);
   const total = perWeek * classWeeks;
-  // Sınav haftasına işaretlenmiş kayıt sayılmaz (o hafta yoklama yok)
-  const used = course.absences.filter((a) => !(a.week && exams.has(a.week))).length;
+  // Sınav haftasına düşen kayıt sayılmaz (o hafta yoklama yok). Aynı hafta + aynı oturum bir kez sayılır:
+  // Bugün'deki "Gitmedim" (tarihli) ile Dönem'deki ızgara işareti aynı devamsızlıksa iki kez sayılmasın.
+  const seen = new Set();
+  let used = 0;
+  for (const a of course.absences) {
+    const wk = a.week || weekOfDate(a.date, termStart);
+    if (wk && exams.has(wk)) continue;
+    const key = wk ? `w${wk}|${a.start || ""}` : `d${a.date}|${a.start || ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    used++;
+  }
   let limit = null;
   let basis = null;
   if (course.absLimit !== null && course.absLimit !== undefined) {

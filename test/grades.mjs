@@ -42,5 +42,21 @@ ok(tr.done && tr.letter === "C", `bitmiş ders: done=${tr.done} harf=${tr.letter
 const c2 = { ...c, grading: G({ v: 80, m: 60 }), targetLetter: "B", target: 75 };
 ok(targetResult(c2).onlyFinal === true, "bonus boşken 'yalnız final kaldı' algılanmalı");
 
+// Ağırlık toplamı 100 değil (öğrenci "Belgede de böyle" dedi): 100'lük ölçeğe oranlanır (denetim, 17 Eki).
+// %30 + %40, ikisinden 100 → ders puanı 100 (önce 70 → "D" çıkıyordu)
+const W = (a, b) => [{ name: "Ara sınav", weight: 30, score: a }, { name: "Final", weight: 40, score: b }];
+r = calcGrades(W(100, 100), 70);
+ok(r.total === 70, "toplam ham kalır (ekrandaki uyarı için)");
+ok(near(r.earned, 100) && r.remaining === 0, `toplam 70, hepsi 100 → ders puanı 100: ${r.earned}`);
+ok(targetResult({ ...c, grading: W(100, 100) }).letter === "A", "harf A olmalı");
+r = calcGrades(W(60, null), 70);
+ok(near(r.earned, 60 * 30 / 70) && near(r.remaining, 40 * 100 / 70), `yarım: kazanılan ${r.earned}, kalan ${r.remaining}`);
+ok(near(r.needed, 70 + (70 - 60) * 30 / 40), `finalden gereken ${r.needed} (vize 60, hedef 70 → 77,5)`);
+// Toplam 100'ü aşıyor (%60 + %60): kalan eksiye düşmez, gereken hesaplanır
+r = calcGrades([{ name: "Vize", weight: 60, score: 50 }, { name: "Final", weight: 60, score: null }], 70);
+ok(r.remaining > 0 && near(r.needed, 90), `toplam 120: gereken ${r.needed} ≠ 90`);
+// Toplam 100 iken davranış aynı
+ok(near(calcGrades(G({ v: 80, m: 60 }), 70).needed, 75), "toplam 100'de değişiklik yok");
+
 console.log(`\ngrades\n\n${pass} doğru, ${fail} hata`);
 process.exit(fail ? 1 : 0);

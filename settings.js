@@ -24,7 +24,7 @@ import { THEMES, applyTheme } from "./theme.js";
 import { LANGS, setLang, t, localize } from "./i18n.js";
 import { CITIES } from "./weather.js";
 
-export const APP_VERSION = "2.32.0";
+export const APP_VERSION = "2.32.1";
 const BRAND = "Köprü"; // i18n-ok — marka adı çevrilmez
 
 // Sınıf etiketleri (store.js YEARS anahtarları)
@@ -32,6 +32,16 @@ const YEAR_LABEL = localize(
   { hz: "Hazırlık", 1: "1. sınıf", 2: "2. sınıf", 3: "3. sınıf", 4: "4. sınıf", 5: "5. sınıf", 6: "6. sınıf", yl: "Yüksek lisans", dr: "Doktora" }, // i18n-ok
   { hz: "Prep year", 1: "Year 1", 2: "Year 2", 3: "Year 3", 4: "Year 4", 5: "Year 5", 6: "Year 6", yl: "Master's", dr: "PhD" }
 );
+
+/** Tüm veriyi JSON dosyası olarak indirir (Profil → Yedek al; depo dolu uyarısı). */
+export function downloadBackup() {
+  const blob = new Blob([JSON.stringify(store.get(), null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `kpr-yedek-${todayISO()}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
 
 /** "Elif Yılmaz" → "EY"; ad yoksa boş (avatar yerine kişi simgesi). */
 export function initials(name) {
@@ -335,12 +345,7 @@ const ACT = {
     if (result === "downloaded") toast(t("Takvim dosyası indirildi. Açınca takvimine eklenir."));
   },
   export() {
-    const blob = new Blob([JSON.stringify(store.get(), null, 2)], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `kpr-yedek-${todayISO()}.json`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    downloadBackup();
     toast(t("Yedek indirildi"));
   },
   reset(el, { close }) {
@@ -391,13 +396,24 @@ const CHANGE = {
     try {
       const data = JSON.parse(await file.text());
       if (!Array.isArray(data?.courses) || !Array.isArray(data?.tasks)) throw new Error("biçim"); // i18n-ok
-      const keepName = store.get().profile.name;
+      const prev = store.get();
+      const keepName = prev.profile.name;
+      // Yanlış dosya seçilirse "Geri al" önceki veriyi getirir (ikinci kopya cihaza yazılmaz: depoyu doldurmasın)
       store.replace(data);
       runMigrations(); // eski sürümün yedeği de yeni biçime geçsin
       if (!store.get().profile.name) store.setName(keepName);
       applyTheme(store.get().settings.theme);
       setLang(store.get().settings.lang);
-      toast(t("Yedek yüklendi"));
+      toast(t("Yedek yüklendi"), {
+        label: t("Geri al"),
+        onClick: () => {
+          store.replace(prev);
+          applyTheme(prev.settings.theme);
+          setLang(prev.settings.lang);
+          toast(t("Önceki veri geri geldi"));
+          redraw();
+        },
+      });
       redraw();
     } catch {
       toast(t("Bu dosya geçerli bir Köprü yedeği değil"));

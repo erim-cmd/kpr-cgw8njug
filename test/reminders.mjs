@@ -10,7 +10,11 @@ import vm from "node:vm";
 globalThis.localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
 const A = await import("../alerts.js");
 const { setLang } = await import("../i18n.js");
-const { buildReminders, describe, describeReminder, pickDueReminders, reminderStrings } = A;
+const { describe, describeReminder, pickDueReminders, reminderStrings } = A;
+// Görev hatırlatmalarının kimliğinde görevin tarihi/saati de var ("r:t1@2026-10-13T1000:3h"); aşağıdaki
+// denetimler kısa adla ("r:t1:3h") yazıldı. Tarih değişince kimlik değişir: bölüm 11.
+const short = (id) => id.replace(/@[^:]+(?=:)/, "");
+const buildReminders = (...a) => A.buildReminders(...a).map((r) => ({ ...r, id: short(r.id) }));
 
 let pass = 0, fail = 0;
 const ok = (c, msg) => { c ? pass++ : (fail++, console.log("  ✗ " + msg)); };
@@ -260,6 +264,23 @@ function shownAt(st, now, only = /^r:(t1|e\d):/) {
   ok(!weekOn("2026-10-05", "2026-10-12"), "tatil Pazartesi'yi de kapsıyor → haftaya bakış gelmez");
   // Sessiz saat kuralı tatilde de korunur (teslim 3 saat önce → önceki akşam 20:00)
   ok(byId(buildReminders(st({ pauseOn: true, pauseStart: "2026-10-10", pauseEnd: "2026-10-18" }), D(10, 11, 0), 5), "r:t1:3h")?.fireAt.getTime() === D(10, 12, 20).getTime(), "tatilde de sessiz saat kuralı");
+}
+
+// 11) Sınav ertelenince hatırlatmaları yeniden gelir (gönderildi kaydı eski tarihe aitti; denetim 17 Eki)
+{
+  const exam = (due) => state([task({ id: "e1", type: "sinav", title: "Ara sınav", due, time: "10:00" })]);
+  const sent = {};
+  const first = flat(A.buildReminders(exam("2026-11-10"), D(11, 9, 8), 2));
+  const r1 = pickDueReminders(first, sent, D(11, 9, 20, 1).getTime(), CATCH);
+  ok(r1.show.some((r) => short(r.id) === "r:e1:1d"), "ilk tarih: 1 gün önce hatırlatması gelir");
+  for (const r of [...r1.show, ...r1.skip.map((id) => ({ id }))]) sent[r.id] = D(11, 9, 20, 1).getTime();
+  const moved = flat(A.buildReminders(exam("2026-11-17"), D(11, 16, 8), 2));
+  const r2 = pickDueReminders(moved, sent, D(11, 16, 20, 1).getTime(), CATCH);
+  ok(r2.show.some((r) => short(r.id) === "r:e1:1d"), `ertelenen sınavın "yarın" hatırlatması gelmeli: ${r2.show.map((r) => r.id)}`);
+  const again = pickDueReminders(first, sent, D(11, 9, 20, 30).getTime(), CATCH);
+  ok(!again.show.some((r) => short(r.id) === "r:e1:1d"), "aynı tarih için gönderilmiş hatırlatma tekrar gelmez");
+  const timeMoved = flat(A.buildReminders(state([task({ id: "e1", type: "sinav", due: "2026-11-10", time: "14:00" })]), D(11, 9, 8), 2));
+  ok(timeMoved.find((r) => short(r.id) === "r:e1:1d")?.id !== first.find((r) => short(r.id) === "r:e1:1d")?.id, "saat değişince de kimlik değişir");
 }
 
 console.log(`\nbildirim zamanı\n\n${pass} doğru, ${fail} hata`);

@@ -110,3 +110,6 @@ jobs:
 
       - name: GNO — önceki not düşülmez (UMIS HESAPLA)
         run: node test/gno-retake.mjs
+
+      - name: Cihazdaki veri — iki sekme, dolu depo, bozuk kayıt
+        run: node test/store-safety.mjs

@@ -104,7 +104,7 @@ function ruleAnswer(kind, c, state) {
   const list = c.policies.filter((p) => p.kind === kind);
   const parts = [];
   if (kind === "devam") {
-    const a = attendance(c, state.settings.termWeeks);
+    const a = attendance(c, state.settings.termWeeks, state.settings.termStart);
     if (c.attendPct !== null || c.absLimit !== null) parts.push(`${name(c)}: ${c.attendPct !== null ? t("devam şartı {p}", { p: pct(c.attendPct) }) : t("en fazla {n} devamsızlık", { n: c.absLimit })}. ${attendanceText(a)}.`);
   }
   for (const p of list) {

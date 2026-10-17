@@ -59,5 +59,12 @@ function lastDates(ics) {
   ok(strip(a) === strip(b) && /RRULE/.test(b), "duraklatma açıkken .ics aynı (ders tekrarları ve teslimler dahil)");
 }
 
+// Not alanındaki tek başına CR (\r) satır kırmamalı: sahte alan ("DTSTART:…") eklenemesin (denetim, 17 Eki)
+{
+  const due = toISO(new Date(today.getTime() + 3 * 86400000));
+  const ics = buildICS({ courses: [course], tasks: [{ id: "x", courseId: "c1", title: "Ödev", type: "odev", due, time: "", note: "a\rDTSTART:19700101T000000", done: false }], settings: { termWeeks: 14 } });
+  ok(!/\r(?!\n)/.test(ics) && !/^DTSTART:1970/m.test(ics.replace(/\r\n/g, "\n")), "tek CR kaçırılmalı");
+}
+
 console.log(`\ntakvime aktarma\n\n${pass} doğru, ${fail} hata`);
 process.exit(fail ? 1 : 0);
